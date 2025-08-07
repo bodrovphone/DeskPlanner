@@ -84,6 +84,8 @@ export default function DeskCalendar() {
           id: `${deskId}-${date}`,
           deskId,
           date,
+          startDate: date,
+          endDate: date,
           status: nextStatus,
           personName: booking?.personName,
           title: booking?.title,
@@ -125,6 +127,8 @@ export default function DeskCalendar() {
     title: string;
     price: number;
     status: DeskStatus;
+    startDate: string;
+    endDate: string;
   }) => {
     if (!selectedBooking) return;
 
@@ -133,6 +137,8 @@ export default function DeskCalendar() {
       id: `${deskId}-${date}`,
       deskId,
       date,
+      startDate: bookingData.startDate || date,
+      endDate: bookingData.endDate || date,
       status: bookingData.status,
       personName: bookingData.personName,
       title: bookingData.title,
@@ -166,6 +172,8 @@ export default function DeskCalendar() {
       id: `${deskId}-${date}`,
       deskId,
       date,
+      startDate: selectedBooking.booking?.startDate || date,
+      endDate: selectedBooking.booking?.endDate || date,
       status: 'assigned',
       personName,
       title: selectedBooking.booking?.title,
@@ -211,6 +219,8 @@ export default function DeskCalendar() {
             id: `${deskId}-${date}`,
             deskId,
             date,
+            startDate: date,
+            endDate: date,
             status,
             personName: undefined,
             title: undefined,

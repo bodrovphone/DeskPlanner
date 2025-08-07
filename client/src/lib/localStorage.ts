@@ -27,6 +27,8 @@ export function saveBooking(booking: DeskBooking): void {
     const key = getBookingKey(booking.deskId, booking.date);
     bookings[key] = {
       ...booking,
+      startDate: booking.startDate || booking.date,
+      endDate: booking.endDate || booking.date,
       createdAt: booking.createdAt || new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
@@ -86,6 +88,8 @@ export function bulkUpdateBookings(
             id: key,
             deskId,
             date,
+            startDate: date,
+            endDate: date,
             status,
             personName: existingBooking?.personName || undefined,
             title: existingBooking?.title || undefined,

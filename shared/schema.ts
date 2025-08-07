@@ -5,7 +5,9 @@ export const deskStatusSchema = z.enum(["available", "booked", "assigned"]);
 export const deskBookingSchema = z.object({
   id: z.string(),
   deskId: z.string(),
-  date: z.string(), // YYYY-MM-DD format
+  date: z.string(), // YYYY-MM-DD format - for backward compatibility
+  startDate: z.string(), // YYYY-MM-DD format
+  endDate: z.string(), // YYYY-MM-DD format
   status: deskStatusSchema,
   personName: z.string().optional(),
   title: z.string().optional(), // Booking title/description

@@ -19,6 +19,8 @@ interface BookingModalProps {
     title: string;
     price: number;
     status: DeskStatus;
+    startDate: string;
+    endDate: string;
   }) => void;
 }
 
@@ -34,6 +36,8 @@ export default function BookingModal({
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [status, setStatus] = useState<DeskStatus>('booked');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -41,20 +45,24 @@ export default function BookingModal({
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || '25');
       setStatus(booking?.status || 'booked');
+      setStartDate(booking?.startDate || date);
+      setEndDate(booking?.endDate || date);
     }
-  }, [isOpen, booking]);
+  }, [isOpen, booking, date]);
 
   const handleSave = () => {
     const trimmedName = personName.trim();
     const trimmedTitle = title.trim();
     const parsedPrice = parseFloat(price);
     
-    if (trimmedName && trimmedTitle && parsedPrice >= 0) {
+    if (trimmedName && trimmedTitle && parsedPrice >= 0 && startDate && endDate) {
       onSave({
         personName: trimmedName,
         title: trimmedTitle,
         price: parsedPrice,
-        status: status
+        status: status,
+        startDate: startDate,
+        endDate: endDate
       });
       onClose();
     }
@@ -77,7 +85,8 @@ export default function BookingModal({
   });
 
   const isValidForm = personName.trim() && title.trim() && 
-                     price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0;
+                     price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0 &&
+                     startDate && endDate && startDate <= endDate;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -97,6 +106,34 @@ export default function BookingModal({
             </p>
           </div>
           
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
+                Start Date *
+              </Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                End Date *
+              </Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="personName" className="text-sm font-medium text-gray-700">
               Person Name *

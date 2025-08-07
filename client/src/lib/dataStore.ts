@@ -88,7 +88,12 @@ export class LocalStorageDataStore implements IDataStore {
   async saveBooking(booking: DeskBooking): Promise<void> {
     const data = this.getStorageData();
     const key = this.getBookingKey(booking.deskId, booking.date);
-    data[key] = booking;
+    const bookingWithDates = {
+      ...booking,
+      startDate: booking.startDate || booking.date,
+      endDate: booking.endDate || booking.date
+    };
+    data[key] = bookingWithDates;
     this.saveStorageData(data);
   }
 
