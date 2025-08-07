@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Booking System**: Three status types (available, booked, assigned) with comprehensive booking details
 - **Enhanced Booking Dialog**: Full booking modal with person name, title/purpose, and daily pricing
 - **Calendar Interface**: Dual-view system with both weekly and monthly views for better date management
-- **Monthly View**: Scrollable table container for viewing up to 30+ days with sticky header
+- **Monthly View**: Horizontally scrollable table with dates as columns and desks as rows, includes sticky desk column for easy reference
 - **Interactive Controls**: Multiple interaction methods - regular click for booking, Ctrl+click/right-click for quick status cycling
 - **Bulk Operations**: Range-based availability updates across multiple desks and dates
 - **Statistics**: Real-time desk utilization tracking and reporting

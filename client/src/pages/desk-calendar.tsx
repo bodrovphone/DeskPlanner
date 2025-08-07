@@ -308,58 +308,58 @@ export default function DeskCalendar() {
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <div className={viewMode === 'month' ? "max-h-[600px] overflow-y-auto" : ""}>
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                      Date
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sticky left-0 bg-gray-50 z-20">
+                    Desk
+                  </th>
+                  {currentDates.map((day) => (
+                    <th
+                      key={day.dateString}
+                      className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-900">
+                          {day.dayName}
+                        </span>
+                        <span className="text-xs">
+                          {day.fullDate}
+                        </span>
+                      </div>
                     </th>
-                    {DESKS.map((desk) => (
-                      <th
-                        key={desk.id}
-                        className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]"
-                      >
-                        <div className="flex flex-col">
-                          <span className={`font-semibold ${
-                            desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
-                          }`}>
-                            Room {desk.room}
-                          </span>
-                          <span>Desk {desk.number}</span>
-                        </div>
-                      </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {DESKS.map((desk) => (
+                  <tr key={desk.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-semibold ${
+                          desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
+                        }`}>
+                          Room {desk.room}
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          Desk {desk.number}
+                        </span>
+                      </div>
+                    </td>
+                    {currentDates.map((day) => (
+                      <td key={day.dateString} className="px-2 py-3 text-center">
+                        <DeskCell
+                          deskId={desk.id}
+                          date={day.dateString}
+                          booking={getBooking(desk.id, day.dateString)}
+                          onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
+                        />
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {currentDates.map((day) => (
-                    <tr key={day.dateString} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {day.dayName}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {day.fullDate}
-                          </span>
-                        </div>
-                      </td>
-                      {DESKS.map((desk) => (
-                        <td key={desk.id} className="px-2 py-3 text-center">
-                          <DeskCell
-                            deskId={desk.id}
-                            date={day.dateString}
-                            booking={getBooking(desk.id, day.dateString)}
-                            onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Card>
 
