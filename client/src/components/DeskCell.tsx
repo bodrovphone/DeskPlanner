@@ -1,4 +1,5 @@
 import { DeskBooking, DeskStatus } from '@shared/schema';
+import { currencySymbols } from '@/lib/settings';
 import { cn } from '@/lib/utils';
 
 interface DeskCellProps {
@@ -63,7 +64,7 @@ export default function DeskCell({ booking, onClick }: DeskCellProps) {
           )}
           {booking?.price && (
             <div className={cn('text-[10px] font-medium mt-0.5', config.iconColor)}>
-              ${booking.price}
+              {currencySymbols[booking.currency || 'USD']}{booking.price}
             </div>
           )}
         </div>

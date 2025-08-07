@@ -16,9 +16,10 @@ import {
   getMonthRange, 
   getMonthRangeString 
 } from '@/lib/dateUtils';
-import { DeskBooking, DeskStatus } from '@shared/schema';
+import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { currencySymbols } from '@/lib/settings';
 
 export default function DeskCalendar() {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
@@ -90,6 +91,7 @@ export default function DeskCalendar() {
           personName: booking?.personName,
           title: booking?.title,
           price: booking?.price,
+          currency: booking?.currency || 'USD',
           createdAt: booking?.createdAt || new Date().toISOString(),
         };
         await dataStore.saveBooking(newBooking);
@@ -129,6 +131,7 @@ export default function DeskCalendar() {
     status: DeskStatus;
     startDate: string;
     endDate: string;
+    currency: Currency;
   }) => {
     if (!selectedBooking) return;
 
@@ -150,6 +153,7 @@ export default function DeskCalendar() {
         personName: bookingData.personName,
         title: bookingData.title,
         price: bookingData.price,
+        currency: bookingData.currency,
         createdAt: new Date().toISOString(),
       };
       bookingsToCreate.push(newBooking);
@@ -169,9 +173,10 @@ export default function DeskCalendar() {
     
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
     const dayCount = dateRange.length;
+    const currencySymbol = currencySymbols[bookingData.currency];
     toast({
       title: "Desk Booking Created",
-      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - $${bookingData.price * dayCount} total`,
+      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price * dayCount} total`,
     });
   }, [selectedBooking, dates, toast]);
 
@@ -189,6 +194,7 @@ export default function DeskCalendar() {
       personName,
       title: selectedBooking.booking?.title,
       price: selectedBooking.booking?.price,
+      currency: selectedBooking.booking?.currency || 'USD',
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
@@ -236,6 +242,7 @@ export default function DeskCalendar() {
             personName: undefined,
             title: undefined,
             price: undefined,
+            currency: 'USD',
             createdAt: new Date().toISOString(),
           };
           bulkBookings.push(booking);
