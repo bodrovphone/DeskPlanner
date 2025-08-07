@@ -5,6 +5,7 @@ import DeskCell from '@/components/DeskCell';
 import PersonModal from '@/components/PersonModal';
 import BookingModal from '@/components/BookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
+import FloorPlanModal from '@/components/FloorPlanModal';
 import { 
   DESKS, 
   exportData
@@ -36,6 +37,7 @@ export default function DeskCalendar() {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
+  const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const { toast } = useToast();
 
   const currentWeek = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
@@ -312,6 +314,14 @@ export default function DeskCalendar() {
               <CurrencySelector onCurrencyChange={setCurrentCurrency} />
               <Button
                 variant="outline"
+                onClick={() => setIsFloorPlanModalOpen(true)}
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                <span className="material-icon text-sm mr-2">map</span>
+                Floor Plan
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setIsRangeModalOpen(true)}
                 className="border-blue-600 text-blue-600 hover:bg-blue-50"
               >
@@ -557,6 +567,12 @@ export default function DeskCalendar() {
         isOpen={isRangeModalOpen}
         onClose={() => setIsRangeModalOpen(false)}
         onApply={handleBulkAvailability}
+      />
+
+      {/* Floor Plan Modal */}
+      <FloorPlanModal
+        isOpen={isFloorPlanModalOpen}
+        onClose={() => setIsFloorPlanModalOpen(false)}
       />
     </div>
   );

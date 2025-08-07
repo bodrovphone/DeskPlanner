@@ -11,6 +11,7 @@ interface DataAPIRequest {
   document?: Record<string, any>;
   documents?: Record<string, any>[];
   update?: Record<string, any>;
+  replacement?: Record<string, any>;
   sort?: Record<string, any>;
   limit?: number;
   skip?: number;
