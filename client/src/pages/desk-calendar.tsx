@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DeskCell from '@/components/DeskCell';
@@ -34,13 +34,13 @@ export default function DeskCalendar() {
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const currentWeek = getWeekRange(weekOffset);
-  const currentMonth = getMonthRange(monthOffset);
-  const weekRangeString = getWeekRangeString(weekOffset);
-  const monthRangeString = getMonthRangeString(monthOffset);
+  const currentWeek = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
+  const currentMonth = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
+  const weekRangeString = useMemo(() => getWeekRangeString(weekOffset), [weekOffset]);
+  const monthRangeString = useMemo(() => getMonthRangeString(monthOffset), [monthOffset]);
   
-  const currentDates = viewMode === 'week' ? currentWeek : currentMonth;
-  const dates = currentDates.map(day => day.dateString);
+  const currentDates = useMemo(() => viewMode === 'week' ? currentWeek : currentMonth, [viewMode, currentWeek, currentMonth]);
+  const dates = useMemo(() => currentDates.map(day => day.dateString), [currentDates]);
   const [stats, setStats] = useState({ available: 0, assigned: 0, booked: 0 });
   const [bookings, setBookings] = useState<Record<string, DeskBooking>>({});
   
@@ -118,7 +118,7 @@ export default function DeskCalendar() {
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [toast]);
+  }, [dates, toast]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
