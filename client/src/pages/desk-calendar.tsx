@@ -19,7 +19,8 @@ import {
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
-import { currencySymbols } from '@/lib/settings';
+import { currencySymbols, getCurrency } from '@/lib/settings';
+import CurrencySelector from '@/components/CurrencySelector';
 
 export default function DeskCalendar() {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
@@ -30,6 +31,7 @@ export default function DeskCalendar() {
     deskId: string;
     date: string;
   } | null>(null);
+  const [currentCurrency, setCurrentCurrency] = useState<Currency>('USD');
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
@@ -54,6 +56,7 @@ export default function DeskCalendar() {
       ]);
       setBookings(allBookings);
       setStats(currentStats);
+      setCurrentCurrency(getCurrency());
     };
     
     loadData();
@@ -91,7 +94,7 @@ export default function DeskCalendar() {
           personName: booking?.personName,
           title: booking?.title,
           price: booking?.price,
-          currency: booking?.currency || 'USD',
+          currency: booking?.currency || currentCurrency,
           createdAt: booking?.createdAt || new Date().toISOString(),
         };
         await dataStore.saveBooking(newBooking);
@@ -153,7 +156,7 @@ export default function DeskCalendar() {
         personName: bookingData.personName,
         title: bookingData.title,
         price: bookingData.price,
-        currency: bookingData.currency,
+        currency: bookingData.currency || currentCurrency,
         createdAt: new Date().toISOString(),
       };
       bookingsToCreate.push(newBooking);
@@ -194,7 +197,7 @@ export default function DeskCalendar() {
       personName,
       title: selectedBooking.booking?.title,
       price: selectedBooking.booking?.price,
-      currency: selectedBooking.booking?.currency || 'USD',
+      currency: selectedBooking.booking?.currency || currentCurrency,
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
@@ -242,7 +245,7 @@ export default function DeskCalendar() {
             personName: undefined,
             title: undefined,
             price: undefined,
-            currency: 'USD',
+            currency: currentCurrency,
             createdAt: new Date().toISOString(),
           };
           bulkBookings.push(booking);
@@ -305,6 +308,7 @@ export default function DeskCalendar() {
               <h1 className="text-xl font-medium text-gray-900">Coworking Desk Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <CurrencySelector onCurrencyChange={setCurrentCurrency} />
               <Button
                 variant="outline"
                 onClick={() => setIsRangeModalOpen(true)}
@@ -525,6 +529,7 @@ export default function DeskCalendar() {
         booking={selectedBooking?.booking || null}
         deskId={selectedBooking?.deskId || ''}
         date={selectedBooking?.date || ''}
+        currency={currentCurrency}
         onSave={handleBookingSave}
       />
 

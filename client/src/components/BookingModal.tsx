@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { DESKS } from '@/lib/localStorage';
-import { getCurrency, setCurrency, currencySymbols, currencyLabels } from '@/lib/settings';
+import { currencySymbols } from '@/lib/settings';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface BookingModalProps {
   booking: DeskBooking | null;
   deskId: string;
   date: string;
+  currency: Currency;
   onSave: (bookingData: {
     personName: string;
     title: string;
@@ -32,6 +33,7 @@ export default function BookingModal({
   booking,
   deskId,
   date,
+  currency,
   onSave
 }: BookingModalProps) {
   const [personName, setPersonName] = useState('');
@@ -40,7 +42,6 @@ export default function BookingModal({
   const [status, setStatus] = useState<DeskStatus>('assigned');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [currency, setCurrencyState] = useState<Currency>('USD');
 
   useEffect(() => {
     if (isOpen) {
@@ -50,7 +51,6 @@ export default function BookingModal({
       setStatus(booking?.status || 'assigned');
       setStartDate(booking?.startDate || date);
       setEndDate(booking?.endDate || date);
-      setCurrencyState(booking?.currency || getCurrency());
     }
   }, [isOpen, booking, date]);
 
@@ -60,9 +60,6 @@ export default function BookingModal({
     const parsedPrice = parseFloat(price);
     
     if (trimmedName && trimmedTitle && parsedPrice >= 0 && startDate && endDate) {
-      // Save currency preference
-      setCurrency(currency);
-      
       onSave({
         personName: trimmedName,
         title: trimmedTitle,
@@ -211,62 +208,30 @@ export default function BookingModal({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price" className="text-sm font-medium text-gray-700">
-                Daily Rate *
-              </Label>
-              <div className="relative mt-1">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
-                  {currencySymbols[currency]}
-                </span>
-                <Input
-                  id="price"
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="25.00"
-                  min="0"
-                  step="0.01"
-                  className="pl-8"
-                />
-              </div>
+          <div>
+            <Label htmlFor="price" className="text-sm font-medium text-gray-700">
+              Daily Rate ({currencySymbols[currency]}) *
+            </Label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                {currencySymbols[currency]}
+              </span>
+              <Input
+                id="price"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="25.00"
+                min="0"
+                step="0.01"
+                className="pl-8"
+              />
             </div>
-            <div>
-              <Label htmlFor="currency" className="text-sm font-medium text-gray-700">
-                Currency *
-              </Label>
-              <Select value={currency} onValueChange={(value: Currency) => setCurrencyState(value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">
-                    <div className="flex items-center gap-2">
-                      <span>{currencySymbols.USD}</span>
-                      <span>{currencyLabels.USD}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="EUR">
-                    <div className="flex items-center gap-2">
-                      <span>{currencySymbols.EUR}</span>
-                      <span>{currencyLabels.EUR}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="BGN">
-                    <div className="flex items-center gap-2">
-                      <span>{currencySymbols.BGN}</span>
-                      <span>{currencyLabels.BGN}</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Enter the daily rate for this desk booking
+            </p>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Enter the daily rate for this desk booking
-          </p>
         </div>
         
         <div className="flex justify-end space-x-3 mt-6">
