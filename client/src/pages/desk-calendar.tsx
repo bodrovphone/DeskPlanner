@@ -21,6 +21,7 @@ import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { currencySymbols, getCurrency } from '@/lib/settings';
 import CurrencySelector from '@/components/CurrencySelector';
+import WaitingList from '@/components/WaitingList';
 
 export default function DeskCalendar() {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
@@ -516,6 +517,11 @@ export default function DeskCalendar() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Waiting List */}
+        <div className="mt-8">
+          <WaitingList />
         </div>
       </main>
 

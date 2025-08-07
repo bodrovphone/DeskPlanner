@@ -18,6 +18,15 @@ export const deskBookingSchema = z.object({
   createdAt: z.string(),
 });
 
+export const waitingListEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  preferredDates: z.string(), // Comma-separated date ranges or specific dates
+  contactInfo: z.string().optional(), // Phone or email
+  notes: z.string().optional(),
+  createdAt: z.string(),
+});
+
 export const appSettingsSchema = z.object({
   currency: currencySchema.default("USD"),
   createdAt: z.string(),
@@ -44,3 +53,4 @@ export type Desk = z.infer<typeof deskSchema>;
 export type BulkAvailability = z.infer<typeof bulkAvailabilitySchema>;
 export type Currency = z.infer<typeof currencySchema>;
 export type AppSettings = z.infer<typeof appSettingsSchema>;
+export type WaitingListEntry = z.infer<typeof waitingListEntrySchema>;
