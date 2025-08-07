@@ -40,7 +40,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Features and Business Logic
 - **Desk Management**: Support for multiple rooms with numbered desk assignments (2 rooms, 4 desks each)
-- **Booking System**: Four status types (available, booked, unavailable, assigned) with comprehensive booking details
+- **Booking System**: Three status types (available, booked, assigned) with comprehensive booking details
 - **Enhanced Booking Dialog**: Full booking modal with person name, title/purpose, and daily pricing
 - **Calendar Interface**: Dual-view system with both weekly and monthly views for better date management
 - **Monthly View**: Scrollable table container for viewing up to 30+ days with sticky header

@@ -107,37 +107,34 @@ export function getDeskStats(dates: string[]): {
   available: number;
   assigned: number;
   booked: number;
-  unavailable: number;
 } {
   const bookings = getBookings();
   const totalSlots = DESKS.length * dates.length;
   
   let assigned = 0;
   let booked = 0;
-  let unavailable = 0;
   
   for (const deskId of DESKS.map(d => d.id)) {
     for (const date of dates) {
       const booking = bookings[getBookingKey(deskId, date)];
       if (booking) {
-        switch (booking.status) {
+        // Handle legacy 'unavailable' status by treating as available
+        const validStatus = (booking.status as any) === 'unavailable' ? 'available' : booking.status;
+        switch (validStatus) {
           case 'assigned':
             assigned++;
             break;
           case 'booked':
             booked++;
             break;
-          case 'unavailable':
-            unavailable++;
-            break;
         }
       }
     }
   }
   
-  const available = totalSlots - assigned - booked - unavailable;
+  const available = totalSlots - assigned - booked;
   
-  return { available, assigned, booked, unavailable };
+  return { available, assigned, booked };
 }
 
 export function exportData(): string {

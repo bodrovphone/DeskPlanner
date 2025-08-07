@@ -21,12 +21,6 @@ const statusConfig = {
     iconColor: 'text-orange-700',
     label: 'Booked'
   },
-  unavailable: {
-    className: 'desk-unavailable',
-    icon: 'block',
-    iconColor: 'text-red-700',
-    label: 'Unavailable'
-  },
   assigned: {
     className: 'desk-assigned',
     icon: 'person',
@@ -36,8 +30,10 @@ const statusConfig = {
 };
 
 export default function DeskCell({ booking, onClick }: DeskCellProps) {
-  const status: DeskStatus = booking?.status || 'available';
-  const config = statusConfig[status];
+  const rawStatus = booking?.status || 'available';
+  // Handle legacy 'unavailable' status by converting to 'available'
+  const status: DeskStatus = (rawStatus as any) === 'unavailable' ? 'available' : rawStatus as DeskStatus;
+  const config = statusConfig[status] || statusConfig.available;
   const isBooked = status === 'booked' && booking?.personName;
   const isAssigned = status === 'assigned' && booking?.personName;
   const hasBooking = isBooked || isAssigned;

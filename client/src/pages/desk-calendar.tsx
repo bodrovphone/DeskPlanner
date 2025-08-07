@@ -55,7 +55,7 @@ export default function DeskCalendar() {
       event?.preventDefault();
       
       const currentStatus = booking?.status || 'available';
-      const statusCycle: DeskStatus[] = ['available', 'unavailable', 'booked'];
+      const statusCycle: DeskStatus[] = ['available', 'booked'];
       const currentIndex = statusCycle.indexOf(currentStatus);
       const nextIndex = (currentIndex + 1) % statusCycle.length;
       const nextStatus = statusCycle[nextIndex];
@@ -92,13 +92,6 @@ export default function DeskCalendar() {
       // For available desks, open booking modal to create new booking
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
-    } else {
-      // For unavailable desks, make available with regular click
-      deleteBooking(deskId, date);
-      toast({
-        title: "Desk Status Updated",
-        description: "Desk is now available",
-      });
     }
   }, [toast]);
 
@@ -305,10 +298,6 @@ export default function DeskCalendar() {
                 <span className="text-sm text-gray-700">Booked</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 bg-red-600 rounded mr-2"></div>
-                <span className="text-sm text-gray-700">Unavailable</span>
-              </div>
-              <div className="flex items-center">
                 <div className="w-4 h-4 bg-blue-100 border-2 border-blue-400 rounded mr-2"></div>
                 <span className="text-sm text-gray-700">Person Assigned</span>
               </div>
@@ -375,7 +364,7 @@ export default function DeskCalendar() {
         </Card>
 
         {/* Desk Stats */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center">
@@ -385,20 +374,6 @@ export default function DeskCalendar() {
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900">Available</p>
                   <p className="text-lg font-semibold text-green-600">{stats.available}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className="material-icon text-blue-600 text-2xl">person</span>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Assigned</p>
-                  <p className="text-lg font-semibold text-blue-600">{stats.assigned}</p>
                 </div>
               </div>
             </CardContent>
@@ -422,11 +397,11 @@ export default function DeskCalendar() {
             <CardContent className="p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className="material-icon text-red-600 text-2xl">block</span>
+                  <span className="material-icon text-blue-600 text-2xl">person</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Unavailable</p>
-                  <p className="text-lg font-semibold text-red-600">{stats.unavailable}</p>
+                  <p className="text-sm font-medium text-gray-900">Assigned</p>
+                  <p className="text-lg font-semibold text-blue-600">{stats.assigned}</p>
                 </div>
               </div>
             </CardContent>

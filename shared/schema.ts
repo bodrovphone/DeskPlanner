@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const deskStatusSchema = z.enum(["available", "booked", "unavailable", "assigned"]);
+export const deskStatusSchema = z.enum(["available", "booked", "assigned"]);
 
 export const deskBookingSchema = z.object({
   id: z.string(),

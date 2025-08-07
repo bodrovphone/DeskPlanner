@@ -158,7 +158,6 @@ export default function AvailabilityRangeModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="unavailable">Unavailable</SelectItem>
                 <SelectItem value="booked">Booked</SelectItem>
               </SelectContent>
             </Select>

@@ -29,7 +29,7 @@
   --material-pink: hsl(340 100% 43%);
   --available: hsl(122 47% 34%);
   --booked: hsl(27 98% 47%);
-  --unavailable: hsl(354 70% 51%);
+
   --person-assigned: hsl(210 67% 85%);
   --person-assigned-border: hsl(210 78% 46%);
   --font-roboto: 'Roboto', sans-serif;
@@ -98,15 +98,7 @@
     background-color: hsl(27 98% 47% / 0.2);
   }
   
-  .desk-unavailable {
-    @apply bg-red-50 border-2;
-    border-color: var(--unavailable);
-    background-color: hsl(354 70% 51% / 0.1);
-  }
-  
-  .desk-unavailable:hover {
-    background-color: hsl(354 70% 51% / 0.2);
-  }
+
   
   .desk-assigned {
     @apply bg-blue-50 border-2 border-blue-400;
