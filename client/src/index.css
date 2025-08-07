@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(180 6.6667% 97.0588%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(210 78% 46%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(240 1.9608% 90%);
+  --muted-foreground: hsl(210 25% 7.8431%);
+  --accent: hsl(211.5789 51.3514% 92.7451%);
+  --accent-foreground: hsl(210 78% 46%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(201.4286 30.4348% 90.9804%);
+  --input: hsl(200 23.0769% 97.4510%);
+  --ring: hsl(210 78% 46%);
+  --material-blue: hsl(210 78% 46%);
+  --material-pink: hsl(340 100% 43%);
+  --available: hsl(122 47% 34%);
+  --booked: hsl(27 98% 47%);
+  --unavailable: hsl(354 70% 51%);
+  --person-assigned: hsl(210 67% 85%);
+  --person-assigned-border: hsl(210 78% 46%);
+  --font-roboto: 'Roboto', sans-serif;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(0 0% 0%);
+  --foreground: hsl(200 6.6667% 91.1765%);
+  --card: hsl(228 9.8039% 10%);
+  --card-foreground: hsl(0 0% 85.0980%);
+  --popover: hsl(0 0% 0%);
+  --popover-foreground: hsl(200 6.6667% 91.1765%);
+  --primary: hsl(210 78% 46%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(195.0000 15.3846% 94.9020%);
+  --secondary-foreground: hsl(210 25% 7.8431%);
+  --muted: hsl(0 0% 9.4118%);
+  --muted-foreground: hsl(210 3.3898% 46.2745%);
+  --accent: hsl(205.7143 70% 7.8431%);
+  --accent-foreground: hsl(210 78% 46%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(210 5.2632% 14.9020%);
+  --input: hsl(207.6923 27.6596% 18.4314%);
+  --ring: hsl(210 78% 46%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-foreground antialiased;
+    font-family: var(--font-roboto);
+  }
+}
+
+@layer components {
+  .desk-cell {
+    @apply transition-all duration-200 cursor-pointer;
+  }
+  
+  .desk-cell:hover {
+    @apply transform scale-105;
+  }
+  
+  .desk-available {
+    @apply bg-green-50 border-2;
+    border-color: var(--available);
+    background-color: hsl(122 47% 34% / 0.1);
+  }
+  
+  .desk-available:hover {
+    background-color: hsl(122 47% 34% / 0.2);
+  }
+  
+  .desk-booked {
+    @apply bg-orange-50 border-2;
+    border-color: var(--booked);
+    background-color: hsl(27 98% 47% / 0.1);
+  }
+  
+  .desk-booked:hover {
+    background-color: hsl(27 98% 47% / 0.2);
+  }
+  
+  .desk-unavailable {
+    @apply bg-red-50 border-2;
+    border-color: var(--unavailable);
+    background-color: hsl(354 70% 51% / 0.1);
+  }
+  
+  .desk-unavailable:hover {
+    background-color: hsl(354 70% 51% / 0.2);
+  }
+  
+  .desk-assigned {
+    @apply bg-blue-50 border-2 border-blue-400;
+  }
+  
+  .desk-assigned:hover {
+    @apply bg-blue-100;
+  }
+  
+  .material-icon {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+}
