@@ -412,13 +412,13 @@ export default function DeskCalendar() {
                   <tr key={desk.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
                       <div className="flex flex-col">
-                        <span className={`text-sm font-semibold ${
+                        <span className="text-sm font-semibold text-gray-900">
+                          Desk {desk.number}
+                        </span>
+                        <span className={`text-xs ${
                           desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
                         }`}>
                           Room {desk.room}
-                        </span>
-                        <span className="text-xs text-gray-600">
-                          Desk {desk.number}
                         </span>
                       </div>
                     </td>
