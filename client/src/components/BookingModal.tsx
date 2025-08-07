@@ -136,18 +136,22 @@ export default function BookingModal({
 
           <div>
             <Label htmlFor="personName" className="text-sm font-medium text-gray-700">
-              Person Name *
+              Name *
             </Label>
             <Input
               id="personName"
               type="text"
               value={personName}
-              onChange={(e) => setPersonName(e.target.value)}
+              onChange={(e) => setPersonName(e.target.value.slice(0, 20))}
               onKeyDown={handleKeyDown}
-              placeholder="Enter person's name"
+              placeholder="Enter name"
+              maxLength={20}
               className="mt-1"
               autoFocus
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {personName.length}/20 characters
+            </p>
           </div>
 
           <div>
