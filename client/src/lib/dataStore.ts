@@ -176,65 +176,33 @@ export class LocalStorageDataStore implements IDataStore {
   }
 }
 
-/**
- * Future MongoDB implementation placeholder
- * This will be implemented when migrating from localStorage to MongoDB
- */
-export class MongoDataStore implements IDataStore {
-  // TODO: Implement MongoDB connection and operations
-  
-  async getBooking(deskId: string, date: string): Promise<DeskBooking | null> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async getAllBookings(): Promise<Record<string, DeskBooking>> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async saveBooking(booking: DeskBooking): Promise<void> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async deleteBooking(deskId: string, date: string): Promise<void> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async bulkUpdateBookings(bookings: DeskBooking[]): Promise<void> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async getBookingsForDesk(deskId: string, startDate?: string, endDate?: string): Promise<DeskBooking[]> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async getDeskStats(dates: string[]): Promise<{
-    available: number;
-    assigned: number;
-    booked: number;
-  }> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-  
-  async clearAllBookings(): Promise<void> {
-    throw new Error('MongoDB implementation not yet available');
-  }
-}
+// Import MongoDB implementation
+import { MongoDataStore } from './mongoDataStore';
+import { MongoDBDataAPIClient } from './mongodbDataApi';
 
 // Data store factory - easily switch between implementations
-export function createDataStore(type: 'localStorage' | 'mongodb' = 'localStorage'): IDataStore {
-  switch (type) {
+export function createDataStore(type?: 'localStorage' | 'mongodb'): IDataStore {
+  // Determine storage type from environment or parameter
+  const storageType = type || (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'mongodb') || 'localStorage';
+  
+  switch (storageType) {
     case 'localStorage':
+      console.log('Using LocalStorage for data persistence');
       return new LocalStorageDataStore();
     case 'mongodb':
+      // Check if MongoDB is configured before trying to use it
+      const client = new MongoDBDataAPIClient();
+      if (!client.isConfigured()) {
+        console.warn('MongoDB not configured, falling back to localStorage');
+        return new LocalStorageDataStore();
+      }
+      console.log('Using MongoDB Data API for data persistence');
       return new MongoDataStore();
     default:
-      throw new Error(`Unknown data store type: ${type}`);
+      console.warn(`Unknown data store type: ${storageType}, using localStorage`);
+      return new LocalStorageDataStore();
   }
 }
 
-// Global data store instance
-export const dataStore = createDataStore('localStorage');
+// Global data store instance - will use environment variable to determine type
+export const dataStore = createDataStore();
