@@ -35,7 +35,7 @@ export default function BookingModal({
   const [personName, setPersonName] = useState('');
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
-  const [status, setStatus] = useState<DeskStatus>('booked');
+  const [status, setStatus] = useState<DeskStatus>('assigned');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -44,7 +44,7 @@ export default function BookingModal({
       setPersonName(booking?.personName || '');
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || '25');
-      setStatus(booking?.status || 'booked');
+      setStatus(booking?.status || 'assigned');
       setStartDate(booking?.startDate || date);
       setEndDate(booking?.endDate || date);
     }
