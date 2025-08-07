@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DeskBooking } from '@shared/schema';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DeskBooking, DeskStatus } from '@shared/schema';
 import { DESKS } from '@/lib/localStorage';
 
 interface BookingModalProps {
@@ -17,6 +18,7 @@ interface BookingModalProps {
     personName: string;
     title: string;
     price: number;
+    status: DeskStatus;
   }) => void;
 }
 
@@ -31,12 +33,14 @@ export default function BookingModal({
   const [personName, setPersonName] = useState('');
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
+  const [status, setStatus] = useState<DeskStatus>('booked');
 
   useEffect(() => {
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || '25');
+      setStatus(booking?.status || 'booked');
     }
   }, [isOpen, booking]);
 
@@ -49,7 +53,8 @@ export default function BookingModal({
       onSave({
         personName: trimmedName,
         title: trimmedTitle,
-        price: parsedPrice
+        price: parsedPrice,
+        status: status
       });
       onClose();
     }
@@ -121,6 +126,40 @@ export default function BookingModal({
               className="mt-1 resize-none"
               rows={2}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+              Booking Status *
+            </Label>
+            <Select value={status} onValueChange={(value: DeskStatus) => setStatus(value)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="booked">
+                  <div className="flex items-center gap-2">
+                    <span className="material-icon text-orange-600 text-sm">event_busy</span>
+                    <div>
+                      <div className="font-medium">Booked</div>
+                      <div className="text-xs text-gray-500">Reserved but not paid</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="assigned">
+                  <div className="flex items-center gap-2">
+                    <span className="material-icon text-blue-600 text-sm">person</span>
+                    <div>
+                      <div className="font-medium">Assigned (Paid)</div>
+                      <div className="text-xs text-gray-500">Paid and confirmed</div>
+                    </div>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Choose "Booked" for reservations or "Assigned" for paid bookings
+            </p>
           </div>
 
           <div>

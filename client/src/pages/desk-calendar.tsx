@@ -124,6 +124,7 @@ export default function DeskCalendar() {
     personName: string;
     title: string;
     price: number;
+    status: DeskStatus;
   }) => {
     if (!selectedBooking) return;
 
@@ -132,7 +133,7 @@ export default function DeskCalendar() {
       id: `${deskId}-${date}`,
       deskId,
       date,
-      status: 'booked',
+      status: bookingData.status,
       personName: bookingData.personName,
       title: bookingData.title,
       price: bookingData.price,
@@ -150,9 +151,10 @@ export default function DeskCalendar() {
     setBookings(allBookings);
     setStats(newStats);
     
+    const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
     toast({
-      title: "Desk Booked Successfully",
-      description: `${bookingData.personName} booked the desk for $${bookingData.price}`,
+      title: "Desk Booking Created",
+      description: `${bookingData.personName} ${statusText} for $${bookingData.price}`,
     });
   }, [selectedBooking, dates, toast]);
 
