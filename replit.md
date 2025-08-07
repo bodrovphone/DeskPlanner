@@ -30,7 +30,9 @@ Preferred communication style: Simple, everyday language.
 - **ORM**: Drizzle ORM for type-safe database operations and schema management
 - **Connection**: Neon Database serverless connection for cloud PostgreSQL hosting
 - **Migrations**: Drizzle Kit for database schema migrations and management
-- **Local Storage**: Browser localStorage for client-side data persistence with enhanced booking data (name, title, price)
+- **Data Abstraction Layer**: `IDataStore` interface in `/client/src/lib/dataStore.ts` with multiple implementations
+- **Current Implementation**: LocalStorage implementation for client-side persistence with enhanced booking data (name, title, price)
+- **Future Migration Support**: MongoDB implementation placeholder ready for easy database migration
 - **Schema Design**: Centralized schema definitions in `/shared/schema.ts` for type consistency
 
 ### Authentication and Authorization

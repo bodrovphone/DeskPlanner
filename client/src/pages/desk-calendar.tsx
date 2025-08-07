@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DeskCell from '@/components/DeskCell';
@@ -7,13 +7,9 @@ import BookingModal from '@/components/BookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import { 
   DESKS, 
-  getBooking, 
-  saveBooking, 
-  deleteBooking, 
-  bulkUpdateBookings,
-  getDeskStats,
   exportData
 } from '@/lib/localStorage';
+import { dataStore } from '@/lib/dataStore';
 import { 
   getWeekRange, 
   getWeekRangeString, 
@@ -45,10 +41,31 @@ export default function DeskCalendar() {
   
   const currentDates = viewMode === 'week' ? currentWeek : currentMonth;
   const dates = currentDates.map(day => day.dateString);
-  const stats = getDeskStats(dates);
+  const [stats, setStats] = useState({ available: 0, assigned: 0, booked: 0 });
+  const [bookings, setBookings] = useState<Record<string, DeskBooking>>({});
+  
+  // Load initial data and stats when dates change
+  useEffect(() => {
+    const loadData = async () => {
+      const [allBookings, currentStats] = await Promise.all([
+        dataStore.getAllBookings(),
+        dataStore.getDeskStats(dates)
+      ]);
+      setBookings(allBookings);
+      setStats(currentStats);
+    };
+    
+    loadData();
+  }, [dates]);
 
-  const handleDeskClick = useCallback((deskId: string, date: string, event?: React.MouseEvent) => {
-    const booking = getBooking(deskId, date);
+  // Helper function to get booking for a desk/date
+  const getBookingForCell = (deskId: string, date: string): DeskBooking | null => {
+    const key = `${deskId}-${date}`;
+    return bookings[key] || null;
+  };
+
+  const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent) => {
+    const booking = await dataStore.getBooking(deskId, date);
     
     // Right click or Ctrl+Click for quick status cycling
     if (event?.ctrlKey || event?.button === 2) {
@@ -61,7 +78,7 @@ export default function DeskCalendar() {
       const nextStatus = statusCycle[nextIndex];
 
       if (nextStatus === 'available') {
-        deleteBooking(deskId, date);
+        await dataStore.deleteBooking(deskId, date);
       } else {
         const newBooking: DeskBooking = {
           id: `${deskId}-${date}`,
@@ -73,8 +90,16 @@ export default function DeskCalendar() {
           price: booking?.price,
           createdAt: booking?.createdAt || new Date().toISOString(),
         };
-        saveBooking(newBooking);
+        await dataStore.saveBooking(newBooking);
       }
+      
+      // Refresh data
+      const [allBookings, newStats] = await Promise.all([
+        dataStore.getAllBookings(),
+        dataStore.getDeskStats(dates)
+      ]);
+      setBookings(allBookings);
+      setStats(newStats);
 
       toast({
         title: "Desk Status Updated",
@@ -95,7 +120,7 @@ export default function DeskCalendar() {
     }
   }, [toast]);
 
-  const handleBookingSave = useCallback((bookingData: {
+  const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
     title: string;
     price: number;
@@ -114,16 +139,24 @@ export default function DeskCalendar() {
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
-    saveBooking(newBooking);
+    await dataStore.saveBooking(newBooking);
     setSelectedBooking(null);
+    
+    // Refresh data
+    const [allBookings, newStats] = await Promise.all([
+      dataStore.getAllBookings(),
+      dataStore.getDeskStats(dates)
+    ]);
+    setBookings(allBookings);
+    setStats(newStats);
     
     toast({
       title: "Desk Booked Successfully",
       description: `${bookingData.personName} booked the desk for $${bookingData.price}`,
     });
-  }, [selectedBooking, toast]);
+  }, [selectedBooking, dates, toast]);
 
-  const handlePersonSave = useCallback((personName: string) => {
+  const handlePersonSave = useCallback(async (personName: string) => {
     if (!selectedBooking) return;
 
     const { deskId, date } = selectedBooking;
@@ -138,29 +171,72 @@ export default function DeskCalendar() {
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
-    saveBooking(newBooking);
+    await dataStore.saveBooking(newBooking);
     setSelectedBooking(null);
+    
+    // Refresh data
+    const [allBookings, newStats] = await Promise.all([
+      dataStore.getAllBookings(),
+      dataStore.getDeskStats(dates)
+    ]);
+    setBookings(allBookings);
+    setStats(newStats);
     
     toast({
       title: "Person Assigned",
       description: `${personName} assigned to desk`,
     });
-  }, [selectedBooking, toast]);
+  }, [selectedBooking, dates, toast]);
 
-  const handleBulkAvailability = useCallback((
+  const handleBulkAvailability = useCallback(async (
     startDate: string,
     endDate: string,
     deskIds: string[],
     status: DeskStatus
   ) => {
     const dateRange = generateDateRange(startDate, endDate);
-    bulkUpdateBookings(deskIds, dateRange, status);
+    
+    // Create booking updates for bulk operation
+    const bulkBookings: DeskBooking[] = [];
+    for (const deskId of deskIds) {
+      for (const date of dateRange) {
+        if (status === 'available') {
+          // For available status, we delete the booking
+          await dataStore.deleteBooking(deskId, date);
+        } else {
+          // For booked status, create a new booking
+          const booking: DeskBooking = {
+            id: `${deskId}-${date}`,
+            deskId,
+            date,
+            status,
+            personName: undefined,
+            title: undefined,
+            price: undefined,
+            createdAt: new Date().toISOString(),
+          };
+          bulkBookings.push(booking);
+        }
+      }
+    }
+    
+    if (bulkBookings.length > 0) {
+      await dataStore.bulkUpdateBookings(bulkBookings);
+    }
+    
+    // Refresh data
+    const [allBookings, newStats] = await Promise.all([
+      dataStore.getAllBookings(),
+      dataStore.getDeskStats(dates)
+    ]);
+    setBookings(allBookings);
+    setStats(newStats);
     
     toast({
       title: "Bulk Update Applied",
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,
     });
-  }, [toast]);
+  }, [dates, toast]);
 
   const handleExport = useCallback(() => {
     try {
@@ -351,7 +427,7 @@ export default function DeskCalendar() {
                         <DeskCell
                           deskId={desk.id}
                           date={day.dateString}
-                          booking={getBooking(desk.id, day.dateString)}
+                          booking={getBookingForCell(desk.id, day.dateString)}
                           onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
                         />
                       </td>
