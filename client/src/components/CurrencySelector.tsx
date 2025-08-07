@@ -8,7 +8,7 @@ interface CurrencySelectorProps {
 }
 
 export default function CurrencySelector({ onCurrencyChange }: CurrencySelectorProps) {
-  const [currency, setCurrencyState] = useState<Currency>('USD');
+  const [currency, setCurrencyState] = useState<Currency>('BGN');
 
   useEffect(() => {
     setCurrencyState(getCurrency());

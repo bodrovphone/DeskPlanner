@@ -3,7 +3,7 @@ import { AppSettings, Currency } from '@shared/schema';
 const SETTINGS_KEY = 'coworking-settings';
 
 const defaultSettings: AppSettings = {
-  currency: 'USD',
+  currency: 'BGN',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

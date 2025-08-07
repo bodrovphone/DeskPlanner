@@ -47,7 +47,7 @@ export default function BookingModal({
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setTitle(booking?.title || '');
-      setPrice(booking?.price?.toString() || '25');
+      setPrice(booking?.price?.toString() || '15');
       setStatus(booking?.status || 'assigned');
       setStartDate(booking?.startDate || date);
       setEndDate(booking?.endDate || date);
@@ -210,7 +210,7 @@ export default function BookingModal({
 
           <div>
             <Label htmlFor="price" className="text-sm font-medium text-gray-700">
-              Daily Rate ({currencySymbols[currency]}) *
+              Price ({currencySymbols[currency]}) *
             </Label>
             <div className="relative mt-1">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
@@ -222,14 +222,14 @@ export default function BookingModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="25.00"
+                placeholder="15.00"
                 min="0"
                 step="0.01"
                 className="pl-8"
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Enter the daily rate for this desk booking
+              Enter the total price for this booking
             </p>
           </div>
         </div>

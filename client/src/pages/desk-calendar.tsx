@@ -31,7 +31,7 @@ export default function DeskCalendar() {
     deskId: string;
     date: string;
   } | null>(null);
-  const [currentCurrency, setCurrentCurrency] = useState<Currency>('USD');
+  const [currentCurrency, setCurrentCurrency] = useState<Currency>('BGN');
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
@@ -94,7 +94,7 @@ export default function DeskCalendar() {
           personName: booking?.personName,
           title: booking?.title,
           price: booking?.price,
-          currency: booking?.currency || currentCurrency,
+          currency: booking?.currency || currentCurrency || 'BGN',
           createdAt: booking?.createdAt || new Date().toISOString(),
         };
         await dataStore.saveBooking(newBooking);
@@ -179,7 +179,7 @@ export default function DeskCalendar() {
     const currencySymbol = currencySymbols[bookingData.currency];
     toast({
       title: "Desk Booking Created",
-      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price * dayCount} total`,
+      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
     });
   }, [selectedBooking, dates, toast]);
 
@@ -197,7 +197,7 @@ export default function DeskCalendar() {
       personName,
       title: selectedBooking.booking?.title,
       price: selectedBooking.booking?.price,
-      currency: selectedBooking.booking?.currency || currentCurrency,
+      currency: selectedBooking.booking?.currency || currentCurrency || 'BGN',
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
@@ -245,7 +245,7 @@ export default function DeskCalendar() {
             personName: undefined,
             title: undefined,
             price: undefined,
-            currency: currentCurrency,
+            currency: currentCurrency || 'BGN',
             createdAt: new Date().toISOString(),
           };
           bulkBookings.push(booking);
