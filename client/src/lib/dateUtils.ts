@@ -12,6 +12,14 @@ export interface WeekDay {
   dateString: string; // YYYY-MM-DD format
 }
 
+export interface MonthDay {
+  date: Dayjs;
+  dayName: string;
+  fullDate: string;
+  dateString: string; // YYYY-MM-DD format
+  isCurrentMonth: boolean;
+}
+
 export function getCurrentWeek(): WeekDay[] {
   const today = dayjs();
   const startOfWeek = today.startOf('isoWeek');
@@ -48,6 +56,27 @@ export function getWeekRange(weekOffset: number = 0): WeekDay[] {
   return weekDays;
 }
 
+export function getMonthRange(monthOffset: number = 0): MonthDay[] {
+  const today = dayjs().add(monthOffset, 'month');
+  const startOfMonth = today.startOf('month');
+  const endOfMonth = today.endOf('month');
+  const daysInMonth = endOfMonth.date();
+  
+  const monthDays: MonthDay[] = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    const date = startOfMonth.date(i);
+    monthDays.push({
+      date,
+      dayName: date.format('ddd'),
+      fullDate: date.format('MMM D'),
+      dateString: date.format('YYYY-MM-DD'),
+      isCurrentMonth: true
+    });
+  }
+  
+  return monthDays;
+}
+
 export function getWeekRangeString(weekOffset: number = 0): string {
   const weekDays = getWeekRange(weekOffset);
   const firstDay = weekDays[0];
@@ -58,6 +87,11 @@ export function getWeekRangeString(weekOffset: number = 0): string {
   } else {
     return `${firstDay.date.format('MMM D')} - ${lastDay.date.format('MMM D, YYYY')}`;
   }
+}
+
+export function getMonthRangeString(monthOffset: number = 0): string {
+  const today = dayjs().add(monthOffset, 'month');
+  return today.format('MMMM YYYY');
 }
 
 export function formatDateRange(startDate: string, endDate: string): string {

@@ -8,6 +8,8 @@ export const deskBookingSchema = z.object({
   date: z.string(), // YYYY-MM-DD format
   status: deskStatusSchema,
   personName: z.string().optional(),
+  title: z.string().optional(), // Booking title/description
+  price: z.number().optional(), // Daily price for the booking
   createdAt: z.string(),
 });
 

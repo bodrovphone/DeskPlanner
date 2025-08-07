@@ -25,7 +25,10 @@ export function saveBooking(booking: DeskBooking): void {
   try {
     const bookings = getBookings();
     const key = getBookingKey(booking.deskId, booking.date);
-    bookings[key] = booking;
+    bookings[key] = {
+      ...booking,
+      createdAt: booking.createdAt || new Date().toISOString(),
+    };
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
   } catch (error) {
     console.error('Failed to save booking:', error);
@@ -85,6 +88,8 @@ export function bulkUpdateBookings(
             date,
             status,
             personName: existingBooking?.personName || undefined,
+            title: existingBooking?.title || undefined,
+            price: existingBooking?.price || undefined,
             createdAt: existingBooking?.createdAt || new Date().toISOString(),
           };
         }

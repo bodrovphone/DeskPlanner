@@ -68,7 +68,7 @@ export default function AvailabilityRangeModal({
   };
 
   const isValidForm = startDate && endDate && selectedDeskIds.length > 0 && 
-                     dayjs(startDate).isSameOrBefore(dayjs(endDate));
+                     (dayjs(startDate).isSame(dayjs(endDate)) || dayjs(startDate).isBefore(dayjs(endDate)));
 
   const dateRangeText = startDate && endDate ? formatDateRange(startDate, endDate) : '';
 

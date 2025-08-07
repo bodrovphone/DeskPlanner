@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DeskCell from '@/components/DeskCell';
 import PersonModal from '@/components/PersonModal';
+import BookingModal from '@/components/BookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import { 
   DESKS, 
@@ -13,52 +14,63 @@ import {
   getDeskStats,
   exportData
 } from '@/lib/localStorage';
-import { getWeekRange, getWeekRangeString } from '@/lib/dateUtils';
+import { 
+  getWeekRange, 
+  getWeekRangeString, 
+  getMonthRange, 
+  getMonthRangeString 
+} from '@/lib/dateUtils';
 import { DeskBooking, DeskStatus } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DeskCalendar() {
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<{
     booking: DeskBooking | null;
     deskId: string;
     date: string;
   } | null>(null);
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const { toast } = useToast();
 
   const currentWeek = getWeekRange(weekOffset);
+  const currentMonth = getMonthRange(monthOffset);
   const weekRangeString = getWeekRangeString(weekOffset);
-  const dates = currentWeek.map(day => day.dateString);
+  const monthRangeString = getMonthRangeString(monthOffset);
+  
+  const currentDates = viewMode === 'week' ? currentWeek : currentMonth;
+  const dates = currentDates.map(day => day.dateString);
   const stats = getDeskStats(dates);
 
-  const handleDeskClick = useCallback((deskId: string, date: string) => {
+  const handleDeskClick = useCallback((deskId: string, date: string, event?: React.MouseEvent) => {
     const booking = getBooking(deskId, date);
     
-    if (booking?.status === 'assigned' || booking?.personName) {
-      // Open person modal for assigned desks or desks with names
-      setSelectedBooking({ booking, deskId, date });
-      setIsPersonModalOpen(true);
-    } else {
-      // Cycle through statuses for other desks
+    // Right click or Ctrl+Click for quick status cycling
+    if (event?.ctrlKey || event?.button === 2) {
+      event?.preventDefault();
+      
       const currentStatus = booking?.status || 'available';
-      const statusCycle: DeskStatus[] = ['available', 'booked', 'unavailable'];
+      const statusCycle: DeskStatus[] = ['available', 'unavailable', 'booked'];
       const currentIndex = statusCycle.indexOf(currentStatus);
       const nextIndex = (currentIndex + 1) % statusCycle.length;
       const nextStatus = statusCycle[nextIndex];
 
       if (nextStatus === 'available') {
-        // Remove booking
         deleteBooking(deskId, date);
       } else {
-        // Create or update booking
         const newBooking: DeskBooking = {
           id: `${deskId}-${date}`,
           deskId,
           date,
           status: nextStatus,
+          personName: booking?.personName,
+          title: booking?.title,
+          price: booking?.price,
           createdAt: booking?.createdAt || new Date().toISOString(),
         };
         saveBooking(newBooking);
@@ -68,8 +80,55 @@ export default function DeskCalendar() {
         title: "Desk Status Updated",
         description: `Desk status set to ${nextStatus}`,
       });
+      
+      return;
+    }
+    
+    if (booking?.status === 'booked' || booking?.status === 'assigned') {
+      // Open booking modal for existing bookings to edit
+      setSelectedBooking({ booking, deskId, date });
+      setIsBookingModalOpen(true);
+    } else if (booking?.status === 'available' || !booking) {
+      // For available desks, open booking modal to create new booking
+      setSelectedBooking({ booking: null, deskId, date });
+      setIsBookingModalOpen(true);
+    } else {
+      // For unavailable desks, make available with regular click
+      deleteBooking(deskId, date);
+      toast({
+        title: "Desk Status Updated",
+        description: "Desk is now available",
+      });
     }
   }, [toast]);
+
+  const handleBookingSave = useCallback((bookingData: {
+    personName: string;
+    title: string;
+    price: number;
+  }) => {
+    if (!selectedBooking) return;
+
+    const { deskId, date } = selectedBooking;
+    const newBooking: DeskBooking = {
+      id: `${deskId}-${date}`,
+      deskId,
+      date,
+      status: 'booked',
+      personName: bookingData.personName,
+      title: bookingData.title,
+      price: bookingData.price,
+      createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
+    };
+
+    saveBooking(newBooking);
+    setSelectedBooking(null);
+    
+    toast({
+      title: "Desk Booked Successfully",
+      description: `${bookingData.personName} booked the desk for $${bookingData.price}`,
+    });
+  }, [selectedBooking, toast]);
 
   const handlePersonSave = useCallback((personName: string) => {
     if (!selectedBooking) return;
@@ -81,6 +140,8 @@ export default function DeskCalendar() {
       date,
       status: 'assigned',
       personName,
+      title: selectedBooking.booking?.title,
+      price: selectedBooking.booking?.price,
       createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
     };
 
@@ -174,19 +235,35 @@ export default function DeskCalendar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setWeekOffset(weekOffset - 1)}
+                  onClick={() => {
+                    if (viewMode === 'week') {
+                      setWeekOffset(weekOffset - 1);
+                    } else {
+                      setMonthOffset(monthOffset - 1);
+                    }
+                  }}
                   className="p-2 rounded-full"
                 >
                   <span className="material-icon text-gray-600">chevron_left</span>
                 </Button>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-medium text-gray-900">{weekRangeString}</h2>
-                  <p className="text-sm text-gray-500">Week View</p>
+                  <h2 className="text-lg font-medium text-gray-900">
+                    {viewMode === 'week' ? weekRangeString : monthRangeString}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {viewMode === 'week' ? 'Week View' : 'Month View'}
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setWeekOffset(weekOffset + 1)}
+                  onClick={() => {
+                    if (viewMode === 'week') {
+                      setWeekOffset(weekOffset + 1);
+                    } else {
+                      setMonthOffset(monthOffset + 1);
+                    }
+                  }}
                   className="p-2 rounded-full"
                 >
                   <span className="material-icon text-gray-600">chevron_right</span>
@@ -194,16 +271,18 @@ export default function DeskCalendar() {
               </div>
               <div className="flex items-center space-x-2">
                 <Button
-                  variant="secondary"
+                  variant={viewMode === 'week' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="bg-gray-100 text-gray-700"
+                  onClick={() => setViewMode('week')}
+                  className={viewMode === 'week' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}
                 >
                   Week
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant={viewMode === 'month' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="text-gray-700 hover:bg-gray-100"
+                  onClick={() => setViewMode('month')}
+                  className={viewMode === 'month' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}
                 >
                   Month
                 </Button>
@@ -240,56 +319,58 @@ export default function DeskCalendar() {
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                    Date
-                  </th>
-                  {DESKS.map((desk) => (
-                    <th
-                      key={desk.id}
-                      className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]"
-                    >
-                      <div className="flex flex-col">
-                        <span className={`font-semibold ${
-                          desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
-                        }`}>
-                          Room {desk.room}
-                        </span>
-                        <span>Desk {desk.number}</span>
-                      </div>
+            <div className={viewMode === 'month' ? "max-h-[600px] overflow-y-auto" : ""}>
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                      Date
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentWeek.map((day) => (
-                  <tr key={day.dateString} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900">
-                          {day.dayName}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {day.fullDate}
-                        </span>
-                      </div>
-                    </td>
                     {DESKS.map((desk) => (
-                      <td key={desk.id} className="px-2 py-3 text-center">
-                        <DeskCell
-                          deskId={desk.id}
-                          date={day.dateString}
-                          booking={getBooking(desk.id, day.dateString)}
-                          onClick={() => handleDeskClick(desk.id, day.dateString)}
-                        />
-                      </td>
+                      <th
+                        key={desk.id}
+                        className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]"
+                      >
+                        <div className="flex flex-col">
+                          <span className={`font-semibold ${
+                            desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
+                          }`}>
+                            Room {desk.room}
+                          </span>
+                          <span>Desk {desk.number}</span>
+                        </div>
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentDates.map((day) => (
+                    <tr key={day.dateString} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {day.dayName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {day.fullDate}
+                          </span>
+                        </div>
+                      </td>
+                      {DESKS.map((desk) => (
+                        <td key={desk.id} className="px-2 py-3 text-center">
+                          <DeskCell
+                            deskId={desk.id}
+                            date={day.dateString}
+                            booking={getBooking(desk.id, day.dateString)}
+                            onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </Card>
 
@@ -352,6 +433,19 @@ export default function DeskCalendar() {
           </Card>
         </div>
       </main>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking?.booking || null}
+        deskId={selectedBooking?.deskId || ''}
+        date={selectedBooking?.date || ''}
+        onSave={handleBookingSave}
+      />
 
       {/* Person Modal */}
       <PersonModal

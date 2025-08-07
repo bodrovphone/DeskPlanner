@@ -30,7 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **ORM**: Drizzle ORM for type-safe database operations and schema management
 - **Connection**: Neon Database serverless connection for cloud PostgreSQL hosting
 - **Migrations**: Drizzle Kit for database schema migrations and management
-- **Local Storage**: Browser localStorage for client-side data persistence and offline capabilities
+- **Local Storage**: Browser localStorage for client-side data persistence with enhanced booking data (name, title, price)
 - **Schema Design**: Centralized schema definitions in `/shared/schema.ts` for type consistency
 
 ### Authentication and Authorization
@@ -39,12 +39,16 @@ Preferred communication style: Simple, everyday language.
 - **Storage Interface**: Abstracted storage layer allowing easy switching between memory and database storage
 
 ### Key Features and Business Logic
-- **Desk Management**: Support for multiple rooms with numbered desk assignments
-- **Booking System**: Four status types (available, booked, unavailable, assigned) with person assignment
-- **Calendar Interface**: Week-based view with navigation and bulk operations
+- **Desk Management**: Support for multiple rooms with numbered desk assignments (2 rooms, 4 desks each)
+- **Booking System**: Four status types (available, booked, unavailable, assigned) with comprehensive booking details
+- **Enhanced Booking Dialog**: Full booking modal with person name, title/purpose, and daily pricing
+- **Calendar Interface**: Dual-view system with both weekly and monthly views for better date management
+- **Monthly View**: Scrollable table container for viewing up to 30+ days with sticky header
+- **Interactive Controls**: Multiple interaction methods - regular click for booking, Ctrl+click/right-click for quick status cycling
 - **Bulk Operations**: Range-based availability updates across multiple desks and dates
 - **Statistics**: Real-time desk utilization tracking and reporting
 - **Export Functionality**: Data export capabilities for reporting and backup
+- **Material Design**: Clean Material UI-inspired interface with Google Fonts and Material Icons
 
 ## External Dependencies
 
