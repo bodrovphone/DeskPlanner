@@ -132,21 +132,31 @@ export default function DeskCalendar() {
   }) => {
     if (!selectedBooking) return;
 
-    const { deskId, date } = selectedBooking;
-    const newBooking: DeskBooking = {
-      id: `${deskId}-${date}`,
-      deskId,
-      date,
-      startDate: bookingData.startDate || date,
-      endDate: bookingData.endDate || date,
-      status: bookingData.status,
-      personName: bookingData.personName,
-      title: bookingData.title,
-      price: bookingData.price,
-      createdAt: selectedBooking.booking?.createdAt || new Date().toISOString(),
-    };
+    const { deskId } = selectedBooking;
+    
+    // Generate all dates in the range
+    const dateRange = generateDateRange(bookingData.startDate, bookingData.endDate);
+    const bookingsToCreate: DeskBooking[] = [];
+    
+    // Create a booking for each day in the range
+    for (const date of dateRange) {
+      const newBooking: DeskBooking = {
+        id: `${deskId}-${date}`,
+        deskId,
+        date,
+        startDate: bookingData.startDate,
+        endDate: bookingData.endDate,
+        status: bookingData.status,
+        personName: bookingData.personName,
+        title: bookingData.title,
+        price: bookingData.price,
+        createdAt: new Date().toISOString(),
+      };
+      bookingsToCreate.push(newBooking);
+    }
 
-    await dataStore.saveBooking(newBooking);
+    // Save all bookings in the range
+    await dataStore.bulkUpdateBookings(bookingsToCreate);
     setSelectedBooking(null);
     
     // Refresh data
@@ -158,9 +168,10 @@ export default function DeskCalendar() {
     setStats(newStats);
     
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
+    const dayCount = dateRange.length;
     toast({
       title: "Desk Booking Created",
-      description: `${bookingData.personName} ${statusText} for $${bookingData.price}`,
+      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - $${bookingData.price * dayCount} total`,
     });
   }, [selectedBooking, dates, toast]);
 
