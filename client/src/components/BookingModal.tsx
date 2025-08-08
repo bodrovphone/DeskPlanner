@@ -133,6 +133,7 @@ export default function BookingModal({
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="mt-1"
+                required
               />
             </div>
             <div>
@@ -146,6 +147,7 @@ export default function BookingModal({
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate}
                 className="mt-1"
+                required
               />
             </div>
           </div>

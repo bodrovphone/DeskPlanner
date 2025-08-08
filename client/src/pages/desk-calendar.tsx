@@ -263,7 +263,7 @@ export default function DeskCalendar() {
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [dates, toast]);
+  }, [dates, toast, calculateNextDates, currentCurrency]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
@@ -354,7 +354,7 @@ export default function DeskCalendar() {
       title: "Desk Booking Created",
       description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
     });
-  }, [selectedBooking, dates, toast]);
+  }, [selectedBooking, dates, toast, calculateNextDates]);
 
   const handlePersonSave = useCallback(async (personName: string) => {
     if (!selectedBooking) return;
@@ -378,18 +378,22 @@ export default function DeskCalendar() {
     setSelectedBooking(null);
     
     // Refresh data
-    const [allBookings, newStats] = await Promise.all([
+    const [allBookings, newStats, nextDates] = await Promise.all([
       dataStore.getAllBookings(),
-      dataStore.getDeskStats(dates)
+      dataStore.getDeskStats(dates),
+      calculateNextDates()
     ]);
     setBookings(allBookings);
     setStats(newStats);
+    setNextAvailableDates(nextDates.available);
+    setNextBookedDates(nextDates.booked);
+    setExpiringAssignments(nextDates.expiring);
     
     toast({
       title: "Person Assigned",
       description: `${personName} assigned to desk`,
     });
-  }, [selectedBooking, dates, toast]);
+  }, [selectedBooking, dates, toast, calculateNextDates, currentCurrency]);
 
   const handleBulkAvailability = useCallback(async (
     startDate: string,
@@ -431,18 +435,22 @@ export default function DeskCalendar() {
     }
     
     // Refresh data
-    const [allBookings, newStats] = await Promise.all([
+    const [allBookings, newStats, nextDates] = await Promise.all([
       dataStore.getAllBookings(),
-      dataStore.getDeskStats(dates)
+      dataStore.getDeskStats(dates),
+      calculateNextDates()
     ]);
     setBookings(allBookings);
     setStats(newStats);
+    setNextAvailableDates(nextDates.available);
+    setNextBookedDates(nextDates.booked);
+    setExpiringAssignments(nextDates.expiring);
     
     toast({
       title: "Bulk Update Applied",
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,
     });
-  }, [dates, toast]);
+  }, [dates, toast, calculateNextDates, currentCurrency]);
 
   const handleExport = useCallback(() => {
     try {
