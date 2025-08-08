@@ -67,7 +67,8 @@ export default function DeskCalendar() {
     today.setHours(0, 0, 0, 0);
     const availableDates: string[] = [];
     const bookedDatesMap = new Map<string, Set<string>>();
-    let checkDate = new Date(today); // Start from today
+    let checkDate = new Date(today);
+    checkDate.setDate(checkDate.getDate() + 1); // Start from tomorrow, not today
     
     // Check up to 90 days ahead
     const maxDaysToCheck = 90;
