@@ -24,7 +24,7 @@ interface BookingModalProps {
     startDate: string;
     endDate: string;
     currency: Currency;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export default function BookingModal({
@@ -42,6 +42,7 @@ export default function BookingModal({
   const [status, setStatus] = useState<DeskStatus>('assigned');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [conflictError, setConflictError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -51,25 +52,35 @@ export default function BookingModal({
       setStatus(booking?.status || 'assigned');
       setStartDate(booking?.startDate || date);
       setEndDate(booking?.endDate || date);
+      setConflictError('');
     }
   }, [isOpen, booking, date]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedName = personName.trim();
     const trimmedTitle = title.trim();
     const parsedPrice = parseFloat(price);
     
     if (trimmedName && parsedPrice >= 0 && startDate && endDate) {
-      onSave({
-        personName: trimmedName,
-        title: trimmedTitle,
-        price: parsedPrice,
-        status: status,
-        startDate: startDate,
-        endDate: endDate,
-        currency: currency
-      });
-      onClose();
+      try {
+        setConflictError('');
+        await onSave({
+          personName: trimmedName,
+          title: trimmedTitle,
+          price: parsedPrice,
+          status: status,
+          startDate: startDate,
+          endDate: endDate,
+          currency: currency
+        });
+        onClose();
+      } catch (error: any) {
+        if (error.message && error.message.includes('conflict')) {
+          setConflictError(error.message);
+        } else {
+          setConflictError('An error occurred while saving the booking.');
+        }
+      }
     }
   };
 
@@ -232,6 +243,18 @@ export default function BookingModal({
               Enter the total price for this booking
             </p>
           </div>
+
+          {conflictError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start">
+                <span className="material-icon text-red-500 text-lg mr-2 mt-0.5">error</span>
+                <div>
+                  <h4 className="text-sm font-medium text-red-800">Booking Conflict</h4>
+                  <p className="text-sm text-red-700 mt-1 whitespace-pre-line">{conflictError}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end space-x-3 mt-6">

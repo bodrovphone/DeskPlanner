@@ -7,6 +7,7 @@ interface DeskCellProps {
   date: string;
   booking: DeskBooking | null;
   onClick: (event?: React.MouseEvent) => void;
+  isWeekend?: boolean;
 }
 
 const statusConfig = {
@@ -30,7 +31,7 @@ const statusConfig = {
   }
 };
 
-export default function DeskCell({ booking, onClick }: DeskCellProps) {
+export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps) {
   const rawStatus = booking?.status || 'available';
   // Handle legacy 'unavailable' status by converting to 'available'
   const status: DeskStatus = (rawStatus as any) === 'unavailable' ? 'available' : rawStatus as DeskStatus;
@@ -39,14 +40,33 @@ export default function DeskCell({ booking, onClick }: DeskCellProps) {
   const isAssigned = status === 'assigned' && booking?.personName;
   const hasBooking = isBooked || isAssigned;
 
+  // For weekends with no booking, show weekend indicator
+  if (isWeekend && !hasBooking) {
+    return (
+      <div
+        className="desk-cell rounded-lg p-2 min-h-[80px] bg-gray-100 cursor-not-allowed flex flex-col items-center justify-center text-center"
+        style={{ pointerEvents: 'none' }}
+      >
+        <span className="material-icon text-sm text-gray-400">
+          weekend
+        </span>
+        <div className="text-xs font-medium mt-1 text-gray-400">
+          Weekend
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
         'desk-cell rounded-lg p-2 min-h-[80px] flex flex-col items-center justify-center text-center',
-        config.className
+        config.className,
+        isWeekend && 'opacity-50 cursor-not-allowed'
       )}
-      onClick={(e) => onClick(e)}
-      onContextMenu={(e) => onClick(e)}
+      onClick={(e) => !isWeekend && onClick(e)}
+      onContextMenu={(e) => !isWeekend && onClick(e)}
+      style={{ pointerEvents: isWeekend ? 'none' : 'auto' }}
     >
       <span className={cn('material-icon text-sm', config.iconColor)}>
         {config.icon}
