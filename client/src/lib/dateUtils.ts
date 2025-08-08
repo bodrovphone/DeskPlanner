@@ -1,9 +1,11 @@
 import dayjs, { Dayjs } from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
 
 export interface WeekDay {
   date: Dayjs;
@@ -57,21 +59,22 @@ export function getWeekRange(weekOffset: number = 0): WeekDay[] {
 }
 
 export function getMonthRange(monthOffset: number = 0): MonthDay[] {
-  const today = dayjs().add(monthOffset, 'month');
-  const startOfMonth = today.startOf('month');
-  const endOfMonth = today.endOf('month');
-  const daysInMonth = endOfMonth.date();
-  
+  const baseDate = dayjs().add(monthOffset, 'month');
+  const startOfMonth = baseDate.startOf('month');
+  const endOfMonth = baseDate.endOf('month');
   const monthDays: MonthDay[] = [];
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = startOfMonth.date(i);
+  
+  // Always generate the full month
+  let currentDate = startOfMonth;
+  while (currentDate.isSameOrBefore(endOfMonth, 'day')) {
     monthDays.push({
-      date,
-      dayName: date.format('ddd'),
-      fullDate: date.format('MMM D'),
-      dateString: date.format('YYYY-MM-DD'),
-      isCurrentMonth: true
+      date: currentDate,
+      dayName: currentDate.format('ddd'),
+      fullDate: currentDate.format('MMM D'),
+      dateString: currentDate.format('YYYY-MM-DD'),
+      isCurrentMonth: currentDate.isSame(baseDate, 'month')
     });
+    currentDate = currentDate.add(1, 'day');
   }
   
   return monthDays;

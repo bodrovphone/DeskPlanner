@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DeskCell from '@/components/DeskCell';
@@ -39,6 +39,7 @@ export default function DeskCalendar() {
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const { toast } = useToast();
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const currentWeek = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
   const currentMonth = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
@@ -126,10 +127,34 @@ export default function DeskCalendar() {
     loadData();
   }, [dates, calculateNextDates]);
 
+  // Auto-scroll to today's column when view changes
+  useEffect(() => {
+    if (viewMode === 'month' && monthOffset === 0 && tableRef.current) {
+      const todayIndex = currentDates.findIndex(day => isToday(day.dateString));
+      if (todayIndex >= 0) {
+        // Scroll to today's column after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          if (tableRef.current) {
+            const columnWidth = 120; // min-width from CSS
+            const scrollPosition = Math.max(0, (todayIndex * columnWidth) - 32); // 32px offset for sticky desk column
+            tableRef.current.scrollLeft = scrollPosition;
+          }
+        }, 100);
+      }
+    }
+  }, [viewMode, monthOffset, currentDates]);
+
   // Helper function to get booking for a desk/date
   const getBookingForCell = (deskId: string, date: string): DeskBooking | null => {
     const key = `${deskId}-${date}`;
     return bookings[key] || null;
+  };
+
+  // Helper function to check if date is today
+  const isToday = (dateString: string): boolean => {
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+    return dateString === todayString;
   };
 
   const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent) => {
@@ -551,28 +576,40 @@ export default function DeskCalendar() {
 
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
+          <div ref={tableRef} className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sticky left-0 bg-gray-50 z-20">
                     Desk
                   </th>
-                  {currentDates.map((day) => (
-                    <th
-                      key={day.dateString}
-                      className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900">
-                          {day.dayName}
-                        </span>
-                        <span className="text-xs">
-                          {day.fullDate}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
+                  {currentDates.map((day) => {
+                    const isTodayColumn = isToday(day.dateString);
+                    return (
+                      <th
+                        key={day.dateString}
+                        className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[120px] ${
+                          isTodayColumn 
+                            ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300' 
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className={`font-semibold ${
+                            isTodayColumn ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                            {day.dayName}
+                          </span>
+                          <span className="text-xs">
+                            {day.fullDate}
+                          </span>
+                          {isTodayColumn && (
+                            <span className="text-xs font-medium text-blue-600 mt-1">TODAY</span>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -590,16 +627,24 @@ export default function DeskCalendar() {
                         </span>
                       </div>
                     </td>
-                    {currentDates.map((day) => (
-                      <td key={day.dateString} className="px-2 py-3 text-center">
-                        <DeskCell
-                          deskId={desk.id}
-                          date={day.dateString}
-                          booking={getBookingForCell(desk.id, day.dateString)}
-                          onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
-                        />
-                      </td>
-                    ))}
+                    {currentDates.map((day) => {
+                      const isTodayColumn = isToday(day.dateString);
+                      return (
+                        <td 
+                          key={day.dateString} 
+                          className={`px-2 py-3 text-center ${
+                            isTodayColumn ? 'bg-blue-50 border-l-2 border-r-2 border-blue-300' : ''
+                          }`}
+                        >
+                          <DeskCell
+                            deskId={desk.id}
+                            date={day.dateString}
+                            booking={getBookingForCell(desk.id, day.dateString)}
+                            onClick={(e) => handleDeskClick(desk.id, day.dateString, e)}
+                          />
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
