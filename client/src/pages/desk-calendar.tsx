@@ -25,7 +25,7 @@ import CurrencySelector from '@/components/CurrencySelector';
 import WaitingList from '@/components/WaitingList';
 
 export default function DeskCalendar() {
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<{
@@ -48,22 +48,83 @@ export default function DeskCalendar() {
   const currentDates = useMemo(() => viewMode === 'week' ? currentWeek : currentMonth, [viewMode, currentWeek, currentMonth]);
   const dates = useMemo(() => currentDates.map(day => day.dateString), [currentDates]);
   const [stats, setStats] = useState({ available: 0, assigned: 0, booked: 0 });
-  const [bookings, setBookings] = useState<Record<string, DeskBooking>>({});
+  const [bookings, setBookings] = useState<Record<string, DeskBooking>>({}); 
+  const [nextAvailableDates, setNextAvailableDates] = useState<string[]>([]);
+  const [nextBookedDates, setNextBookedDates] = useState<{ date: string, names: string[] }[]>([]);
   
+  // Calculate next available and booked dates
+  const calculateNextDates = useCallback(async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const availableDates: string[] = [];
+    const bookedDatesMap = new Map<string, Set<string>>();
+    let checkDate = new Date(today); // Start from today
+    
+    // Check up to 90 days ahead
+    const maxDaysToCheck = 90;
+    let daysChecked = 0;
+    
+    while ((availableDates.length < 5 || bookedDatesMap.size < 3) && daysChecked < maxDaysToCheck) {
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      // Check each desk on this date
+      let hasAvailableDesk = false;
+      const bookedNames = new Set<string>();
+      
+      for (const desk of DESKS) {
+        const booking = await dataStore.getBooking(desk.id, dateString);
+        if (!booking) {
+          // No booking means the desk is available
+          hasAvailableDesk = true;
+        } else if (booking.status === 'available') {
+          // Explicitly marked as available
+          hasAvailableDesk = true;
+        } else if (booking.status === 'booked' && booking.personName) {
+          // Booked (not assigned/paid)
+          bookedNames.add(booking.personName);
+        }
+      }
+      
+      // Track available dates
+      if (hasAvailableDesk && availableDates.length < 5) {
+        availableDates.push(dateString);
+      }
+      
+      // Track booked dates with names
+      if (bookedNames.size > 0 && bookedDatesMap.size < 3) {
+        bookedDatesMap.set(dateString, bookedNames);
+      }
+      
+      checkDate.setDate(checkDate.getDate() + 1);
+      daysChecked++;
+    }
+    
+    // Convert booked dates map to array format
+    const bookedDates = Array.from(bookedDatesMap.entries()).map(([date, names]) => ({
+      date,
+      names: Array.from(names)
+    }));
+    
+    return { available: availableDates, booked: bookedDates };
+  }, []);
+
   // Load initial data and stats when dates change
   useEffect(() => {
     const loadData = async () => {
-      const [allBookings, currentStats] = await Promise.all([
+      const [allBookings, currentStats, nextDates] = await Promise.all([
         dataStore.getAllBookings(),
-        dataStore.getDeskStats(dates)
+        dataStore.getDeskStats(dates),
+        calculateNextDates()
       ]);
       setBookings(allBookings);
       setStats(currentStats);
+      setNextAvailableDates(nextDates.available);
+      setNextBookedDates(nextDates.booked);
       setCurrentCurrency(getCurrency());
     };
     
     loadData();
-  }, [dates]);
+  }, [dates, calculateNextDates]);
 
   // Helper function to get booking for a desk/date
   const getBookingForCell = (deskId: string, date: string): DeskBooking | null => {
@@ -104,12 +165,15 @@ export default function DeskCalendar() {
       }
       
       // Refresh data
-      const [allBookings, newStats] = await Promise.all([
+      const [allBookings, newStats, nextDates] = await Promise.all([
         dataStore.getAllBookings(),
-        dataStore.getDeskStats(dates)
+        dataStore.getDeskStats(dates),
+        calculateNextDates()
       ]);
       setBookings(allBookings);
       setStats(newStats);
+      setNextAvailableDates(nextDates.available);
+      setNextBookedDates(nextDates.booked);
 
       toast({
         title: "Desk Status Updated",
@@ -405,6 +469,60 @@ export default function DeskCalendar() {
           </CardContent>
         </Card>
 
+        {/* Next Available and Booked Dates */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            {/* Available Dates Section */}
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <span className="material-icon text-green-600 text-xl mr-2">event_available</span>
+                <h3 className="text-sm font-medium text-gray-900">Next Available Dates</h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {nextAvailableDates.length > 0 ? (
+                  nextAvailableDates.map(date => {
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                    const day = dateObj.getDate();
+                    return (
+                      <div key={date} className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+                        <span className="font-medium text-green-700">{monthName} {day}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="text-sm text-gray-500">No available dates found in the next 90 days</span>
+                )}
+              </div>
+            </div>
+            
+            {/* Booked Dates Section */}
+            {nextBookedDates.length > 0 && (
+              <div>
+                <div className="flex items-center mb-2">
+                  <span className="material-icon text-orange-600 text-xl mr-2">event_busy</span>
+                  <h3 className="text-sm font-medium text-gray-900">Next Booked Dates</h3>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {nextBookedDates.map(({ date, names }) => {
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                    const day = dateObj.getDate();
+                    return (
+                      <div key={date} className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
+                        <div className="font-medium text-orange-700">{monthName} {day}</div>
+                        <div className="text-xs text-orange-600 mt-1">
+                          {names.join(', ')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Status Legend */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -425,6 +543,11 @@ export default function DeskCalendar() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Waiting List */}
+        <div className="mb-6">
+          <WaitingList />
+        </div>
 
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
@@ -527,11 +650,6 @@ export default function DeskCalendar() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Waiting List */}
-        <div className="mt-8">
-          <WaitingList />
         </div>
       </main>
 

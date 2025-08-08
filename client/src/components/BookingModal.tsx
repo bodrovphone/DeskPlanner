@@ -59,7 +59,7 @@ export default function BookingModal({
     const trimmedTitle = title.trim();
     const parsedPrice = parseFloat(price);
     
-    if (trimmedName && trimmedTitle && parsedPrice >= 0 && startDate && endDate) {
+    if (trimmedName && parsedPrice >= 0 && startDate && endDate) {
       onSave({
         personName: trimmedName,
         title: trimmedTitle,
@@ -89,7 +89,7 @@ export default function BookingModal({
     day: 'numeric'
   });
 
-  const isValidForm = personName.trim() && title.trim() && 
+  const isValidForm = personName.trim() && 
                      price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0 &&
                      startDate && endDate && startDate <= endDate;
 
@@ -161,7 +161,7 @@ export default function BookingModal({
 
           <div>
             <Label htmlFor="title" className="text-sm font-medium text-gray-700">
-              Booking Title/Purpose *
+              Booking Title/Purpose (Optional)
             </Label>
             <Textarea
               id="title"

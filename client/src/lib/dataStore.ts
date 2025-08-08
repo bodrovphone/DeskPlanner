@@ -36,9 +36,46 @@ export interface IDataStore {
  */
 export class LocalStorageDataStore implements IDataStore {
   private readonly STORAGE_KEY = 'deskBookings';
+  private readonly DAYS_TO_KEEP = 60; // Keep bookings for 60 days
+
+  constructor() {
+    // Run cleanup on initialization
+    this.cleanupOldBookings();
+  }
 
   private getBookingKey(deskId: string, date: string): string {
     return `${deskId}-${date}`;
+  }
+  
+  private cleanupOldBookings(): void {
+    try {
+      const data = this.getStorageData();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const cutoffDate = new Date(today);
+      cutoffDate.setDate(cutoffDate.getDate() - this.DAYS_TO_KEEP);
+      
+      let removedCount = 0;
+      const cleanedData: Record<string, DeskBooking> = {};
+      
+      for (const [key, booking] of Object.entries(data)) {
+        const bookingDate = new Date(booking.date + 'T00:00:00');
+        
+        // Keep bookings that are within the retention period or in the future
+        if (bookingDate >= cutoffDate) {
+          cleanedData[key] = booking;
+        } else {
+          removedCount++;
+        }
+      }
+      
+      if (removedCount > 0) {
+        this.saveStorageData(cleanedData);
+        console.log(`Automatically cleaned up ${removedCount} bookings older than ${this.DAYS_TO_KEEP} days`);
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+    }
   }
 
   private getStorageData(): Record<string, DeskBooking> {

@@ -11,10 +11,10 @@ export const DESKS: Desk[] = [
   { id: 'room1-desk2', room: 1, number: 2, label: 'Room 1, Desk 2' },
   { id: 'room1-desk3', room: 1, number: 3, label: 'Room 1, Desk 3' },
   { id: 'room1-desk4', room: 1, number: 4, label: 'Room 1, Desk 4' },
-  { id: 'room2-desk1', room: 2, number: 1, label: 'Room 2, Desk 1' },
-  { id: 'room2-desk2', room: 2, number: 2, label: 'Room 2, Desk 2' },
-  { id: 'room2-desk3', room: 2, number: 3, label: 'Room 2, Desk 3' },
-  { id: 'room2-desk4', room: 2, number: 4, label: 'Room 2, Desk 4' },
+  { id: 'room2-desk1', room: 2, number: 5, label: 'Room 2, Desk 5' },
+  { id: 'room2-desk2', room: 2, number: 6, label: 'Room 2, Desk 6' },
+  { id: 'room2-desk3', room: 2, number: 7, label: 'Room 2, Desk 7' },
+  { id: 'room2-desk4', room: 2, number: 8, label: 'Room 2, Desk 8' },
 ];
 
 export function getBookingKey(deskId: string, date: string): string {
@@ -166,5 +166,41 @@ export function importData(jsonData: string): void {
   } catch (error) {
     console.error('Failed to import data:', error);
     throw new Error('Failed to import data');
+  }
+}
+
+// Clean up bookings older than specified days
+export function cleanupOldBookings(daysToKeep: number = 60): number {
+  try {
+    const bookings = getBookings();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const cutoffDate = new Date(today);
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    
+    let removedCount = 0;
+    const cleanedBookings: Record<string, DeskBooking> = {};
+    
+    for (const [key, booking] of Object.entries(bookings)) {
+      const bookingDate = new Date(booking.date + 'T00:00:00');
+      
+      // Keep bookings that are within the retention period
+      if (bookingDate >= cutoffDate) {
+        cleanedBookings[key] = booking;
+      } else {
+        removedCount++;
+      }
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cleanedBookings));
+    
+    if (removedCount > 0) {
+      console.log(`Cleaned up ${removedCount} bookings older than ${daysToKeep} days`);
+    }
+    
+    return removedCount;
+  } catch (error) {
+    console.error('Failed to cleanup old bookings:', error);
+    return 0;
   }
 }
