@@ -217,10 +217,18 @@ export class LocalStorageDataStore implements IDataStore {
 import { MongoDataStore } from './mongoDataStore';
 import { MongoDBDataAPIClient } from './mongodbDataApi';
 
+// Import Supabase implementation
+import { SupabaseDataStore } from './supabaseDataStore';
+// Import Hybrid implementation
+import { HybridDataStore } from './hybridDataStore';
+
 // Data store factory - easily switch between implementations
-export function createDataStore(type?: 'localStorage' | 'mongodb'): IDataStore {
+export function createDataStore(type?: 'localStorage' | 'mongodb' | 'supabase' | 'hybrid'): IDataStore {
   // Determine storage type from environment or parameter
-  const storageType = type || (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'mongodb') || 'localStorage';
+  const storageType = type || (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'mongodb' | 'supabase' | 'hybrid') || 'localStorage';
+  
+  console.log('DataStore factory - Storage type:', storageType);
+  console.log('VITE_STORAGE_TYPE from env:', import.meta.env.VITE_STORAGE_TYPE);
   
   switch (storageType) {
     case 'localStorage':
@@ -235,6 +243,26 @@ export function createDataStore(type?: 'localStorage' | 'mongodb'): IDataStore {
       }
       console.log('Using MongoDB Data API for data persistence');
       return new MongoDataStore();
+    case 'supabase':
+      try {
+        console.log('Attempting to initialize Supabase...');
+        console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('VITE_SUPABASE_ANON_KEY present:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+        
+        const supabaseStore = new SupabaseDataStore();
+        if (!supabaseStore.isConfigured()) {
+          console.warn('Supabase not configured, falling back to localStorage');
+          return new LocalStorageDataStore();
+        }
+        console.log('Using Supabase for data persistence');
+        return supabaseStore;
+      } catch (error) {
+        console.error('Error initializing Supabase, falling back to localStorage:', error);
+        return new LocalStorageDataStore();
+      }
+    case 'hybrid':
+      console.log('Using Hybrid storage (localStorage + Supabase sync)');
+      return new HybridDataStore();
     default:
       console.warn(`Unknown data store type: ${storageType}, using localStorage`);
       return new LocalStorageDataStore();

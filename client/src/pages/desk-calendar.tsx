@@ -6,9 +6,9 @@ import PersonModal from '@/components/PersonModal';
 import BookingModal from '@/components/BookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import FloorPlanModal from '@/components/FloorPlanModal';
+import DataMigrationModal from '@/components/DataMigrationModal';
 import { 
-  DESKS, 
-  exportData
+  DESKS
 } from '@/lib/localStorage';
 import { dataStore } from '@/lib/dataStore';
 import { 
@@ -20,11 +20,19 @@ import {
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { useNextDates } from '@/hooks/use-next-dates';
+import { useRealtimeBookings } from '@/hooks/use-realtime-bookings';
+import { useBookings, useBookingStats } from '@/hooks/use-bookings';
+import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols, getCurrency } from '@/lib/settings';
 import CurrencySelector from '@/components/CurrencySelector';
 import WaitingList from '@/components/WaitingList';
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogOut } from 'lucide-react';
 
 export default function DeskCalendar() {
+  const { user, signOut } = useAuth();
   const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -38,7 +46,9 @@ export default function DeskCalendar() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
+  const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const tableRef = useRef<HTMLDivElement>(null);
 
   const currentWeek = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
@@ -48,125 +58,31 @@ export default function DeskCalendar() {
   
   const currentDates = useMemo(() => viewMode === 'week' ? currentWeek : currentMonth, [viewMode, currentWeek, currentMonth]);
   const dates = useMemo(() => currentDates.map(day => day.dateString), [currentDates]);
-  const [stats, setStats] = useState({ available: 0, assigned: 0, booked: 0 });
-  const [bookings, setBookings] = useState<Record<string, DeskBooking>>({}); 
-  const [nextAvailableDates, setNextAvailableDates] = useState<string[]>([]);
-  const [nextBookedDates, setNextBookedDates] = useState<{ date: string, names: string[] }[]>([]);
-  const [expiringAssignments, setExpiringAssignments] = useState<{ date: string, personName: string, deskNumber: number }[]>([]);
   
-  // Helper function to check if date is weekend (moved here to be used in calculateNextDates)
+  // Use React Query hooks for data
+  const { data: bookings = {}, isLoading: bookingsLoading } = useBookings();
+  const { data: stats = { available: 0, assigned: 0, booked: 0 }, isLoading: statsLoading } = useBookingStats(dates);
+  const { data: nextDatesData, isLoading: nextDatesLoading, error: nextDatesError } = useNextDates();
+  
+  // Set up real-time subscriptions
+  useRealtimeBookings();
+  
+  // Extract data from hook with fallbacks
+  const nextAvailableDates = nextDatesData?.available || [];
+  const nextBookedDates = nextDatesData?.booked || [];
+  const expiringAssignments = nextDatesData?.expiring || [];
+  
+  // Helper function to check if date is weekend
   const isWeekend = (dateString: string): boolean => {
     const date = new Date(dateString + 'T00:00:00');
     const dayOfWeek = date.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
   };
-  
-  // Calculate next available and booked dates
-  const calculateNextDates = useCallback(async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const availableDates: string[] = [];
-    const bookedDatesMap = new Map<string, Set<string>>();
-    let checkDate = new Date(today);
-    checkDate.setDate(checkDate.getDate() + 1); // Start from tomorrow, not today
-    
-    // Check up to 90 days ahead
-    const maxDaysToCheck = 90;
-    let daysChecked = 0;
-    
-    while ((availableDates.length < 5 || bookedDatesMap.size < 3) && daysChecked < maxDaysToCheck) {
-      const dateString = checkDate.toISOString().split('T')[0];
-      
-      // Skip weekends
-      if (!isWeekend(dateString)) {
-        // Check each desk on this date
-        let hasAvailableDesk = false;
-        const bookedNames = new Set<string>();
-        
-        for (const desk of DESKS) {
-          const booking = await dataStore.getBooking(desk.id, dateString);
-          if (!booking) {
-            // No booking means the desk is available
-            hasAvailableDesk = true;
-          } else if (booking.status === 'available') {
-            // Explicitly marked as available
-            hasAvailableDesk = true;
-          } else if (booking.status === 'booked' && booking.personName) {
-            // Booked (not assigned/paid)
-            bookedNames.add(booking.personName);
-          }
-        }
-        
-        // Track available dates
-        if (hasAvailableDesk && availableDates.length < 5) {
-          availableDates.push(dateString);
-        }
-        
-        // Track booked dates with names
-        if (bookedNames.size > 0 && bookedDatesMap.size < 3) {
-          bookedDatesMap.set(dateString, bookedNames);
-        }
-      }
-      
-      checkDate.setDate(checkDate.getDate() + 1);
-      daysChecked++;
-    }
-    
-    // Convert booked dates map to array format
-    const bookedDates = Array.from(bookedDatesMap.entries()).map(([date, names]) => ({
-      date,
-      names: Array.from(names)
-    }));
-    
-    // Check for expiring assignments in the next 10 days
-    const expiring: { date: string, personName: string, deskNumber: number }[] = [];
-    const checkDates: string[] = [];
-    
-    // Generate dates for the next 10 days
-    for (let i = 1; i <= 10; i++) {
-      const futureDate = new Date(today);
-      futureDate.setDate(futureDate.getDate() + i);
-      checkDates.push(futureDate.toISOString().split('T')[0]);
-    }
-    
-    for (const dateString of checkDates) {
-      // Skip weekends for expiring assignments too
-      if (!isWeekend(dateString)) {
-        for (const desk of DESKS) {
-          const booking = await dataStore.getBooking(desk.id, dateString);
-          // Check if it's an assigned (paid) booking that will end on this date
-          if (booking && booking.status === 'assigned' && booking.personName && booking.endDate === dateString) {
-            expiring.push({
-              date: dateString,
-              personName: booking.personName,
-              deskNumber: desk.number
-            });
-          }
-        }
-      }
-    }
-    
-    return { available: availableDates, booked: bookedDates, expiring };
-  }, []);
 
-  // Load initial data and stats when dates change
+  // Set current currency on load
   useEffect(() => {
-    const loadData = async () => {
-      const [allBookings, currentStats, nextDates] = await Promise.all([
-        dataStore.getAllBookings(),
-        dataStore.getDeskStats(dates),
-        calculateNextDates()
-      ]);
-      setBookings(allBookings);
-      setStats(currentStats);
-      setNextAvailableDates(nextDates.available);
-      setNextBookedDates(nextDates.booked);
-      setExpiringAssignments(nextDates.expiring);
-      setCurrentCurrency(getCurrency());
-    };
-    
-    loadData();
-  }, [dates, calculateNextDates]);
+    setCurrentCurrency(getCurrency());
+  }, []);
 
   // Auto-scroll to today's column when view changes
   useEffect(() => {
@@ -235,17 +151,10 @@ export default function DeskCalendar() {
         await dataStore.saveBooking(newBooking);
       }
       
-      // Refresh data
-      const [allBookings, newStats, nextDates] = await Promise.all([
-        dataStore.getAllBookings(),
-        dataStore.getDeskStats(dates),
-        calculateNextDates()
-      ]);
-      setBookings(allBookings);
-      setStats(newStats);
-      setNextAvailableDates(nextDates.available);
-      setNextBookedDates(nextDates.booked);
-      setExpiringAssignments(nextDates.expiring);
+      // Refresh React Query data
+      queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['next-dates'] });
 
       toast({
         title: "Desk Status Updated",
@@ -264,7 +173,7 @@ export default function DeskCalendar() {
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [dates, toast, calculateNextDates, currentCurrency]);
+  }, [dates, toast, currentCurrency]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
@@ -334,19 +243,11 @@ export default function DeskCalendar() {
 
     // Save all bookings in the range
     await dataStore.bulkUpdateBookings(bookingsToCreate);
-    setSelectedBooking(null);
     
-    // Refresh data
-    const [allBookings, newStats, nextDates] = await Promise.all([
-      dataStore.getAllBookings(),
-      dataStore.getDeskStats(dates),
-      calculateNextDates()
-    ]);
-    setBookings(allBookings);
-    setStats(newStats);
-    setNextAvailableDates(nextDates.available);
-    setNextBookedDates(nextDates.booked);
-    setExpiringAssignments(nextDates.expiring);
+    // Refresh React Query data
+    queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
     
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
     const dayCount = dateRange.length;
@@ -355,7 +256,7 @@ export default function DeskCalendar() {
       title: "Desk Booking Created",
       description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
     });
-  }, [selectedBooking, dates, toast, calculateNextDates]);
+  }, [selectedBooking, dates, toast, queryClient]);
 
   const handlePersonSave = useCallback(async (personName: string) => {
     if (!selectedBooking) return;
@@ -378,23 +279,16 @@ export default function DeskCalendar() {
     await dataStore.saveBooking(newBooking);
     setSelectedBooking(null);
     
-    // Refresh data
-    const [allBookings, newStats, nextDates] = await Promise.all([
-      dataStore.getAllBookings(),
-      dataStore.getDeskStats(dates),
-      calculateNextDates()
-    ]);
-    setBookings(allBookings);
-    setStats(newStats);
-    setNextAvailableDates(nextDates.available);
-    setNextBookedDates(nextDates.booked);
-    setExpiringAssignments(nextDates.expiring);
+    // Refresh React Query data
+    queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
     
     toast({
       title: "Person Assigned",
       description: `${personName} assigned to desk`,
     });
-  }, [selectedBooking, dates, toast, calculateNextDates, currentCurrency]);
+  }, [selectedBooking, dates, toast, currentCurrency]);
 
   const handleBulkAvailability = useCallback(async (
     startDate: string,
@@ -435,27 +329,31 @@ export default function DeskCalendar() {
       await dataStore.bulkUpdateBookings(bulkBookings);
     }
     
-    // Refresh data
-    const [allBookings, newStats, nextDates] = await Promise.all([
-      dataStore.getAllBookings(),
-      dataStore.getDeskStats(dates),
-      calculateNextDates()
-    ]);
-    setBookings(allBookings);
-    setStats(newStats);
-    setNextAvailableDates(nextDates.available);
-    setNextBookedDates(nextDates.booked);
-    setExpiringAssignments(nextDates.expiring);
+    // Refresh React Query data
+    queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
     
     toast({
       title: "Bulk Update Applied",
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,
     });
-  }, [dates, toast, calculateNextDates, currentCurrency]);
+  }, [dates, toast, currentCurrency]);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const data = exportData();
+      // Get all bookings from the current data store
+      const allBookings = await dataStore.getAllBookings();
+      
+      // Prepare export data
+      const exportData = {
+        bookings: allBookings,
+        exportDate: new Date().toISOString(),
+        version: '1.0',
+        totalBookings: Object.keys(allBookings).length
+      };
+      
+      const data = JSON.stringify(exportData, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -468,9 +366,10 @@ export default function DeskCalendar() {
       
       toast({
         title: "Data Exported",
-        description: "Booking data exported successfully",
+        description: `Successfully exported ${Object.keys(allBookings).length} bookings`,
       });
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Export Failed",
         description: "Failed to export data",
@@ -490,6 +389,7 @@ export default function DeskCalendar() {
               <h1 className="text-xl font-medium text-gray-900">Coworking Desk Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <SyncStatusIndicator />
               <CurrencySelector onCurrencyChange={setCurrentCurrency} />
               <Button
                 variant="outline"
@@ -514,6 +414,24 @@ export default function DeskCalendar() {
                 <span className="material-icon text-sm mr-2">download</span>
                 Export
               </Button>
+              <Button
+                onClick={() => setIsMigrationModalOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <span className="material-icon text-sm mr-2">sync</span>
+                Migrate
+              </Button>
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l">
+                <span className="text-sm text-gray-600">{user?.email}</span>
+                <Button
+                  onClick={() => signOut()}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -874,6 +792,11 @@ export default function DeskCalendar() {
       <FloorPlanModal
         isOpen={isFloorPlanModalOpen}
         onClose={() => setIsFloorPlanModalOpen(false)}
+      />
+
+      <DataMigrationModal
+        isOpen={isMigrationModalOpen}
+        onClose={() => setIsMigrationModalOpen(false)}
       />
     </div>
   );

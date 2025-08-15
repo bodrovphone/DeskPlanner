@@ -93,12 +93,31 @@ export default function BookingModal({
   };
 
   const desk = DESKS.find(d => d.id === deskId);
-  const formattedDate = new Date(date).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  
+  // Safely format the date
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Invalid Date';
+    
+    try {
+      // Ensure the date string is in YYYY-MM-DD format
+      const parsedDate = new Date(dateStr + 'T00:00:00');
+      if (isNaN(parsedDate.getTime())) {
+        return dateStr; // Return original string if parsing fails
+      }
+      
+      return parsedDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return dateStr; // Return original string if error
+    }
+  };
+  
+  const formattedDate = formatDate(date);
 
   const isValidForm = personName.trim() && 
                      price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0 &&
