@@ -14,6 +14,7 @@ export interface IDataStore {
   
   // Bulk operations
   bulkUpdateBookings(bookings: DeskBooking[]): Promise<void>;
+  bulkDeleteBookings?(deletions: { deskId: string; date: string }[]): Promise<void>;
   
   // Query operations
   getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]>;
@@ -28,6 +29,11 @@ export interface IDataStore {
   
   // Utility
   clearAllBookings(): Promise<void>;
+  
+  // Waiting List operations
+  getWaitingListEntries?(): Promise<import('@shared/schema').WaitingListEntry[]>;
+  saveWaitingListEntry?(entry: import('@shared/schema').WaitingListEntry): Promise<void>;
+  deleteWaitingListEntry?(id: string): Promise<void>;
 }
 
 /**
@@ -152,6 +158,17 @@ export class LocalStorageDataStore implements IDataStore {
     this.saveStorageData(data);
   }
 
+  async bulkDeleteBookings(deletions: { deskId: string; date: string }[]): Promise<void> {
+    const data = this.getStorageData();
+    
+    for (const { deskId, date } of deletions) {
+      const key = this.getBookingKey(deskId, date);
+      delete data[key];
+    }
+    
+    this.saveStorageData(data);
+  }
+
   async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
     const data = this.getStorageData();
     const start = new Date(startDate);
@@ -210,6 +227,44 @@ export class LocalStorageDataStore implements IDataStore {
 
   async clearAllBookings(): Promise<void> {
     localStorage.removeItem(this.STORAGE_KEY);
+  }
+
+  // Waiting List operations
+  async getWaitingListEntries(): Promise<import('@shared/schema').WaitingListEntry[]> {
+    try {
+      const data = localStorage.getItem('coworking-waiting-list');
+      const entries: Record<string, import('@shared/schema').WaitingListEntry> = data ? JSON.parse(data) : {};
+      return Object.values(entries).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error loading waiting list from localStorage:', error);
+      return [];
+    }
+  }
+
+  async saveWaitingListEntry(entry: import('@shared/schema').WaitingListEntry): Promise<void> {
+    try {
+      const data = localStorage.getItem('coworking-waiting-list');
+      const entries: Record<string, import('@shared/schema').WaitingListEntry> = data ? JSON.parse(data) : {};
+      entries[entry.id] = entry;
+      localStorage.setItem('coworking-waiting-list', JSON.stringify(entries));
+    } catch (error) {
+      console.error('Error saving waiting list to localStorage:', error);
+      throw new Error('Failed to save waiting list entry');
+    }
+  }
+
+  async deleteWaitingListEntry(id: string): Promise<void> {
+    try {
+      const data = localStorage.getItem('coworking-waiting-list');
+      const entries: Record<string, import('@shared/schema').WaitingListEntry> = data ? JSON.parse(data) : {};
+      delete entries[id];
+      localStorage.setItem('coworking-waiting-list', JSON.stringify(entries));
+    } catch (error) {
+      console.error('Error deleting waiting list from localStorage:', error);
+      throw new Error('Failed to delete waiting list entry');
+    }
   }
 }
 

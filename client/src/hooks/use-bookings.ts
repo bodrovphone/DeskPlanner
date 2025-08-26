@@ -20,11 +20,15 @@ export function useBookings() {
 }
 
 export function useBookingStats(dates: string[]) {
+  // Create a stable query key by sorting dates to avoid duplicate queries
+  const sortedDates = [...dates].sort();
+  const dateRangeKey = sortedDates.length > 0 ? `${sortedDates[0]}_${sortedDates[sortedDates.length - 1]}_${sortedDates.length}` : 'empty';
+  
   return useQuery({
-    queryKey: ['desk-stats', dates],
-    queryFn: () => dataStore.getDeskStats(dates),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    queryKey: ['desk-stats', dateRangeKey],
+    queryFn: () => dataStore.getDeskStats(sortedDates),
+    staleTime: 5 * 60 * 1000, // Increased to 5 minutes for better caching
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     refetchOnWindowFocus: false,
     retry: 1,
     enabled: dates.length > 0, // Only run when we have dates

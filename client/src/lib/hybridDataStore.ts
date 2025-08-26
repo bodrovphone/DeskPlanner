@@ -209,16 +209,14 @@ export class HybridDataStore implements IDataStore {
       const bookingsToSync = Array.from(this.syncQueue);
       const allBookings = await this.localStorage.getAllBookings();
       
+      // Separate bookings to save vs delete
+      const bookingsToSave: DeskBooking[] = [];
+      const bookingsToDelete: { deskId: string, date: string }[] = [];
+      
       for (const bookingKey of bookingsToSync) {
         const booking = allBookings[bookingKey];
         if (booking) {
-          try {
-            await this.supabase.saveBooking(booking);
-            this.syncQueue.delete(bookingKey);
-          } catch (error) {
-            console.error(`Failed to sync booking ${bookingKey}:`, error);
-            // Keep in queue for retry
-          }
+          bookingsToSave.push(booking);
         } else {
           // Booking was deleted, remove from Supabase
           const [deskId, date] = bookingKey.split('-').reduce((acc, part, idx) => {
@@ -228,13 +226,49 @@ export class HybridDataStore implements IDataStore {
           }, ['', '']);
           
           if (deskId && date) {
-            try {
-              await this.supabase.deleteBooking(deskId, date);
-              this.syncQueue.delete(bookingKey);
-            } catch (error) {
-              console.error(`Failed to sync deletion ${bookingKey}:`, error);
+            bookingsToDelete.push({ deskId, date });
+          }
+        }
+      }
+      
+      // Batch sync bookings to save
+      if (bookingsToSave.length > 0) {
+        try {
+          await this.supabase.bulkUpdateBookings(bookingsToSave);
+          bookingsToSave.forEach(booking => {
+            const key = this.getBookingKey(booking.deskId, booking.date);
+            this.syncQueue.delete(key);
+          });
+        } catch (error) {
+          console.error(`Failed to bulk sync ${bookingsToSave.length} bookings:`, error);
+          // Keep in queue for retry
+        }
+      }
+      
+      // Batch process deletions
+      if (bookingsToDelete.length > 0) {
+        try {
+          if (this.supabase.bulkDeleteBookings) {
+            await this.supabase.bulkDeleteBookings(bookingsToDelete);
+            bookingsToDelete.forEach(({ deskId, date }) => {
+              const key = this.getBookingKey(deskId, date);
+              this.syncQueue.delete(key);
+            });
+          } else {
+            // Fall back to individual deletions
+            for (const { deskId, date } of bookingsToDelete) {
+              try {
+                await this.supabase.deleteBooking(deskId, date);
+                const key = this.getBookingKey(deskId, date);
+                this.syncQueue.delete(key);
+              } catch (error) {
+                console.error(`Failed to sync deletion ${deskId}-${date}:`, error);
+              }
             }
           }
+        } catch (error) {
+          console.error(`Failed to bulk sync ${bookingsToDelete.length} deletions:`, error);
+          // Keep in queue for retry
         }
       }
 
@@ -330,6 +364,22 @@ export class HybridDataStore implements IDataStore {
     });
   }
 
+  async bulkDeleteBookings(deletions: { deskId: string; date: string }[]): Promise<void> {
+    // Delete from localStorage first
+    await Promise.all(
+      deletions.map(({ deskId, date }) => this.localStorage.deleteBooking(deskId, date))
+    );
+    
+    // Mark local update
+    this.metadataManager.markLocalUpdate();
+    
+    // Queue all for sync
+    deletions.forEach(({ deskId, date }) => {
+      const key = this.getBookingKey(deskId, date);
+      this.addToSyncQueue(key);
+    });
+  }
+
   async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
     return this.localStorage.getBookingsForDateRange(startDate, endDate);
   }
@@ -360,6 +410,65 @@ export class HybridDataStore implements IDataStore {
     // Clear sync queue
     this.syncQueue.clear();
     this.updateSyncStatus({ pendingChanges: 0 });
+  }
+
+  // Waiting List operations - use Supabase if available, otherwise localStorage
+  async getWaitingListEntries(): Promise<WaitingListEntry[]> {
+    if (this.supabase && this.supabase.getWaitingListEntries) {
+      try {
+        return await this.supabase.getWaitingListEntries();
+      } catch (error) {
+        console.error('Failed to get waiting list from Supabase, falling back to localStorage:', error);
+      }
+    }
+    
+    // Fallback to localStorage
+    return this.localStorage.getWaitingListEntries ? 
+      await this.localStorage.getWaitingListEntries() : [];
+  }
+
+  async saveWaitingListEntry(entry: WaitingListEntry): Promise<void> {
+    // Ensure entry has an ID if not provided
+    if (!entry.id) {
+      entry.id = Date.now().toString(); // Use simple timestamp for better Supabase compatibility
+    }
+    
+    // Ensure entry has createdAt if not provided
+    if (!entry.createdAt) {
+      entry.createdAt = new Date().toISOString();
+    }
+    
+    // Always save to localStorage first
+    if (this.localStorage.saveWaitingListEntry) {
+      await this.localStorage.saveWaitingListEntry(entry);
+    }
+    
+    // Try to save to Supabase
+    if (this.supabase && this.supabase.saveWaitingListEntry) {
+      try {
+        await this.supabase.saveWaitingListEntry(entry);
+      } catch (error) {
+        console.error('Failed to save waiting list entry to Supabase:', error);
+        // Don't throw - localStorage save succeeded
+      }
+    }
+  }
+
+  async deleteWaitingListEntry(id: string): Promise<void> {
+    // Delete from localStorage first
+    if (this.localStorage.deleteWaitingListEntry) {
+      await this.localStorage.deleteWaitingListEntry(id);
+    }
+    
+    // Try to delete from Supabase
+    if (this.supabase && this.supabase.deleteWaitingListEntry) {
+      try {
+        await this.supabase.deleteWaitingListEntry(id);
+      } catch (error) {
+        console.error('Failed to delete waiting list entry from Supabase:', error);
+        // Don't throw - localStorage delete succeeded
+      }
+    }
   }
 
   /**

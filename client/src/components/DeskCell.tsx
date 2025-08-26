@@ -44,7 +44,7 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
   if (isWeekend && !hasBooking) {
     return (
       <div
-        className="desk-cell rounded-lg p-2 min-h-[80px] bg-gray-100 cursor-not-allowed flex flex-col items-center justify-center text-center"
+        className="desk-cell rounded-lg p-1 sm:p-2 min-h-[60px] sm:min-h-[80px] bg-gray-100 cursor-not-allowed flex flex-col items-center justify-center text-center"
         style={{ pointerEvents: 'none' }}
       >
         <span className="material-icon text-sm text-gray-400">
@@ -60,9 +60,10 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
   return (
     <div
       className={cn(
-        'desk-cell rounded-lg p-2 min-h-[80px] flex flex-col items-center justify-center text-center',
+        'desk-cell rounded-lg p-1 sm:p-2 min-h-[60px] sm:min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer select-none touch-manipulation',
         config.className,
-        isWeekend && 'opacity-50 cursor-not-allowed'
+        isWeekend && 'opacity-50 cursor-not-allowed',
+        'hover:shadow-md active:scale-95 transition-all duration-150'
       )}
       onClick={(e) => !isWeekend && onClick(e)}
       onContextMenu={(e) => !isWeekend && onClick(e)}

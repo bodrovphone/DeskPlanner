@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WaitingListEntry } from '@shared/schema';
-import { waitingListStore } from '@/lib/waitingListStore';
+import { dataStore } from '@/lib/dataStore';
 import WaitingListModal from './WaitingListModal';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,7 +17,8 @@ export default function WaitingList() {
 
   const loadEntries = async () => {
     try {
-      const allEntries = await waitingListStore.getAllEntries();
+      const allEntries = dataStore.getWaitingListEntries ? 
+        await dataStore.getWaitingListEntries() : [];
       setEntries(allEntries);
     } catch (error) {
       console.error('Error loading waiting list:', error);
@@ -31,7 +32,16 @@ export default function WaitingList() {
 
   const handleAddEntry = async (entry: Omit<WaitingListEntry, 'id' | 'createdAt'>) => {
     try {
-      await waitingListStore.addEntry(entry);
+      const newEntry: WaitingListEntry = {
+        ...entry,
+        id: Date.now().toString(), // Use simple timestamp for better Supabase compatibility
+        createdAt: new Date().toISOString(),
+      };
+      
+      if (dataStore.saveWaitingListEntry) {
+        await dataStore.saveWaitingListEntry(newEntry);
+      }
+      
       await loadEntries();
       toast({
         title: "Added to Waiting List",
@@ -48,7 +58,10 @@ export default function WaitingList() {
 
   const handleRemoveEntry = async (id: string, name: string) => {
     try {
-      await waitingListStore.removeEntry(id);
+      if (dataStore.deleteWaitingListEntry) {
+        await dataStore.deleteWaitingListEntry(id);
+      }
+      
       await loadEntries();
       toast({
         title: "Removed from Waiting List",

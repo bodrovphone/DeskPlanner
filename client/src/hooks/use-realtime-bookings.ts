@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@/lib/supabaseClient';
 
 export function useRealtimeBookings() {
   const queryClient = useQueryClient();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Only set up subscription if using Supabase
@@ -35,10 +36,21 @@ export function useRealtimeBookings() {
         (payload) => {
           console.log('Real-time update received:', payload);
           
-          // Invalidate relevant queries to trigger refetch
-          queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
-          queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
-          queryClient.invalidateQueries({ queryKey: ['next-dates'] });
+          // Debounce the invalidation to avoid cascading requests during bulk operations
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+          
+          debounceRef.current = setTimeout(() => {
+            // Use refetch instead of invalidate for more controlled updates
+            Promise.all([
+              queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
+              queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
+              queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' })
+            ]).catch(error => {
+              console.error('Error refetching queries after real-time update:', error);
+            });
+          }, 500); // 500ms debounce to batch multiple rapid changes
           
           // Optional: Show toast notification
           // toast({
@@ -55,6 +67,11 @@ export function useRealtimeBookings() {
     return () => {
       console.log('Cleaning up real-time subscription');
       subscription.unsubscribe();
+      
+      // Clear any pending debounced calls
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
     };
   }, [queryClient]);
 }

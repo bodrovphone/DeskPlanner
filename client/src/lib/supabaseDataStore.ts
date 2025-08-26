@@ -141,6 +141,26 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
+  async bulkDeleteBookings(deletions: { deskId: string; date: string }[]): Promise<void> {
+    try {
+      // Build a filter to delete multiple bookings in one query
+      // Use OR conditions to match any of the desk_id + date combinations
+      const orConditions = deletions.map(({ deskId, date }) => 
+        `and(desk_id.eq.${deskId},date.eq.${date})`
+      );
+      
+      const { error } = await this.client
+        .from('desk_bookings')
+        .delete()
+        .or(orConditions.join(','));
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error bulk deleting bookings:', error);
+      throw new Error('Failed to bulk delete bookings');
+    }
+  }
+
   async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
     try {
       const { data, error } = await this.client
@@ -237,8 +257,18 @@ export class SupabaseDataStore implements IDataStore {
   // Waiting List operations
   async saveWaitingListEntry(entry: WaitingListEntry): Promise<void> {
     try {
+      // Convert string ID to numeric for Supabase
+      let numericId: number;
+      if (typeof entry.id === 'string' && entry.id.startsWith('waiting-')) {
+        // Extract timestamp from string ID like "waiting-1756209405035-ankcv9rg1"
+        const timestampMatch = entry.id.match(/waiting-(\d+)-/);
+        numericId = timestampMatch ? parseInt(timestampMatch[1]) : Date.now();
+      } else {
+        numericId = typeof entry.id === 'string' ? parseInt(entry.id) || Date.now() : entry.id;
+      }
+
       const dbData = {
-        id: entry.id,
+        id: numericId,
         name: entry.name,
         preferred_dates: entry.preferredDates,
         contact_info: entry.contactInfo,
@@ -267,7 +297,7 @@ export class SupabaseDataStore implements IDataStore {
       if (error) throw error;
 
       return (data || []).map(row => ({
-        id: row.id,
+        id: row.id.toString(), // Convert numeric ID back to string for consistency
         name: row.name,
         preferredDates: row.preferred_dates,
         contactInfo: row.contact_info,
@@ -282,10 +312,19 @@ export class SupabaseDataStore implements IDataStore {
 
   async deleteWaitingListEntry(id: string): Promise<void> {
     try {
+      // Convert string ID to numeric for Supabase
+      let numericId: number;
+      if (id.startsWith('waiting-')) {
+        const timestampMatch = id.match(/waiting-(\d+)-/);
+        numericId = timestampMatch ? parseInt(timestampMatch[1]) : parseInt(id) || 0;
+      } else {
+        numericId = parseInt(id) || 0;
+      }
+
       const { error } = await this.client
         .from('waiting_list_entries')
         .delete()
-        .eq('id', id);
+        .eq('id', numericId);
 
       if (error) throw error;
     } catch (error) {

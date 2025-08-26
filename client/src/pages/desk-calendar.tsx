@@ -29,7 +29,7 @@ import CurrencySelector from '@/components/CurrencySelector';
 import WaitingList from '@/components/WaitingList';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 
 export default function DeskCalendar() {
   const { user, signOut } = useAuth();
@@ -47,6 +47,7 @@ export default function DeskCalendar() {
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const tableRef = useRef<HTMLDivElement>(null);
@@ -66,6 +67,18 @@ export default function DeskCalendar() {
   
   // Set up real-time subscriptions
   useRealtimeBookings();
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Extract data from hook with fallbacks
   const nextAvailableDates = nextDatesData?.available || [];
@@ -173,7 +186,7 @@ export default function DeskCalendar() {
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [dates, toast, currentCurrency]);
+  }, [toast, currentCurrency]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
@@ -186,45 +199,62 @@ export default function DeskCalendar() {
   }) => {
     if (!selectedBooking) return;
 
-    const { deskId } = selectedBooking;
+    const { deskId, booking: existingBooking } = selectedBooking;
     
-    // Generate all dates in the range
-    const dateRange = generateDateRange(bookingData.startDate, bookingData.endDate);
+    // Generate new date range
+    const newDateRange = generateDateRange(bookingData.startDate, bookingData.endDate);
     
-    // Check for conflicts unless we're editing an existing booking
-    if (!selectedBooking.booking) {
-      const conflictDates: string[] = [];
-      const conflictDetails: string[] = [];
-      
-      for (const date of dateRange) {
-        const existingBooking = await dataStore.getBooking(deskId, date);
-        if (existingBooking && existingBooking.status !== 'available') {
-          conflictDates.push(date);
-          const dateObj = new Date(date + 'T00:00:00');
-          const formattedDate = dateObj.toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          
-          if (existingBooking.personName) {
-            conflictDetails.push(`${formattedDate}: ${existingBooking.personName} (${existingBooking.status})`);
-          } else {
-            conflictDetails.push(`${formattedDate}: Desk is ${existingBooking.status}`);
-          }
-        }
+    // If editing existing booking, get the old date range for cleanup
+    let oldDateRange: string[] = [];
+    if (existingBooking) {
+      oldDateRange = generateDateRange(existingBooking.startDate, existingBooking.endDate);
+    }
+    
+    // Check for conflicts on new dates (excluding dates that are part of the existing booking)
+    const conflictDates: string[] = [];
+    const conflictDetails: string[] = [];
+    
+    for (const date of newDateRange) {
+      // Skip conflict check if this date was part of the original booking
+      if (existingBooking && oldDateRange.includes(date)) {
+        continue;
       }
       
-      if (conflictDates.length > 0) {
-        const errorMessage = `Cannot create booking due to conflicts on the following dates:\n\n${conflictDetails.join('\n')}\n\nPlease choose different dates or select available time slots.`;
-        throw new Error(errorMessage);
+      const existingBookingOnDate = await dataStore.getBooking(deskId, date);
+      if (existingBookingOnDate && existingBookingOnDate.status !== 'available') {
+        conflictDates.push(date);
+        const dateObj = new Date(date + 'T00:00:00');
+        const formattedDate = dateObj.toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        if (existingBookingOnDate.personName) {
+          conflictDetails.push(`${formattedDate}: ${existingBookingOnDate.personName} (${existingBookingOnDate.status})`);
+        } else {
+          conflictDetails.push(`${formattedDate}: Desk is ${existingBookingOnDate.status}`);
+        }
+      }
+    }
+    
+    if (conflictDates.length > 0) {
+      const errorMessage = `Cannot create booking due to conflicts on the following dates:\n\n${conflictDetails.join('\n')}\n\nPlease choose different dates or select available time slots.`;
+      throw new Error(errorMessage);
+    }
+    
+    // If editing existing booking, first delete bookings that are no longer needed
+    if (existingBooking && oldDateRange.length > 0) {
+      const datesToDelete = oldDateRange.filter(date => !newDateRange.includes(date));
+      for (const date of datesToDelete) {
+        await dataStore.deleteBooking(deskId, date);
       }
     }
     
     const bookingsToCreate: DeskBooking[] = [];
     
-    // Create a booking for each day in the range
-    for (const date of dateRange) {
+    // Create or update bookings for each day in the new range
+    for (const date of newDateRange) {
       const newBooking: DeskBooking = {
         id: `${deskId}-${date}`,
         deskId,
@@ -236,7 +266,10 @@ export default function DeskCalendar() {
         title: bookingData.title,
         price: bookingData.price,
         currency: bookingData.currency || currentCurrency,
-        createdAt: new Date().toISOString(),
+        // Preserve original createdAt for existing bookings, use current time for new ones
+        createdAt: (existingBooking && oldDateRange.includes(date)) ? 
+                   existingBooking.createdAt : 
+                   new Date().toISOString(),
       };
       bookingsToCreate.push(newBooking);
     }
@@ -244,19 +277,27 @@ export default function DeskCalendar() {
     // Save all bookings in the range
     await dataStore.bulkUpdateBookings(bookingsToCreate);
     
-    // Refresh React Query data
-    queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
-    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
+    // Only refetch manually if not using real-time updates (localStorage mode)
+    const storageType = import.meta.env.VITE_STORAGE_TYPE;
+    if (storageType === 'localStorage') {
+      // For localStorage, manually refetch since there's no real-time subscription
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' })
+      ]);
+    }
+    // For Supabase/hybrid modes, real-time subscription handles the refresh automatically
     
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
-    const dayCount = dateRange.length;
+    const dayCount = newDateRange.length;
     const currencySymbol = currencySymbols[bookingData.currency];
+    const isUpdate = existingBooking !== null;
     toast({
-      title: "Desk Booking Created",
+      title: isUpdate ? "Desk Booking Updated" : "Desk Booking Created",
       description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
     });
-  }, [selectedBooking, dates, toast, queryClient]);
+  }, [selectedBooking, toast, queryClient]);
 
   const handlePersonSave = useCallback(async (personName: string) => {
     if (!selectedBooking) return;
@@ -288,7 +329,7 @@ export default function DeskCalendar() {
       title: "Person Assigned",
       description: `${personName} assigned to desk`,
     });
-  }, [selectedBooking, dates, toast, currentCurrency]);
+  }, [selectedBooking, toast, currentCurrency]);
 
   const handleBulkAvailability = useCallback(async (
     startDate: string,
@@ -300,11 +341,13 @@ export default function DeskCalendar() {
     
     // Create booking updates for bulk operation
     const bulkBookings: DeskBooking[] = [];
+    const bookingsToDelete: { deskId: string; date: string }[] = [];
+    
     for (const deskId of deskIds) {
       for (const date of dateRange) {
         if (status === 'available') {
-          // For available status, we delete the booking
-          await dataStore.deleteBooking(deskId, date);
+          // For available status, collect bookings to delete
+          bookingsToDelete.push({ deskId, date });
         } else {
           // For booked status, create a new booking
           const booking: DeskBooking = {
@@ -325,20 +368,39 @@ export default function DeskCalendar() {
       }
     }
     
-    if (bulkBookings.length > 0) {
-      await dataStore.bulkUpdateBookings(bulkBookings);
-    }
+    // Batch process all operations
+    await Promise.all([
+      // Use bulk delete if available, otherwise fall back to individual deletes
+      bookingsToDelete.length > 0 ? (
+        dataStore.bulkDeleteBookings ? 
+          dataStore.bulkDeleteBookings(bookingsToDelete) :
+          Promise.all(bookingsToDelete.map(({ deskId, date }) => 
+            dataStore.deleteBooking(deskId, date).catch(error => 
+              console.error(`Failed to delete booking ${deskId}-${date}:`, error)
+            )
+          ))
+      ) : Promise.resolve(),
+      // Bulk create/update bookings for non-available status
+      bulkBookings.length > 0 ? dataStore.bulkUpdateBookings(bulkBookings) : Promise.resolve()
+    ]);
     
-    // Refresh React Query data
-    queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
-    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
+    // Only refetch manually if not using real-time updates (localStorage mode)
+    const storageType = import.meta.env.VITE_STORAGE_TYPE;
+    if (storageType === 'localStorage') {
+      // For localStorage, manually refetch since there's no real-time subscription
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' })
+      ]);
+    }
+    // For Supabase/hybrid modes, real-time subscription handles the refresh automatically
     
     toast({
       title: "Bulk Update Applied",
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,
     });
-  }, [dates, toast, currentCurrency]);
+  }, [toast, currentCurrency]);
 
   const handleExport = useCallback(async () => {
     try {
@@ -386,9 +448,14 @@ export default function DeskCalendar() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <span className="material-icon text-blue-600 text-2xl mr-3">domain</span>
-              <h1 className="text-xl font-medium text-gray-900">Coworking Desk Manager</h1>
+              <h1 className="text-lg sm:text-xl font-medium text-gray-900">
+                <span className="hidden sm:inline">Coworking Desk Manager</span>
+                <span className="sm:hidden">Desk Manager</span>
+              </h1>
             </div>
-            <div className="flex items-center space-x-4">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-4">
               <SyncStatusIndicator />
               <CurrencySelector onCurrencyChange={setCurrentCurrency} />
               <Button
@@ -433,7 +500,82 @@ export default function DeskCalendar() {
                 </Button>
               </div>
             </div>
+
+            {/* Mobile Navigation */}
+            <div className="flex lg:hidden items-center space-x-2">
+              <SyncStatusIndicator />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden border-t border-gray-200 py-4">
+              <div className="flex flex-col space-y-3">
+                <CurrencySelector onCurrencyChange={setCurrentCurrency} />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsFloorPlanModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 justify-start"
+                >
+                  <span className="material-icon text-sm mr-2">map</span>
+                  Floor Plan
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsRangeModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 justify-start"
+                >
+                  <span className="material-icon text-sm mr-2">date_range</span>
+                  Set Availability
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleExport();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 justify-start"
+                >
+                  <span className="material-icon text-sm mr-2">download</span>
+                  Export
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsMigrationModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 justify-start"
+                >
+                  <span className="material-icon text-sm mr-2">sync</span>
+                  Migrate
+                </Button>
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                  <span className="text-sm text-gray-600">{user?.email}</span>
+                  <Button
+                    onClick={() => signOut()}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -453,7 +595,7 @@ export default function DeskCalendar() {
                       setMonthOffset(monthOffset - 1);
                     }
                   }}
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-full touch-manipulation"
                 >
                   <span className="material-icon text-gray-600">chevron_left</span>
                 </Button>
@@ -475,17 +617,17 @@ export default function DeskCalendar() {
                       setMonthOffset(monthOffset + 1);
                     }
                   }}
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-full touch-manipulation"
                 >
                   <span className="material-icon text-gray-600">chevron_right</span>
                 </Button>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
                 <Button
                   variant={viewMode === 'week' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('week')}
-                  className={viewMode === 'week' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}
+                  className={`touch-manipulation ${viewMode === 'week' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
                 >
                   Week
                 </Button>
@@ -493,7 +635,7 @@ export default function DeskCalendar() {
                   variant={viewMode === 'month' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('month')}
-                  className={viewMode === 'month' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}
+                  className={`touch-manipulation ${viewMode === 'month' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
                 >
                   Month
                 </Button>
@@ -525,12 +667,13 @@ export default function DeskCalendar() {
 
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
-          <div ref={tableRef} className="overflow-x-auto">
+          <div ref={tableRef} className="overflow-x-auto touch-pan-x">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sticky left-0 bg-gray-50 z-20">
-                    Desk
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-32 sticky left-0 bg-gray-50 z-20">
+                    <span className="hidden sm:inline">Desk</span>
+                    <span className="sm:hidden">D</span>
                   </th>
                   {currentDates.map((day) => {
                     const isTodayColumn = isToday(day.dateString);
@@ -538,7 +681,7 @@ export default function DeskCalendar() {
                     return (
                       <th
                         key={day.dateString}
-                        className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[120px] ${
+                        className={`px-2 sm:px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[100px] sm:min-w-[120px] ${
                           isTodayColumn 
                             ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300' 
                             : isWeekendColumn
@@ -570,15 +713,17 @@ export default function DeskCalendar() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {DESKS.map((desk) => (
                   <tr key={desk.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900">
-                          Desk {desk.number}
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                          <span className="sm:hidden">{desk.number}</span>
+                          <span className="hidden sm:inline">Desk {desk.number}</span>
                         </span>
-                        <span className={`text-xs ${
+                        <span className={`text-[10px] sm:text-xs ${
                           desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
                         }`}>
-                          Room {desk.room}
+                          <span className="sm:hidden">R{desk.room}</span>
+                          <span className="hidden sm:inline">Room {desk.room}</span>
                         </span>
                       </div>
                     </td>
@@ -588,7 +733,7 @@ export default function DeskCalendar() {
                       return (
                         <td 
                           key={day.dateString} 
-                          className={`px-2 py-3 text-center ${
+                          className={`px-1 sm:px-2 py-2 sm:py-3 text-center ${
                             isTodayColumn 
                               ? 'bg-blue-50 border-l-2 border-r-2 border-blue-300' 
                               : isWeekendColumn

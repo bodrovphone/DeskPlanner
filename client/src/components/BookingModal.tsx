@@ -43,6 +43,7 @@ export default function BookingModal({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [conflictError, setConflictError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -50,8 +51,27 @@ export default function BookingModal({
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || '15');
       setStatus(booking?.status || 'assigned');
-      setStartDate(booking?.startDate || date);
-      setEndDate(booking?.endDate || date);
+      
+      // Handle date logic more carefully
+      if (booking) {
+        // For existing bookings, check if it's a single-day or multi-day booking
+        const isSingleDay = booking.startDate === booking.endDate;
+        
+        if (isSingleDay) {
+          // Single-day booking: use the clicked date for both start and end
+          setStartDate(date);
+          setEndDate(date);
+        } else {
+          // Multi-day booking: preserve the original date range
+          setStartDate(booking.startDate);
+          setEndDate(booking.endDate);
+        }
+      } else {
+        // New booking: use the clicked date
+        setStartDate(date);
+        setEndDate(date);
+      }
+      
       setConflictError('');
     }
   }, [isOpen, booking, date]);
@@ -63,6 +83,7 @@ export default function BookingModal({
     
     if (trimmedName && parsedPrice >= 0 && startDate && endDate) {
       try {
+        setIsLoading(true);
         setConflictError('');
         await onSave({
           personName: trimmedName,
@@ -80,6 +101,8 @@ export default function BookingModal({
         } else {
           setConflictError('An error occurred while saving the booking.');
         }
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -125,7 +148,7 @@ export default function BookingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="material-icon text-blue-600">event_seat</span>
@@ -284,11 +307,20 @@ export default function BookingModal({
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={!isValidForm}
+            disabled={!isValidForm || isLoading}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            <span className="material-icon text-sm mr-2">check</span>
-            Book Desk
+            {isLoading ? (
+              <>
+                <span className="material-icon text-sm mr-2 animate-spin">hourglass_empty</span>
+                Saving...
+              </>
+            ) : (
+              <>
+                <span className="material-icon text-sm mr-2">check</span>
+                Book Desk
+              </>
+            )}
           </Button>
         </div>
         
