@@ -667,7 +667,7 @@ export default function DeskCalendar() {
 
         {/* Desk Management Table */}
         <Card className="overflow-hidden">
-          <div ref={tableRef} className="overflow-x-auto touch-pan-x">
+          <div ref={tableRef} className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
