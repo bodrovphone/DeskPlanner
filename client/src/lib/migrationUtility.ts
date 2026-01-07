@@ -66,7 +66,7 @@ export class LocalStorageToSupabaseMigration {
       startDate: localBooking.startDate || localBooking.date,
       endDate: localBooking.endDate || localBooking.date,
       createdAt: localBooking.createdAt || new Date().toISOString(),
-      currency: localBooking.currency || 'BGN'
+      currency: localBooking.currency || 'EUR'
     };
   }
 

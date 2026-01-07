@@ -94,7 +94,7 @@ export function bulkUpdateBookings(
             personName: existingBooking?.personName || undefined,
             title: existingBooking?.title || undefined,
             price: existingBooking?.price || undefined,
-            currency: existingBooking?.currency || 'BGN',
+            currency: existingBooking?.currency || 'EUR',
             createdAt: existingBooking?.createdAt || new Date().toISOString(),
           };
         }

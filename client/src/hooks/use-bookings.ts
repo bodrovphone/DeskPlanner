@@ -1,16 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { dataStore } from '@/lib/dataStore';
 
-export function useBookings() {
+export function useBookings(startDate?: string, endDate?: string) {
+  // Create a stable query key based on date range
+  const dateRangeKey = startDate && endDate ? `${startDate}_${endDate}` : 'all';
+
   return useQuery({
-    queryKey: ['desk-bookings'],
+    queryKey: ['desk-bookings', dateRangeKey],
     queryFn: async () => {
-      const [allBookings, dates] = await Promise.all([
-        dataStore.getAllBookings(),
-        // We need current dates to calculate stats, but let's get them from the component
-        Promise.resolve([])
-      ]);
-      return allBookings;
+      return dataStore.getAllBookings(startDate, endDate);
     },
     staleTime: 2 * 60 * 1000, // 2 minutes - shorter than next-dates since this is core data
     gcTime: 5 * 60 * 1000, // 5 minutes garbage collection

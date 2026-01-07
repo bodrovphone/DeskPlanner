@@ -63,11 +63,17 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async getAllBookings(): Promise<Record<string, DeskBooking>> {
+  async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('desk_bookings')
         .select('*');
+
+      // Apply date range filtering if provided
+      if (startDate) query = query.gte('date', startDate);
+      if (endDate) query = query.lte('date', endDate);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Supabase error fetching bookings:', error);
@@ -75,7 +81,7 @@ export class SupabaseDataStore implements IDataStore {
       }
 
       const bookings: Record<string, DeskBooking> = {};
-      
+
       for (const row of data || []) {
         const booking = this.mapFromDatabase(row);
         const key = this.getBookingKey(booking.deskId, booking.date);

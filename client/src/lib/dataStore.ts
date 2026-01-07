@@ -8,7 +8,7 @@ import { DeskBooking } from '@/../../shared/schema';
 export interface IDataStore {
   // Basic CRUD operations
   getBooking(deskId: string, date: string): Promise<DeskBooking | null>;
-  getAllBookings(): Promise<Record<string, DeskBooking>>;
+  getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>>;
   saveBooking(booking: DeskBooking): Promise<void>;
   deleteBooking(deskId: string, date: string): Promise<void>;
   
@@ -124,8 +124,27 @@ export class LocalStorageDataStore implements IDataStore {
     return data[key] || null;
   }
 
-  async getAllBookings(): Promise<Record<string, DeskBooking>> {
-    return this.getStorageData();
+  async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
+    const data = this.getStorageData();
+
+    // If no date range specified, return all bookings
+    if (!startDate || !endDate) {
+      return data;
+    }
+
+    // Filter bookings by date range
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const filteredData: Record<string, DeskBooking> = {};
+
+    for (const [key, booking] of Object.entries(data)) {
+      const bookingDate = new Date(booking.date);
+      if (bookingDate >= start && bookingDate <= end) {
+        filteredData[key] = booking;
+      }
+    }
+
+    return filteredData;
   }
 
   async saveBooking(booking: DeskBooking): Promise<void> {

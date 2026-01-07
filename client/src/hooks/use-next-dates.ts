@@ -22,9 +22,18 @@ const isWeekend = (dateString: string): boolean => {
 async function calculateNextDates() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  // Fetch all bookings once instead of individual calls
-  const allBookings = await dataStore.getAllBookings();
+
+  // Calculate date range for next 30 days
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() + 1); // Start from tomorrow
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + 30);
+
+  // Fetch bookings for the next 30 days only (optimization)
+  const allBookings = await dataStore.getAllBookings(
+    startDate.toISOString().split('T')[0],
+    endDate.toISOString().split('T')[0]
+  );
   
   // Create lookup map for efficient access
   const bookingLookup = new Map<string, any>();
@@ -38,8 +47,8 @@ async function calculateNextDates() {
   let checkDate = new Date(today);
   checkDate.setDate(checkDate.getDate() + 1); // Start from tomorrow
 
-  // Check up to 90 days ahead
-  const maxDaysToCheck = 90;
+  // Check up to 30 days ahead
+  const maxDaysToCheck = 30;
   let daysChecked = 0;
 
   while ((availableDates.length < 5 || bookedDatesMap.size < 3) && daysChecked < maxDaysToCheck) {

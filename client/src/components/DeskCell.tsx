@@ -85,7 +85,7 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
           )}
           {booking?.price && (
             <div className={cn('text-[10px] font-medium mt-0.5', config.iconColor)}>
-              {currencySymbols[booking.currency || 'BGN']}{booking.price}
+              {currencySymbols[booking.currency || 'EUR']}{booking.price}
             </div>
           )}
         </div>

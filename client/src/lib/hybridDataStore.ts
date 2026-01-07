@@ -321,9 +321,9 @@ export class HybridDataStore implements IDataStore {
     return this.localStorage.getBooking(deskId, date);
   }
 
-  async getAllBookings(): Promise<Record<string, DeskBooking>> {
-    // Always read from localStorage
-    return this.localStorage.getAllBookings();
+  async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
+    // Always read from localStorage with date filtering
+    return this.localStorage.getAllBookings(startDate, endDate);
   }
 
   async saveBooking(booking: DeskBooking): Promise<void> {

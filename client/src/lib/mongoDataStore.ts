@@ -35,16 +35,25 @@ export class MongoDataStore implements IDataStore {
     }
   }
 
-  async getAllBookings(): Promise<Record<string, DeskBooking>> {
+  async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
     try {
-      const bookings = await this.client.find(this.COLLECTION_NAME, {});
+      // Build query filter - if dates are provided, filter by date range
+      const filter: any = {};
+      if (startDate && endDate) {
+        filter.date = {
+          $gte: startDate,
+          $lte: endDate
+        };
+      }
+
+      const bookings = await this.client.find(this.COLLECTION_NAME, filter);
       const bookingMap: Record<string, DeskBooking> = {};
-      
+
       for (const booking of bookings) {
         const key = this.getBookingKey(booking.deskId, booking.date);
         bookingMap[key] = booking as DeskBooking;
       }
-      
+
       return bookingMap;
     } catch (error) {
       console.error('Error fetching all bookings from MongoDB:', error);

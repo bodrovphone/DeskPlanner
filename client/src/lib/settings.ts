@@ -3,7 +3,7 @@ import { AppSettings, Currency } from '@shared/schema';
 const SETTINGS_KEY = 'coworking-settings';
 
 const defaultSettings: AppSettings = {
-  currency: 'BGN',
+  currency: 'EUR',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -48,11 +48,9 @@ export function setCurrency(currency: Currency): void {
 export const currencySymbols: Record<Currency, string> = {
   USD: '$',
   EUR: '€',
-  BGN: 'лв',
 };
 
 export const currencyLabels: Record<Currency, string> = {
   USD: 'US Dollar',
   EUR: 'Euro',
-  BGN: 'Bulgarian Lev',
 };

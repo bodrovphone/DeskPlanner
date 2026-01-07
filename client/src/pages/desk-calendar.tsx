@@ -41,7 +41,7 @@ export default function DeskCalendar() {
     deskId: string;
     date: string;
   } | null>(null);
-  const [currentCurrency, setCurrentCurrency] = useState<Currency>('BGN');
+  const [currentCurrency, setCurrentCurrency] = useState<Currency>('EUR');
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
@@ -59,9 +59,13 @@ export default function DeskCalendar() {
   
   const currentDates = useMemo(() => viewMode === 'week' ? currentWeek : currentMonth, [viewMode, currentWeek, currentMonth]);
   const dates = useMemo(() => currentDates.map(day => day.dateString), [currentDates]);
-  
-  // Use React Query hooks for data
-  const { data: bookings = {}, isLoading: bookingsLoading } = useBookings();
+
+  // Calculate date range for fetching bookings (first and last date in current view)
+  const startDate = useMemo(() => dates.length > 0 ? dates[0] : undefined, [dates]);
+  const endDate = useMemo(() => dates.length > 0 ? dates[dates.length - 1] : undefined, [dates]);
+
+  // Use React Query hooks for data - fetch only bookings in the current date range
+  const { data: bookings = {}, isLoading: bookingsLoading } = useBookings(startDate, endDate);
   const { data: stats = { available: 0, assigned: 0, booked: 0 }, isLoading: statsLoading } = useBookingStats(dates);
   const { data: nextDatesData, isLoading: nextDatesLoading, error: nextDatesError } = useNextDates();
   

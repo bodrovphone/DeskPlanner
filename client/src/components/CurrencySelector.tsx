@@ -8,7 +8,7 @@ interface CurrencySelectorProps {
 }
 
 export default function CurrencySelector({ onCurrencyChange }: CurrencySelectorProps) {
-  const [currency, setCurrencyState] = useState<Currency>('BGN');
+  const [currency, setCurrencyState] = useState<Currency>('EUR');
 
   useEffect(() => {
     setCurrencyState(getCurrency());
@@ -38,12 +38,6 @@ export default function CurrencySelector({ onCurrencyChange }: CurrencySelectorP
             <div className="flex items-center gap-2">
               <span>{currencySymbols.EUR}</span>
               <span>EUR</span>
-            </div>
-          </SelectItem>
-          <SelectItem value="BGN">
-            <div className="flex items-center gap-2">
-              <span>{currencySymbols.BGN}</span>
-              <span>BGN</span>
             </div>
           </SelectItem>
         </SelectContent>
