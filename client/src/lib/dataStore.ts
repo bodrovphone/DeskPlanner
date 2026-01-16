@@ -1,4 +1,4 @@
-import { DeskBooking } from '@/../../shared/schema';
+import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense } from '@/../../shared/schema';
 
 /**
  * Abstract data store interface for desk bookings
@@ -26,7 +26,10 @@ export interface IDataStore {
     assigned: number;
     booked: number;
   }>;
-  
+
+  getMonthlyStats(year: number, month: number): Promise<MonthlyStats>;
+  getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats>;
+
   // Utility
   clearAllBookings(): Promise<void>;
   
@@ -34,6 +37,17 @@ export interface IDataStore {
   getWaitingListEntries?(): Promise<import('@shared/schema').WaitingListEntry[]>;
   saveWaitingListEntry?(entry: import('@shared/schema').WaitingListEntry): Promise<void>;
   deleteWaitingListEntry?(id: string): Promise<void>;
+
+  // Expense operations
+  getExpenses?(startDate: string, endDate: string): Promise<Expense[]>;
+  saveExpense?(expense: Expense): Promise<void>;
+  deleteExpense?(id: string): Promise<void>;
+
+  // Recurring expense operations
+  getRecurringExpenses?(): Promise<RecurringExpense[]>;
+  saveRecurringExpense?(expense: RecurringExpense): Promise<void>;
+  deleteRecurringExpense?(id: string): Promise<void>;
+  generateRecurringExpenses?(year: number, month: number): Promise<Expense[]>;
 }
 
 /**
@@ -223,10 +237,10 @@ export class LocalStorageDataStore implements IDataStore {
     const data = this.getStorageData();
     const DESK_COUNT = 8; // 2 rooms × 4 desks
     const totalSlots = DESK_COUNT * dates.length;
-    
+
     let assigned = 0;
     let booked = 0;
-    
+
     for (const booking of Object.values(data)) {
       if (dates.includes(booking.date)) {
         switch (booking.status) {
@@ -239,9 +253,180 @@ export class LocalStorageDataStore implements IDataStore {
         }
       }
     }
-    
+
     const available = totalSlots - assigned - booked;
     return { available, assigned, booked };
+  }
+
+  async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
+    const data = this.getStorageData();
+    const DESK_COUNT = 8; // 2 rooms × 4 desks
+    const { getCurrency } = await import('./settings');
+    const currency = getCurrency();
+
+    // Calculate month boundaries (month is 0-indexed)
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0); // Last day of month
+
+    // Generate all business days in month (exclude weekends)
+    const businessDaysInMonth: string[] = [];
+    let current = new Date(monthStart);
+    while (current <= monthEnd) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        businessDaysInMonth.push(current.toISOString().split('T')[0]);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    const totalDeskDays = DESK_COUNT * businessDaysInMonth.length;
+
+    // Track processed bookings to avoid double-counting multi-day bookings
+    const processedBookings = new Set<string>();
+
+    let confirmedRevenue = 0;
+    let expectedRevenue = 0;
+    let occupiedDays = 0;
+
+    // Process bookings
+    for (const booking of Object.values(data)) {
+      if (!businessDaysInMonth.includes(booking.date)) continue;
+
+      // Count occupied days (each day counts once for occupancy)
+      if (booking.status === 'assigned' || booking.status === 'booked') {
+        occupiedDays++;
+      }
+
+      // For revenue: only process each unique booking once, with pro-rata calculation
+      const bookingKey = `${booking.deskId}-${booking.startDate}`;
+      if (processedBookings.has(bookingKey)) continue;
+      processedBookings.add(bookingKey);
+
+      // Calculate pro-rated revenue for this month
+      const bookingStart = new Date(booking.startDate);
+      const bookingEnd = new Date(booking.endDate);
+
+      // Count total business days in the full booking period
+      const totalBookingDays = this.countBusinessDays(bookingStart, bookingEnd);
+
+      // Count business days that fall within THIS month
+      const effectiveStart = bookingStart > monthStart ? bookingStart : monthStart;
+      const effectiveEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
+      const daysInThisMonth = this.countBusinessDays(effectiveStart, effectiveEnd);
+
+      // Pro-rate the price based on business days
+      const bookingPrice = booking.price || 0;
+      const proratedPrice = totalBookingDays > 0
+        ? (daysInThisMonth / totalBookingDays) * bookingPrice
+        : 0;
+
+      if (booking.status === 'assigned') {
+        confirmedRevenue += proratedPrice;
+      } else if (booking.status === 'booked') {
+        expectedRevenue += proratedPrice;
+      }
+    }
+
+    const totalRevenue = confirmedRevenue + expectedRevenue;
+    const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
+    const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+
+    return {
+      totalRevenue,
+      confirmedRevenue,
+      expectedRevenue,
+      occupiedDays,
+      totalDeskDays,
+      occupancyRate,
+      revenuePerOccupiedDay,
+      currency,
+    };
+  }
+
+  private countBusinessDays(start: Date, end: Date): number {
+    let count = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
+  }
+
+  async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
+    const data = this.getStorageData();
+    const DESK_COUNT = 8;
+    const { getCurrency } = await import('./settings');
+    const currency = getCurrency();
+
+    const rangeStart = new Date(startDate);
+    const rangeEnd = new Date(endDate);
+
+    // Generate all business days in the range
+    const businessDaysInRange: string[] = [];
+    let current = new Date(rangeStart);
+    while (current <= rangeEnd) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        businessDaysInRange.push(current.toISOString().split('T')[0]);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    const totalDeskDays = DESK_COUNT * businessDaysInRange.length;
+    const processedBookings = new Set<string>();
+
+    let confirmedRevenue = 0;
+    let expectedRevenue = 0;
+    let occupiedDays = 0;
+
+    for (const booking of Object.values(data)) {
+      if (!businessDaysInRange.includes(booking.date)) continue;
+
+      if (booking.status === 'assigned' || booking.status === 'booked') {
+        occupiedDays++;
+      }
+
+      const bookingKey = `${booking.deskId}-${booking.startDate}`;
+      if (processedBookings.has(bookingKey)) continue;
+      processedBookings.add(bookingKey);
+
+      const bookingStart = new Date(booking.startDate);
+      const bookingEnd = new Date(booking.endDate);
+      const totalBookingDays = this.countBusinessDays(bookingStart, bookingEnd);
+      const effectiveStart = bookingStart > rangeStart ? bookingStart : rangeStart;
+      const effectiveEnd = bookingEnd < rangeEnd ? bookingEnd : rangeEnd;
+      const daysInThisRange = this.countBusinessDays(effectiveStart, effectiveEnd);
+
+      const bookingPrice = booking.price || 0;
+      const proratedPrice = totalBookingDays > 0
+        ? (daysInThisRange / totalBookingDays) * bookingPrice
+        : 0;
+
+      if (booking.status === 'assigned') {
+        confirmedRevenue += proratedPrice;
+      } else if (booking.status === 'booked') {
+        expectedRevenue += proratedPrice;
+      }
+    }
+
+    const totalRevenue = confirmedRevenue + expectedRevenue;
+    const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
+    const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+
+    return {
+      totalRevenue,
+      confirmedRevenue,
+      expectedRevenue,
+      occupiedDays,
+      totalDeskDays,
+      occupancyRate,
+      revenuePerOccupiedDay,
+      currency,
+    };
   }
 
   async clearAllBookings(): Promise<void> {
@@ -283,6 +468,127 @@ export class LocalStorageDataStore implements IDataStore {
     } catch (error) {
       console.error('Error deleting waiting list from localStorage:', error);
       throw new Error('Failed to delete waiting list entry');
+    }
+  }
+
+  // Expense operations
+  private readonly EXPENSES_KEY = 'coworking-expenses';
+  private readonly RECURRING_EXPENSES_KEY = 'coworking-recurring-expenses';
+
+  async getExpenses(startDate: string, endDate: string): Promise<Expense[]> {
+    try {
+      const data = localStorage.getItem(this.EXPENSES_KEY);
+      const expenses: Record<string, Expense> = data ? JSON.parse(data) : {};
+      return Object.values(expenses)
+        .filter(expense => expense.date >= startDate && expense.date <= endDate)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (error) {
+      console.error('Error loading expenses from localStorage:', error);
+      return [];
+    }
+  }
+
+  async saveExpense(expense: Expense): Promise<void> {
+    try {
+      const data = localStorage.getItem(this.EXPENSES_KEY);
+      const expenses: Record<string, Expense> = data ? JSON.parse(data) : {};
+      expenses[expense.id] = expense;
+      localStorage.setItem(this.EXPENSES_KEY, JSON.stringify(expenses));
+    } catch (error) {
+      console.error('Error saving expense to localStorage:', error);
+      throw new Error('Failed to save expense');
+    }
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    try {
+      const data = localStorage.getItem(this.EXPENSES_KEY);
+      const expenses: Record<string, Expense> = data ? JSON.parse(data) : {};
+      delete expenses[id];
+      localStorage.setItem(this.EXPENSES_KEY, JSON.stringify(expenses));
+    } catch (error) {
+      console.error('Error deleting expense from localStorage:', error);
+      throw new Error('Failed to delete expense');
+    }
+  }
+
+  // Recurring expense operations
+  async getRecurringExpenses(): Promise<RecurringExpense[]> {
+    try {
+      const data = localStorage.getItem(this.RECURRING_EXPENSES_KEY);
+      const expenses: Record<string, RecurringExpense> = data ? JSON.parse(data) : {};
+      return Object.values(expenses).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    } catch (error) {
+      console.error('Error loading recurring expenses from localStorage:', error);
+      return [];
+    }
+  }
+
+  async saveRecurringExpense(expense: RecurringExpense): Promise<void> {
+    try {
+      const data = localStorage.getItem(this.RECURRING_EXPENSES_KEY);
+      const expenses: Record<string, RecurringExpense> = data ? JSON.parse(data) : {};
+      expenses[expense.id] = expense;
+      localStorage.setItem(this.RECURRING_EXPENSES_KEY, JSON.stringify(expenses));
+    } catch (error) {
+      console.error('Error saving recurring expense to localStorage:', error);
+      throw new Error('Failed to save recurring expense');
+    }
+  }
+
+  async deleteRecurringExpense(id: string): Promise<void> {
+    try {
+      const data = localStorage.getItem(this.RECURRING_EXPENSES_KEY);
+      const expenses: Record<string, RecurringExpense> = data ? JSON.parse(data) : {};
+      delete expenses[id];
+      localStorage.setItem(this.RECURRING_EXPENSES_KEY, JSON.stringify(expenses));
+    } catch (error) {
+      console.error('Error deleting recurring expense from localStorage:', error);
+      throw new Error('Failed to delete recurring expense');
+    }
+  }
+
+  async generateRecurringExpenses(year: number, month: number): Promise<Expense[]> {
+    try {
+      const recurringExpenses = await this.getRecurringExpenses();
+      const activeExpenses = recurringExpenses.filter(e => e.isActive);
+
+      // Get existing expenses for this month to avoid duplicates
+      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const monthEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const existingExpenses = await this.getExpenses(monthStart, monthEnd);
+
+      const generatedExpenses: Expense[] = [];
+
+      for (const recurring of activeExpenses) {
+        // Check if expense already generated for this recurring template this month
+        const alreadyExists = existingExpenses.some(
+          e => e.isRecurring && e.recurringExpenseId === recurring.id
+        );
+
+        if (!alreadyExists) {
+          const expenseDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(recurring.dayOfMonth).padStart(2, '0')}`;
+          const newExpense: Expense = {
+            id: `expense-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: expenseDate,
+            amount: recurring.amount,
+            currency: recurring.currency,
+            category: recurring.category,
+            description: recurring.description,
+            isRecurring: true,
+            recurringExpenseId: recurring.id,
+            createdAt: new Date().toISOString(),
+          };
+
+          await this.saveExpense(newExpense);
+          generatedExpenses.push(newExpense);
+        }
+      }
+
+      return generatedExpenses;
+    } catch (error) {
+      console.error('Error generating recurring expenses:', error);
+      return [];
     }
   }
 }

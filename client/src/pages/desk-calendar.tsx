@@ -23,10 +23,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useNextDates } from '@/hooks/use-next-dates';
 import { useRealtimeBookings } from '@/hooks/use-realtime-bookings';
 import { useBookings, useBookingStats } from '@/hooks/use-bookings';
+import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols, getCurrency } from '@/lib/settings';
 import CurrencySelector from '@/components/CurrencySelector';
 import WaitingList from '@/components/WaitingList';
+import RevenueDashboard from '@/components/RevenueDashboard';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -56,7 +58,19 @@ export default function DeskCalendar() {
   const currentMonth = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
   const weekRangeString = useMemo(() => getWeekRangeString(weekOffset), [weekOffset]);
   const monthRangeString = useMemo(() => getMonthRangeString(monthOffset), [monthOffset]);
-  
+
+  // Calculate month offset for week view (which month the current week falls into)
+  const weekViewMonthOffset = useMemo(() => {
+    if (!currentWeek[0]?.date) return 0;
+    const weekStartDate = currentWeek[0].date;
+    const today = new Date();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    const weekMonth = weekStartDate.month();
+    const weekYear = weekStartDate.year();
+    return (weekYear - todayYear) * 12 + (weekMonth - todayMonth);
+  }, [currentWeek]);
+
   const currentDates = useMemo(() => viewMode === 'week' ? currentWeek : currentMonth, [viewMode, currentWeek, currentMonth]);
   const dates = useMemo(() => currentDates.map(day => day.dateString), [currentDates]);
 
@@ -71,6 +85,29 @@ export default function DeskCalendar() {
   
   // Set up real-time subscriptions
   useRealtimeBookings();
+
+  // Auto-generate recurring expenses
+  const generateRecurringExpenses = useGenerateRecurringExpenses();
+
+  // Generate recurring expenses on app load for current month
+  useEffect(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    // Generate recurring expenses for the current month (runs once on mount)
+    generateRecurringExpenses.mutate(
+      { year: currentYear, month: currentMonth },
+      {
+        onSuccess: (generated) => {
+          if (generated.length > 0) {
+            console.log(`Auto-generated ${generated.length} recurring expense(s) for ${currentMonth + 1}/${currentYear}`);
+          }
+        },
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -288,7 +325,9 @@ export default function DeskCalendar() {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
         queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' })
+        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['monthly-stats'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['date-range-stats'], type: 'active' })
       ]);
     }
     // For Supabase/hybrid modes, real-time subscription handles the refresh automatically
@@ -395,7 +434,9 @@ export default function DeskCalendar() {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
         queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' })
+        queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['monthly-stats'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['date-range-stats'], type: 'active' })
       ]);
     }
     // For Supabase/hybrid modes, real-time subscription handles the refresh automatically
@@ -443,6 +484,37 @@ export default function DeskCalendar() {
       });
     }
   }, [toast]);
+
+  // Handle quick book - find first available desk on first available date
+  const handleQuickBook = useCallback(async () => {
+    if (nextAvailableDates.length === 0) {
+      toast({
+        title: "No Availability",
+        description: "No available desks found in the next 30 days",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const firstAvailableDate = nextAvailableDates[0];
+
+    // Find the first available desk on that date
+    for (const desk of DESKS) {
+      const booking = await dataStore.getBooking(desk.id, firstAvailableDate);
+      if (!booking || booking.status === 'available') {
+        // Found an available desk - open booking modal with it
+        setSelectedBooking({ booking: null, deskId: desk.id, date: firstAvailableDate });
+        setIsBookingModalOpen(true);
+        return;
+      }
+    }
+
+    toast({
+      title: "No Available Desk",
+      description: "Could not find an available desk",
+      variant: "destructive",
+    });
+  }, [nextAvailableDates, toast]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -587,8 +659,8 @@ export default function DeskCalendar() {
         {/* Calendar Navigation */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-4 justify-center sm:justify-start">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -644,6 +716,17 @@ export default function DeskCalendar() {
                   Month
                 </Button>
               </div>
+            </div>
+            {/* Mobile-only Book Now button */}
+            <div className="sm:hidden mt-4">
+              <Button
+                onClick={handleQuickBook}
+                disabled={nextAvailableDates.length === 0 || nextDatesLoading}
+                className="w-full bg-green-600 hover:bg-green-700 text-white touch-manipulation"
+              >
+                <span className="material-icon text-sm mr-2">add_circle</span>
+                {nextDatesLoading ? 'Loading...' : 'Book Now'}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -901,6 +984,14 @@ export default function DeskCalendar() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Revenue Dashboard - syncs with calendar navigation */}
+        <RevenueDashboard
+          viewMode={viewMode}
+          monthOffset={monthOffset}
+          startDate={currentDates[0]?.dateString}
+          endDate={currentDates[currentDates.length - 1]?.dateString}
+        />
       </main>
 
       {/* Booking Modal */}

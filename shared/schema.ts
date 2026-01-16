@@ -54,3 +54,44 @@ export type BulkAvailability = z.infer<typeof bulkAvailabilitySchema>;
 export type Currency = z.infer<typeof currencySchema>;
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 export type WaitingListEntry = z.infer<typeof waitingListEntrySchema>;
+
+export interface MonthlyStats {
+  totalRevenue: number;
+  confirmedRevenue: number;
+  expectedRevenue: number;
+  occupiedDays: number;
+  totalDeskDays: number;
+  occupancyRate: number;
+  revenuePerOccupiedDay: number;
+  currency: Currency;
+}
+
+// Expense tracking schemas
+export const expenseCategorySchema = z.enum(['rent', 'supplies', 'internet', 'bills', 'accountant']);
+
+export const expenseSchema = z.object({
+  id: z.string(),
+  date: z.string(), // YYYY-MM-DD
+  amount: z.number().nonnegative(),
+  currency: currencySchema,
+  category: expenseCategorySchema,
+  description: z.string().optional(),
+  isRecurring: z.boolean().default(false),
+  recurringExpenseId: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export const recurringExpenseSchema = z.object({
+  id: z.string(),
+  amount: z.number().nonnegative(),
+  currency: currencySchema,
+  category: expenseCategorySchema,
+  description: z.string().optional(),
+  dayOfMonth: z.number().min(1).max(28).default(1),
+  isActive: z.boolean().default(true),
+  createdAt: z.string(),
+});
+
+export type ExpenseCategory = z.infer<typeof expenseCategorySchema>;
+export type Expense = z.infer<typeof expenseSchema>;
+export type RecurringExpense = z.infer<typeof recurringExpenseSchema>;

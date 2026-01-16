@@ -1,4 +1,4 @@
-import { DeskBooking, WaitingListEntry, AppSettings } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense } from '@shared/schema';
 import { IDataStore, LocalStorageDataStore } from './dataStore';
 import { SupabaseDataStore } from './supabaseDataStore';
 import { SyncMetadataManager } from './syncMetadata';
@@ -396,6 +396,14 @@ export class HybridDataStore implements IDataStore {
     return this.localStorage.getDeskStats(dates);
   }
 
+  async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
+    return this.localStorage.getMonthlyStats(year, month);
+  }
+
+  async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
+    return this.localStorage.getStatsForDateRange(startDate, endDate);
+  }
+
   async clearAllBookings(): Promise<void> {
     // Clear localStorage
     await this.localStorage.clearAllBookings();
@@ -517,5 +525,95 @@ export class HybridDataStore implements IDataStore {
    */
   getSyncStatus(): SyncStatus {
     return { ...this.syncStatus };
+  }
+
+  // Expense operations - use localStorage as primary
+  async getExpenses(startDate: string, endDate: string): Promise<Expense[]> {
+    if (this.localStorage.getExpenses) {
+      return this.localStorage.getExpenses(startDate, endDate);
+    }
+    return [];
+  }
+
+  async saveExpense(expense: Expense): Promise<void> {
+    // Save to localStorage first
+    if (this.localStorage.saveExpense) {
+      await this.localStorage.saveExpense(expense);
+    }
+
+    // Try to save to Supabase in background
+    if (this.supabase?.saveExpense) {
+      this.supabase.saveExpense(expense).catch(error => {
+        console.error('Failed to sync expense to Supabase:', error);
+      });
+    }
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    // Delete from localStorage first
+    if (this.localStorage.deleteExpense) {
+      await this.localStorage.deleteExpense(id);
+    }
+
+    // Try to delete from Supabase in background
+    if (this.supabase?.deleteExpense) {
+      this.supabase.deleteExpense(id).catch(error => {
+        console.error('Failed to sync expense deletion to Supabase:', error);
+      });
+    }
+  }
+
+  // Recurring expense operations
+  async getRecurringExpenses(): Promise<RecurringExpense[]> {
+    if (this.localStorage.getRecurringExpenses) {
+      return this.localStorage.getRecurringExpenses();
+    }
+    return [];
+  }
+
+  async saveRecurringExpense(expense: RecurringExpense): Promise<void> {
+    // Save to localStorage first
+    if (this.localStorage.saveRecurringExpense) {
+      await this.localStorage.saveRecurringExpense(expense);
+    }
+
+    // Try to save to Supabase in background
+    if (this.supabase?.saveRecurringExpense) {
+      this.supabase.saveRecurringExpense(expense).catch(error => {
+        console.error('Failed to sync recurring expense to Supabase:', error);
+      });
+    }
+  }
+
+  async deleteRecurringExpense(id: string): Promise<void> {
+    // Delete from localStorage first
+    if (this.localStorage.deleteRecurringExpense) {
+      await this.localStorage.deleteRecurringExpense(id);
+    }
+
+    // Try to delete from Supabase in background
+    if (this.supabase?.deleteRecurringExpense) {
+      this.supabase.deleteRecurringExpense(id).catch(error => {
+        console.error('Failed to sync recurring expense deletion to Supabase:', error);
+      });
+    }
+  }
+
+  async generateRecurringExpenses(year: number, month: number): Promise<Expense[]> {
+    if (this.localStorage.generateRecurringExpenses) {
+      const generated = await this.localStorage.generateRecurringExpenses(year, month);
+
+      // Sync generated expenses to Supabase in background
+      if (this.supabase?.saveExpense) {
+        for (const expense of generated) {
+          this.supabase.saveExpense(expense).catch(error => {
+            console.error('Failed to sync generated expense to Supabase:', error);
+          });
+        }
+      }
+
+      return generated;
+    }
+    return [];
   }
 }

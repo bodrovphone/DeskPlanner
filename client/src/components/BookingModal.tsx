@@ -49,7 +49,7 @@ export default function BookingModal({
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setTitle(booking?.title || '');
-      setPrice(booking?.price?.toString() || '15');
+      setPrice(booking?.price?.toString() || '8');
       setStatus(booking?.status || 'assigned');
       
       // Handle date logic more carefully
@@ -277,7 +277,7 @@ export default function BookingModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="15.00"
+                placeholder="8.00"
                 min="0"
                 step="0.01"
                 className="pl-8"
