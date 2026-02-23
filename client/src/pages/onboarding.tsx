@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateOrganization, useCheckSlugAvailable } from '@/hooks/use-organization';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencyLabels, currencySymbols, activeCurrencies } from '@/lib/settings';
 import { Currency } from '@shared/schema';
 import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check } from 'lucide-react';
@@ -25,6 +26,14 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const createOrg = useCreateOrganization();
   const checkSlug = useCheckSlugAvailable();
+  const { hasOrganization } = useOrganization();
+
+  // Redirect to calendar if user already has an org
+  useEffect(() => {
+    if (hasOrganization) {
+      navigate('/app/calendar', { replace: true });
+    }
+  }, [hasOrganization, navigate]);
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
