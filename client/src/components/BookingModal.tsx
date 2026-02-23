@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X } from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ interface BookingModalProps {
     endDate: string;
     currency: Currency;
   }) => Promise<void>;
+  onDiscard?: () => Promise<void>;
 }
 
 export default function BookingModal({
@@ -35,7 +36,8 @@ export default function BookingModal({
   deskId,
   date,
   currency,
-  onSave
+  onSave,
+  onDiscard,
 }: BookingModalProps) {
   const [personName, setPersonName] = useState('');
   const [title, setTitle] = useState('');
@@ -45,6 +47,7 @@ export default function BookingModal({
   const [endDate, setEndDate] = useState('');
   const [conflictError, setConflictError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDiscarding, setIsDiscarding] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -115,6 +118,21 @@ export default function BookingModal({
       onClose();
     }
   };
+
+  const handleDiscard = async () => {
+    if (!onDiscard) return;
+    try {
+      setIsDiscarding(true);
+      await onDiscard();
+      onClose();
+    } catch (error) {
+      setConflictError('Failed to discard booking.');
+    } finally {
+      setIsDiscarding(false);
+    }
+  };
+
+  const isExistingBooking = booking && booking.status !== 'available';
 
   const desk = DESKS.find(d => d.id === deskId);
 
@@ -302,14 +320,39 @@ export default function BookingModal({
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 mt-6">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex gap-3 mt-6">
+          {isExistingBooking && onDiscard && (
+            <Button
+              variant="outline"
+              onClick={handleDiscard}
+              disabled={isDiscarding || isLoading}
+              className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              {isDiscarding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Discarding...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Discard
+                </>
+              )}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200"
+          >
+            <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={!isValidForm || isLoading}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
           >
             {isLoading ? (
               <>

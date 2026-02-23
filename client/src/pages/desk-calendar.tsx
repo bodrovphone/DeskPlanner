@@ -6,10 +6,7 @@ import FloorPlanModal from '@/components/FloorPlanModal';
 import DataMigrationModal from '@/components/DataMigrationModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarNavigation from '@/components/calendar/CalendarNavigation';
-import StatusLegend from '@/components/calendar/StatusLegend';
 import DeskGrid from '@/components/calendar/DeskGrid';
-import NextDatesPanel from '@/components/calendar/NextDatesPanel';
-import StatsCards from '@/components/calendar/StatsCards';
 import { DEFAULT_DESKS } from '@/lib/deskConfig';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import {
@@ -21,11 +18,9 @@ import {
 import { DeskBooking, Currency } from '@shared/schema';
 import { useNextDates } from '@/hooks/use-next-dates';
 import { useRealtimeBookings } from '@/hooks/use-realtime-bookings';
-import { useBookings, useBookingStats } from '@/hooks/use-bookings';
+import { useBookings } from '@/hooks/use-bookings';
 import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { getCurrency } from '@/lib/settings';
-import WaitingList from '@/components/WaitingList';
-import RevenueDashboard from '@/components/RevenueDashboard';
 import { useBookingActions } from '@/hooks/use-booking-actions';
 
 export default function DeskCalendar() {
@@ -63,7 +58,6 @@ export default function DeskCalendar() {
   const endDate = useMemo(() => (dates.length > 0 ? dates[dates.length - 1] : undefined), [dates]);
 
   const { data: bookings = {} } = useBookings(startDate, endDate);
-  const { data: stats = { available: 0, assigned: 0, booked: 0 } } = useBookingStats(dates);
   const { data: nextDatesData, isLoading: nextDatesLoading } = useNextDates();
 
   useRealtimeBookings();
@@ -85,8 +79,6 @@ export default function DeskCalendar() {
   }, []);
 
   const nextAvailableDates = nextDatesData?.available || [];
-  const nextBookedDates = nextDatesData?.booked || [];
-  const expiringAssignments = nextDatesData?.expiring || [];
 
   useEffect(() => {
     if (currentOrg?.currency) {
@@ -119,6 +111,7 @@ export default function DeskCalendar() {
     handleBulkAvailability,
     handleExport,
     handleQuickBook,
+    handleDiscardBooking,
   } = useBookingActions(
     currentCurrency,
     selectedBooking,
@@ -133,7 +126,6 @@ export default function DeskCalendar() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <CalendarHeader
-        onCurrencyChange={setCurrentCurrency}
         onFloorPlan={() => setIsFloorPlanModalOpen(true)}
         onSetAvailability={() => setIsRangeModalOpen(true)}
         onExport={handleExport}
@@ -158,33 +150,12 @@ export default function DeskCalendar() {
           quickBookLoading={nextDatesLoading}
         />
 
-        <StatusLegend />
-
         <DeskGrid
           ref={tableRef}
           desks={desks}
           currentDates={currentDates}
           bookings={bookings}
           onDeskClick={handleDeskClick}
-        />
-
-        <NextDatesPanel
-          nextAvailableDates={nextAvailableDates}
-          nextBookedDates={nextBookedDates}
-          expiringAssignments={expiringAssignments}
-        />
-
-        <div className="mt-6">
-          <WaitingList />
-        </div>
-
-        <StatsCards stats={stats} />
-
-        <RevenueDashboard
-          viewMode={viewMode}
-          monthOffset={monthOffset}
-          startDate={currentDates[0]?.dateString}
-          endDate={currentDates[currentDates.length - 1]?.dateString}
         />
       </div>
 
@@ -199,6 +170,7 @@ export default function DeskCalendar() {
         date={selectedBooking?.date || ''}
         currency={currentCurrency}
         onSave={handleBookingSave}
+        onDiscard={handleDiscardBooking}
       />
 
       <PersonModal

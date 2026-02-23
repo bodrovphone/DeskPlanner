@@ -313,6 +313,26 @@ export function useBookingActions(
     });
   }, [nextAvailableDates, toast, setSelectedBooking, setIsBookingModalOpen]);
 
+  const handleDiscardBooking = useCallback(async () => {
+    if (!selectedBooking) return;
+    const { deskId, booking } = selectedBooking;
+    if (!booking) return;
+
+    const dateRange = generateDateRange(booking.startDate, booking.endDate);
+    await Promise.all(
+      dateRange.map(date => dataStore.deleteBooking(deskId, date))
+    );
+
+    queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
+
+    toast({
+      title: 'Booking Discarded',
+      description: `Removed booking for ${booking.personName}`,
+    });
+  }, [selectedBooking, queryClient, toast]);
+
   return {
     handleDeskClick,
     handleBookingSave,
@@ -320,5 +340,6 @@ export function useBookingActions(
     handleBulkAvailability,
     handleExport,
     handleQuickBook,
+    handleDiscardBooking,
   };
 }

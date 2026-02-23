@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { dataStore } from '@/lib/dataStore';
+import { DeskBooking } from '@shared/schema';
 
 const DESKS = [
   { id: 'room1-desk1', room: 1, number: 1, label: 'Room 1 - Desk 1' },
@@ -19,6 +20,21 @@ const isWeekend = (dateString: string): boolean => {
   return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
 };
 
+export interface BookedDate {
+  date: string;
+  names: string[];
+  booking: DeskBooking;
+  deskId: string;
+}
+
+export interface ExpiringAssignment {
+  date: string;
+  personName: string;
+  deskNumber: number;
+  booking: DeskBooking;
+  deskId: string;
+}
+
 async function calculateNextDates() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -34,16 +50,16 @@ async function calculateNextDates() {
     startDate.toISOString().split('T')[0],
     endDate.toISOString().split('T')[0]
   );
-  
+
   // Create lookup map for efficient access
   const bookingLookup = new Map<string, any>();
   Object.values(allBookings).forEach(booking => {
     const key = `${booking.deskId}-${booking.date}`;
     bookingLookup.set(key, booking);
   });
-  
+
   const availableDates: string[] = [];
-  const bookedDatesMap = new Map<string, Set<string>>();
+  const bookedDatesMap = new Map<string, { names: Set<string>; booking: DeskBooking; deskId: string }>();
   let checkDate = new Date(today);
   checkDate.setDate(checkDate.getDate() + 1); // Start from tomorrow
 
@@ -53,84 +69,93 @@ async function calculateNextDates() {
 
   while ((availableDates.length < 5 || bookedDatesMap.size < 3) && daysChecked < maxDaysToCheck) {
     const dateString = checkDate.toISOString().split('T')[0];
-    
+
     // Skip weekends
     if (!isWeekend(dateString)) {
       // Check each desk on this date
       let hasAvailableDesk = false;
       const bookedNames = new Set<string>();
-      
+      let firstBookedBooking: DeskBooking | null = null;
+      let firstBookedDeskId: string | null = null;
+
       for (const desk of DESKS) {
         const bookingKey = `${desk.id}-${dateString}`;
         const booking = bookingLookup.get(bookingKey);
-        
+
         if (!booking) {
-          // No booking means the desk is available
           hasAvailableDesk = true;
         } else if (booking.status === 'available') {
-          // Explicitly marked as available
           hasAvailableDesk = true;
         } else if (booking.status === 'booked' && booking.personName) {
-          // Booked (not assigned/paid)
           bookedNames.add(booking.personName);
+          if (!firstBookedBooking) {
+            firstBookedBooking = booking;
+            firstBookedDeskId = desk.id;
+          }
         }
       }
-      
+
       // Track available dates
       if (hasAvailableDesk && availableDates.length < 5) {
         availableDates.push(dateString);
       }
-      
-      // Track booked dates with names
-      if (bookedNames.size > 0 && bookedDatesMap.size < 3) {
-        bookedDatesMap.set(dateString, bookedNames);
+
+      // Track booked dates with names and first booking
+      if (bookedNames.size > 0 && bookedDatesMap.size < 3 && firstBookedBooking && firstBookedDeskId) {
+        bookedDatesMap.set(dateString, {
+          names: bookedNames,
+          booking: firstBookedBooking,
+          deskId: firstBookedDeskId,
+        });
       }
     }
-    
+
     checkDate.setDate(checkDate.getDate() + 1);
     daysChecked++;
   }
 
   // Convert booked dates map to array format
-  const bookedDates = Array.from(bookedDatesMap.entries()).map(([date, names]) => ({
+  const bookedDates: BookedDate[] = Array.from(bookedDatesMap.entries()).map(([date, data]) => ({
     date,
-    names: Array.from(names)
+    names: Array.from(data.names),
+    booking: data.booking,
+    deskId: data.deskId,
   }));
 
   // Check for expiring assignments in the next 10 days
-  const expiring: { date: string, personName: string, deskNumber: number }[] = [];
+  const expiring: ExpiringAssignment[] = [];
   const checkDates: string[] = [];
-  
+
   // Generate dates for the next 10 days
   for (let i = 1; i <= 10; i++) {
     const futureDate = new Date(today);
     futureDate.setDate(futureDate.getDate() + i);
     checkDates.push(futureDate.toISOString().split('T')[0]);
   }
-  
+
   for (const dateString of checkDates) {
-    // Skip weekends for expiring assignments too
     if (!isWeekend(dateString)) {
       for (const desk of DESKS) {
         const bookingKey = `${desk.id}-${dateString}`;
         const booking = bookingLookup.get(bookingKey);
-        
-        // Check if it's an assigned (paid) booking that will end on this date
+
         if (booking && booking.status === 'assigned' && booking.personName && booking.endDate === dateString) {
           expiring.push({
             date: dateString,
             personName: booking.personName,
-            deskNumber: desk.number
+            deskNumber: desk.number,
+            booking,
+            deskId: desk.id,
           });
         }
       }
     }
   }
-  
-  return { 
-    available: availableDates, 
-    booked: bookedDates, 
-    expiring 
+
+  return {
+    available: availableDates,
+    booked: bookedDates,
+    expiring
   };
 }
 

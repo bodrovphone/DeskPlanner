@@ -1,12 +1,13 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, LayoutGrid, Menu, X } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, LayoutGrid, Menu, X, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 const navItems = [
   { to: '/app/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/app/insights', label: 'Insights', icon: Lightbulb },
   { to: '/app/revenue', label: 'Revenue', icon: BarChart3 },
   { to: '/app/waiting-list', label: 'Waiting List', icon: Users },
   { to: '/app/settings', label: 'Settings', icon: Settings },

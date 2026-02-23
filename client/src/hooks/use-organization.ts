@@ -205,6 +205,44 @@ export function useCreateOrganization() {
   });
 }
 
+export function useRenameRoom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ roomId, newName }: { roomId: string; newName: string }) => {
+      const { error } = await supabaseClient
+        .from('rooms')
+        .update({ name: newName })
+        .eq('id', roomId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    },
+  });
+}
+
+export function useRenameDesk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ deskId, newLabel }: { deskId: string; newLabel: string }) => {
+      const { error } = await supabaseClient
+        .from('desks')
+        .update({ label: newLabel })
+        .eq('id', deskId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    },
+  });
+}
+
 export function useCheckSlugAvailable() {
   return useMutation({
     mutationFn: async (slug: string): Promise<boolean> => {

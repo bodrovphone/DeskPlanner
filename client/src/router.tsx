@@ -11,6 +11,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import RevenuePage from '@/pages/revenue';
 import WaitingListPage from '@/pages/waiting-list';
 import SettingsPage from '@/pages/settings';
+import InsightsPage from '@/pages/insights';
 
 function AuthLayout() {
   return (
@@ -155,6 +156,10 @@ export const router = createBrowserRouter(
                 {
                   path: 'calendar',
                   element: <DeskCalendar />,
+                },
+                {
+                  path: 'insights',
+                  element: <InsightsPage />,
                 },
                 {
                   path: 'revenue',

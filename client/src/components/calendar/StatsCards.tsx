@@ -3,52 +3,58 @@ import { CheckCircle, CalendarX, User } from 'lucide-react';
 
 interface StatsCardsProps {
   stats: { available: number; assigned: number; booked: number };
+  label?: string;
 }
 
-export default function StatsCards({ stats }: StatsCardsProps) {
+export default function StatsCards({ stats, label }: StatsCardsProps) {
   return (
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+    <div className="mt-6">
+      {label && (
+        <p className="text-sm text-gray-500 mb-2">{label}</p>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">Available</p>
+                <p className="text-lg font-semibold text-green-600">{stats.available}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Available</p>
-              <p className="text-lg font-semibold text-green-600">{stats.available}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <CalendarX className="h-6 w-6 text-orange-600" />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CalendarX className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">Booked</p>
+                <p className="text-lg font-semibold text-orange-600">{stats.booked}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Booked</p>
-              <p className="text-lg font-semibold text-orange-600">{stats.booked}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <User className="h-6 w-6 text-blue-600" />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">Assigned</p>
+                <p className="text-lg font-semibold text-blue-600">{stats.assigned}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Assigned</p>
-              <p className="text-lg font-semibold text-blue-600">{stats.assigned}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
