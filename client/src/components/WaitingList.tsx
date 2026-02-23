@@ -5,6 +5,7 @@ import { WaitingListEntry } from '@shared/schema';
 import { dataStore } from '@/lib/dataStore';
 import WaitingListModal from './WaitingListModal';
 import { useToast } from '@/hooks/use-toast';
+import { Clock, UserPlus, Users, User, CalendarRange, Mail, StickyNote, Trash2 } from 'lucide-react';
 
 export default function WaitingList() {
   const [entries, setEntries] = useState<WaitingListEntry[]>([]);
@@ -17,7 +18,7 @@ export default function WaitingList() {
 
   const loadEntries = async () => {
     try {
-      const allEntries = dataStore.getWaitingListEntries ? 
+      const allEntries = dataStore.getWaitingListEntries ?
         await dataStore.getWaitingListEntries() : [];
       setEntries(allEntries);
     } catch (error) {
@@ -37,11 +38,11 @@ export default function WaitingList() {
         id: Date.now().toString(), // Use simple timestamp for better Supabase compatibility
         createdAt: new Date().toISOString(),
       };
-      
+
       if (dataStore.saveWaitingListEntry) {
         await dataStore.saveWaitingListEntry(newEntry);
       }
-      
+
       await loadEntries();
       toast({
         title: "Added to Waiting List",
@@ -61,7 +62,7 @@ export default function WaitingList() {
       if (dataStore.deleteWaitingListEntry) {
         await dataStore.deleteWaitingListEntry(id);
       }
-      
+
       await loadEntries();
       toast({
         title: "Removed from Waiting List",
@@ -89,15 +90,15 @@ export default function WaitingList() {
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
-            <span className="material-icon text-orange-600">schedule</span>
+            <Clock className="h-5 w-5 text-orange-600" />
             Waiting List
           </CardTitle>
-          <Button 
+          <Button
             onClick={() => setIsModalOpen(true)}
             size="sm"
             className="bg-orange-600 hover:bg-orange-700"
           >
-            <span className="material-icon text-sm mr-2">person_add</span>
+            <UserPlus className="h-4 w-4 mr-2" />
             Add Person
           </Button>
         </div>
@@ -105,7 +106,7 @@ export default function WaitingList() {
       <CardContent>
         {entries.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <span className="material-icon text-4xl mb-2 block text-gray-300">people_outline</span>
+            <Users className="h-10 w-10 mb-2 mx-auto text-gray-300" />
             <p>No one on the waiting list yet</p>
             <p className="text-sm">Add people who are interested in booking desks</p>
           </div>
@@ -116,44 +117,44 @@ export default function WaitingList() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="material-icon text-orange-600 text-sm">person</span>
+                      <User className="h-4 w-4 text-orange-600" />
                       <h4 className="font-medium text-gray-900">{entry.name}</h4>
                     </div>
-                    
+
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
-                        <span className="material-icon text-xs">date_range</span>
+                        <CalendarRange className="h-3 w-3" />
                         <span>{entry.preferredDates}</span>
                       </div>
-                      
+
                       {entry.contactInfo && (
                         <div className="flex items-center gap-2">
-                          <span className="material-icon text-xs">contact_mail</span>
+                          <Mail className="h-3 w-3" />
                           <span>{entry.contactInfo}</span>
                         </div>
                       )}
-                      
+
                       {entry.notes && (
                         <div className="flex items-start gap-2">
-                          <span className="material-icon text-xs">note</span>
+                          <StickyNote className="h-3 w-3 mt-0.5" />
                           <span>{entry.notes}</span>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                        <span className="material-icon text-xs">access_time</span>
+                        <Clock className="h-3 w-3" />
                         <span>Added {formatDate(entry.createdAt)}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleRemoveEntry(entry.id, entry.name)}
                     className="text-red-600 hover:text-red-800 hover:bg-red-50"
                   >
-                    <span className="material-icon text-sm">delete</span>
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -161,7 +162,7 @@ export default function WaitingList() {
           </div>
         )}
       </CardContent>
-      
+
       <WaitingListModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

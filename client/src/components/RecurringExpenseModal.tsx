@@ -14,7 +14,10 @@ import {
   useDeleteRecurringExpense
 } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus, Edit2 } from 'lucide-react';
+import {
+  Trash2, Plus, Edit2, Repeat, Loader2, Check,
+  Home, Coffee, Wifi, Zap, Calculator
+} from 'lucide-react';
 
 interface RecurringExpenseModalProps {
   isOpen: boolean;
@@ -29,12 +32,12 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   accountant: 'Accountant',
 };
 
-const categoryIcons: Record<ExpenseCategory, { icon: string; color: string }> = {
-  rent: { icon: 'home', color: 'text-purple-600' },
-  supplies: { icon: 'local_cafe', color: 'text-green-600' },
-  internet: { icon: 'wifi', color: 'text-blue-600' },
-  bills: { icon: 'bolt', color: 'text-yellow-600' },
-  accountant: { icon: 'calculate', color: 'text-indigo-600' },
+const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  rent: { Icon: Home, color: 'text-purple-600' },
+  supplies: { Icon: Coffee, color: 'text-green-600' },
+  internet: { Icon: Wifi, color: 'text-blue-600' },
+  bills: { Icon: Zap, color: 'text-yellow-600' },
+  accountant: { Icon: Calculator, color: 'text-indigo-600' },
 };
 
 export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpenseModalProps) {
@@ -144,7 +147,7 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-purple-600">repeat</span>
+            <Repeat className="h-5 w-5 text-purple-600" />
             Manage Recurring Expenses
           </DialogTitle>
         </DialogHeader>
@@ -155,56 +158,57 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700">Active Templates</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {recurringExpenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      expense.isActive ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`material-icon ${categoryIcons[expense.category].color}`}>
-                        {categoryIcons[expense.category].icon}
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${expense.isActive ? 'text-gray-900' : 'text-gray-500'}`}>
-                            {categoryLabels[expense.category]}
-                          </span>
-                          {!expense.isActive && (
-                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                              Inactive
+                {recurringExpenses.map((expense) => {
+                  const { Icon: CategoryIcon, color } = categoryIcons[expense.category];
+                  return (
+                    <div
+                      key={expense.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        expense.isActive ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CategoryIcon className={`h-5 w-5 ${color}`} />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${expense.isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+                              {categoryLabels[expense.category]}
                             </span>
+                            {!expense.isActive && (
+                              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {currencySymbols[expense.currency]}{expense.amount.toFixed(2)} on day {expense.dayOfMonth}
+                          </div>
+                          {expense.description && (
+                            <div className="text-xs text-gray-400">{expense.description}</div>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {currencySymbols[expense.currency]}{expense.amount.toFixed(2)} on day {expense.dayOfMonth}
-                        </div>
-                        {expense.description && (
-                          <div className="text-xs text-gray-400">{expense.description}</div>
-                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(expense)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(expense.id)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(expense)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(expense.id)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -233,31 +237,31 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
                 <SelectContent>
                   <SelectItem value="rent">
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-purple-600 text-sm">home</span>
+                      <Home className="h-4 w-4 text-purple-600" />
                       <span>Rent</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="supplies">
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-green-600 text-sm">local_cafe</span>
+                      <Coffee className="h-4 w-4 text-green-600" />
                       <span>Supplies</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="internet">
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-blue-600 text-sm">wifi</span>
+                      <Wifi className="h-4 w-4 text-blue-600" />
                       <span>Internet</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="bills">
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-yellow-600 text-sm">bolt</span>
+                      <Zap className="h-4 w-4 text-yellow-600" />
                       <span>Bills</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="accountant">
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-indigo-600 text-sm">calculate</span>
+                      <Calculator className="h-4 w-4 text-indigo-600" />
                       <span>Accountant</span>
                     </div>
                   </SelectItem>
@@ -345,12 +349,12 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
               >
                 {saveRecurringExpense.isPending ? (
                   <>
-                    <span className="material-icon text-sm mr-2 animate-spin">hourglass_empty</span>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <span className="material-icon text-sm mr-2">{isEditing ? 'check' : 'add'}</span>
+                    {isEditing ? <Check className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
                     {isEditing ? 'Update' : 'Add'} Template
                   </>
                 )}

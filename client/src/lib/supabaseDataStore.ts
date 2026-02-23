@@ -2,14 +2,17 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
+import { DESK_COUNT } from './deskConfig';
 
 export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
   private readonly DAYS_TO_KEEP = 60; // Keep bookings for 60 days
+  private organizationId: string | null;
 
-  constructor() {
+  constructor(organizationId?: string) {
     this.client = supabaseClient;
-    
+    this.organizationId = organizationId || null;
+
     // Check authentication status on initialization
     this.checkAuthStatus();
   }
@@ -40,14 +43,22 @@ export class SupabaseDataStore implements IDataStore {
     return `${deskId}-${date}`;
   }
 
+  private scopeQuery<T>(query: T): T {
+    if (this.organizationId) {
+      return (query as any).eq('organization_id', this.organizationId) as T;
+    }
+    return query;
+  }
+
   async getBooking(deskId: string, date: string): Promise<DeskBooking | null> {
     try {
-      const { data, error } = await this.client
-        .from('desk_bookings')
-        .select('*')
-        .eq('desk_id', deskId)
-        .eq('date', date)
-        .limit(1);
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('*')
+          .eq('desk_id', deskId)
+          .eq('date', date)
+      ).limit(1);
 
       if (error) {
         console.error('Supabase error fetching booking:', error);
@@ -65,9 +76,11 @@ export class SupabaseDataStore implements IDataStore {
 
   async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
     try {
-      let query = this.client
-        .from('desk_bookings')
-        .select('*');
+      let query = this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('*')
+      );
 
       // Apply date range filtering if provided
       if (startDate) query = query.gte('date', startDate);
@@ -169,12 +182,13 @@ export class SupabaseDataStore implements IDataStore {
 
   async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
     try {
-      const { data, error } = await this.client
-        .from('desk_bookings')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date');
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+      ).order('date');
 
       if (error) throw error;
 
@@ -187,10 +201,12 @@ export class SupabaseDataStore implements IDataStore {
 
   async getBookingsForDesk(deskId: string, startDate?: string, endDate?: string): Promise<DeskBooking[]> {
     try {
-      let query = this.client
-        .from('desk_bookings')
-        .select('*')
-        .eq('desk_id', deskId);
+      let query = this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('*')
+          .eq('desk_id', deskId)
+      );
 
       if (startDate) query = query.gte('date', startDate);
       if (endDate) query = query.lte('date', endDate);
@@ -214,14 +230,16 @@ export class SupabaseDataStore implements IDataStore {
     booked: number;
   }> {
     try {
-      const { data, error } = await this.client
-        .from('desk_bookings')
-        .select('status')
-        .in('date', dates);
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('status')
+          .in('date', dates)
+      );
 
       if (error) throw error;
 
-      const DESK_COUNT = 8; // 2 rooms × 4 desks
+      // Uses DESK_COUNT from deskConfig
       const totalSlots = DESK_COUNT * dates.length;
 
       let assigned = 0;
@@ -249,7 +267,7 @@ export class SupabaseDataStore implements IDataStore {
   async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
-    const DESK_COUNT = 8;
+    // Uses DESK_COUNT from deskConfig
 
     // Calculate month boundaries (month is 0-indexed)
     const monthStart = new Date(year, month, 1);
@@ -269,10 +287,12 @@ export class SupabaseDataStore implements IDataStore {
     const totalDeskDays = DESK_COUNT * businessDaysInMonth.length;
 
     try {
-      const { data, error } = await this.client
-        .from('desk_bookings')
-        .select('date, start_date, end_date, status, price, desk_id')
-        .in('date', businessDaysInMonth);
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('date, start_date, end_date, status, price, desk_id')
+          .in('date', businessDaysInMonth)
+      );
 
       if (error) throw error;
 
@@ -357,7 +377,7 @@ export class SupabaseDataStore implements IDataStore {
   async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
-    const DESK_COUNT = 8;
+    // Uses DESK_COUNT from deskConfig
 
     const rangeStart = new Date(startDate);
     const rangeEnd = new Date(endDate);
@@ -375,10 +395,12 @@ export class SupabaseDataStore implements IDataStore {
     const totalDeskDays = DESK_COUNT * businessDaysInRange.length;
 
     try {
-      const { data, error } = await this.client
-        .from('desk_bookings')
-        .select('date, start_date, end_date, status, price, desk_id')
-        .in('date', businessDaysInRange);
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('desk_bookings')
+          .select('date, start_date, end_date, status, price, desk_id')
+          .in('date', businessDaysInRange)
+      );
 
       if (error) throw error;
 
@@ -459,7 +481,7 @@ export class SupabaseDataStore implements IDataStore {
         numericId = typeof entry.id === 'string' ? parseInt(entry.id) || Date.now() : entry.id;
       }
 
-      const dbData = {
+      const dbData: any = {
         id: numericId,
         name: entry.name,
         preferred_dates: entry.preferredDates,
@@ -467,6 +489,10 @@ export class SupabaseDataStore implements IDataStore {
         notes: entry.notes,
         created_at: entry.createdAt,
       };
+
+      if (this.organizationId) {
+        dbData.organization_id = this.organizationId;
+      }
 
       const { error } = await this.client
         .from('waiting_list_entries')
@@ -481,10 +507,11 @@ export class SupabaseDataStore implements IDataStore {
 
   async getWaitingListEntries(): Promise<WaitingListEntry[]> {
     try {
-      const { data, error } = await this.client
-        .from('waiting_list_entries')
-        .select('*')
-        .order('created_at');
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('waiting_list_entries')
+          .select('*')
+      ).order('created_at');
 
       if (error) throw error;
 
@@ -576,8 +603,8 @@ export class SupabaseDataStore implements IDataStore {
   private mapToDatabase(booking: DeskBooking): any {
     // Convert string ID to integer for Supabase
     const numericId = this.stringToNumericId(booking.id);
-    
-    return {
+
+    const record: any = {
       id: numericId,
       desk_id: booking.deskId,
       date: booking.date,
@@ -590,6 +617,12 @@ export class SupabaseDataStore implements IDataStore {
       currency: booking.currency,
       created_at: booking.createdAt,
     };
+
+    if (this.organizationId) {
+      record.organization_id = this.organizationId;
+    }
+
+    return record;
   }
 
   private mapFromDatabase(row: any): DeskBooking {
@@ -624,12 +657,13 @@ export class SupabaseDataStore implements IDataStore {
   // Expense operations
   async getExpenses(startDate: string, endDate: string): Promise<Expense[]> {
     try {
-      const { data, error } = await this.client
-        .from('expenses')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date');
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('expenses')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+      ).order('date');
 
       if (error) throw error;
 
@@ -675,10 +709,11 @@ export class SupabaseDataStore implements IDataStore {
   // Recurring expense operations
   async getRecurringExpenses(): Promise<RecurringExpense[]> {
     try {
-      const { data, error } = await this.client
-        .from('recurring_expenses')
-        .select('*')
-        .order('created_at');
+      const { data, error } = await this.scopeQuery(
+        this.client
+          .from('recurring_expenses')
+          .select('*')
+      ).order('created_at');
 
       if (error) throw error;
 
@@ -772,7 +807,7 @@ export class SupabaseDataStore implements IDataStore {
     const recurringId = expense.recurringExpenseId
       ? (/^\d+$/.test(expense.recurringExpenseId) ? parseInt(expense.recurringExpenseId, 10) : this.stringToNumericId(expense.recurringExpenseId))
       : null;
-    return {
+    const record: any = {
       id: numericId,
       date: expense.date,
       amount: expense.amount,
@@ -783,6 +818,10 @@ export class SupabaseDataStore implements IDataStore {
       recurring_expense_id: recurringId,
       created_at: expense.createdAt,
     };
+    if (this.organizationId) {
+      record.organization_id = this.organizationId;
+    }
+    return record;
   }
 
   private mapExpenseFromDatabase(row: any): Expense {
@@ -802,7 +841,7 @@ export class SupabaseDataStore implements IDataStore {
   private mapRecurringExpenseToDatabase(expense: RecurringExpense): any {
     // If the ID is already numeric (from database), use it directly; otherwise hash it
     const numericId = /^\d+$/.test(expense.id) ? parseInt(expense.id, 10) : this.stringToNumericId(expense.id);
-    return {
+    const record: any = {
       id: numericId,
       amount: expense.amount,
       currency: expense.currency,
@@ -812,6 +851,10 @@ export class SupabaseDataStore implements IDataStore {
       is_active: expense.isActive,
       created_at: expense.createdAt,
     };
+    if (this.organizationId) {
+      record.organization_id = this.organizationId;
+    }
+    return record;
   }
 
   private mapRecurringExpenseFromDatabase(row: any): RecurringExpense {

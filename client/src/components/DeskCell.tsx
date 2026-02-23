@@ -1,6 +1,7 @@
 import { DeskBooking, DeskStatus } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { cn } from '@/lib/utils';
+import { CheckCircle, CalendarX, User, Sofa } from 'lucide-react';
 
 interface DeskCellProps {
   deskId: string;
@@ -13,19 +14,19 @@ interface DeskCellProps {
 const statusConfig = {
   available: {
     className: 'desk-available',
-    icon: 'check_circle',
+    Icon: CheckCircle,
     iconColor: 'text-green-700',
     label: 'Available'
   },
   booked: {
     className: 'desk-booked',
-    icon: 'event_busy',
+    Icon: CalendarX,
     iconColor: 'text-orange-700',
     label: 'Booked'
   },
   assigned: {
     className: 'desk-assigned',
-    icon: 'person',
+    Icon: User,
     iconColor: 'text-blue-600',
     label: 'Assigned'
   }
@@ -39,6 +40,7 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
   const isBooked = status === 'booked' && booking?.personName;
   const isAssigned = status === 'assigned' && booking?.personName;
   const hasBooking = isBooked || isAssigned;
+  const StatusIcon = config.Icon;
 
   // For weekends with no booking, show weekend indicator
   if (isWeekend && !hasBooking) {
@@ -47,9 +49,7 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
         className="desk-cell rounded-lg p-1 sm:p-2 min-h-[60px] sm:min-h-[80px] bg-gray-100 cursor-not-allowed flex flex-col items-center justify-center text-center"
         style={{ pointerEvents: 'none' }}
       >
-        <span className="material-icon text-sm text-gray-400">
-          weekend
-        </span>
+        <Sofa className="h-4 w-4 text-gray-400" />
         <div className="text-xs font-medium mt-1 text-gray-400">
           Weekend
         </div>
@@ -69,10 +69,8 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
       onContextMenu={(e) => !isWeekend && onClick(e)}
       style={{ pointerEvents: isWeekend ? 'none' : 'auto' }}
     >
-      <span className={cn('material-icon text-sm', config.iconColor)}>
-        {config.icon}
-      </span>
-      
+      <StatusIcon className={cn('h-4 w-4', config.iconColor)} />
+
       {hasBooking ? (
         <div className="mt-1">
           <div className={cn('text-xs font-semibold', config.iconColor)}>

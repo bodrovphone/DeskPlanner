@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   root: path.resolve(__dirname, "client"),
-  base: "/DeskPlanner/",
+  base: process.env.VITE_BASE_PATH || "/DeskPlanner/",
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,

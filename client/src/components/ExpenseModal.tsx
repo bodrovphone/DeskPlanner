@@ -9,6 +9,7 @@ import { Expense, ExpenseCategory, Currency } from '@shared/schema';
 import { currencySymbols, getCurrency } from '@/lib/settings';
 import { useSaveExpense } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
+import { Receipt, Loader2, Check, Home, Coffee, Wifi, Zap, Calculator } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -108,7 +109,7 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-red-600">receipt_long</span>
+            <Receipt className="h-5 w-5 text-red-600" />
             {expense ? 'Edit Expense' : 'Add Expense'}
           </DialogTitle>
         </DialogHeader>
@@ -140,31 +141,31 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
               <SelectContent>
                 <SelectItem value="rent">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-purple-600 text-sm">home</span>
+                    <Home className="h-4 w-4 text-purple-600" />
                     <span>Rent</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="supplies">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-green-600 text-sm">local_cafe</span>
+                    <Coffee className="h-4 w-4 text-green-600" />
                     <span>Supplies (coffee, tea, water, etc.)</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="internet">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-blue-600 text-sm">wifi</span>
+                    <Wifi className="h-4 w-4 text-blue-600" />
                     <span>Internet</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="bills">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-yellow-600 text-sm">bolt</span>
+                    <Zap className="h-4 w-4 text-yellow-600" />
                     <span>Bills (electricity, water)</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="accountant">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-indigo-600 text-sm">calculate</span>
+                    <Calculator className="h-4 w-4 text-indigo-600" />
                     <span>Accountant</span>
                   </div>
                 </SelectItem>
@@ -222,12 +223,12 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
           >
             {isLoading ? (
               <>
-                <span className="material-icon text-sm mr-2 animate-spin">hourglass_empty</span>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
               <>
-                <span className="material-icon text-sm mr-2">check</span>
+                <Check className="h-4 w-4 mr-2" />
                 {expense ? 'Update' : 'Add'} Expense
               </>
             )}

@@ -1,0 +1,3 @@
+-- Migration: Keep BGN in DB constraints for historical data, but UI no longer offers it
+-- No database changes needed - BGN stays valid in constraints from the previous migration
+-- This file is intentionally empty as the change is UI-only

@@ -1,6 +1,5 @@
 import { DeskBooking, MonthlyStats, Currency } from '@shared/schema';
-
-export const DESK_COUNT = 8; // 2 rooms × 4 desks
+import { DESK_COUNT } from './deskConfig';
 
 export function isWeekday(date: Date): boolean {
   const dayOfWeek = date.getDay();

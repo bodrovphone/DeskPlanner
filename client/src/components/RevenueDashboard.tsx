@@ -9,7 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Expense, ExpenseCategory } from '@shared/schema';
 import ExpenseModal from './ExpenseModal';
 import RecurringExpenseModal from './RecurringExpenseModal';
-import { ChevronDown, ChevronUp, Plus, Settings, Trash2, Edit2 } from 'lucide-react';
+import {
+  ChevronDown, ChevronUp, Plus, Settings, Trash2, Edit2,
+  TrendingUp, TrendingDown, Banknote, Receipt, Armchair, BarChart3,
+  Home, Coffee, Wifi, Zap, Calculator
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface RevenueDashboardProps {
@@ -27,12 +31,12 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   accountant: 'Accountant',
 };
 
-const categoryIcons: Record<ExpenseCategory, { icon: string; color: string }> = {
-  rent: { icon: 'home', color: 'text-purple-600' },
-  supplies: { icon: 'local_cafe', color: 'text-green-600' },
-  internet: { icon: 'wifi', color: 'text-blue-600' },
-  bills: { icon: 'bolt', color: 'text-yellow-600' },
-  accountant: { icon: 'calculate', color: 'text-indigo-600' },
+const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  rent: { Icon: Home, color: 'text-purple-600' },
+  supplies: { Icon: Coffee, color: 'text-green-600' },
+  internet: { Icon: Wifi, color: 'text-blue-600' },
+  bills: { Icon: Zap, color: 'text-yellow-600' },
+  accountant: { Icon: Calculator, color: 'text-indigo-600' },
 };
 
 export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate, endDate }: RevenueDashboardProps) {
@@ -190,9 +194,11 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                     : 'bg-red-50 border-red-100'
                 }`}>
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <span className={`material-icon text-base sm:text-xl ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {netProfit >= 0 ? 'trending_up' : 'trending_down'}
-                    </span>
+                    {netProfit >= 0 ? (
+                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                    )}
                     <span className="text-xs sm:text-sm text-gray-600">Net Profit</span>
                   </div>
                   <div className={`text-lg sm:text-2xl font-bold mt-1 ${
@@ -208,7 +214,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 {/* Total Revenue */}
                 <div className="p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-100">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="material-icon text-yellow-600 text-base sm:text-xl">payments</span>
+                    <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                     <span className="text-xs sm:text-sm text-gray-600">Revenue</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-yellow-600 mt-1">
@@ -219,7 +225,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 {/* Total Expenses */}
                 <div className="p-3 sm:p-4 bg-red-50 rounded-lg border border-red-100">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="material-icon text-red-600 text-base sm:text-xl">receipt_long</span>
+                    <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                     <span className="text-xs sm:text-sm text-gray-600">Expenses</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-red-600 mt-1">
@@ -231,7 +237,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 {/* Occupancy Rate */}
                 <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-100">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="material-icon text-purple-600 text-base sm:text-xl">event_seat</span>
+                    <Armchair className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                     <span className="text-xs sm:text-sm text-gray-600">Occupancy</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-purple-600 mt-1">
@@ -245,7 +251,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 {/* Revenue per Occupied Day */}
                 <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 col-span-2 md:col-span-1">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="material-icon text-teal-600 text-base sm:text-xl">analytics</span>
+                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
                     <span className="text-xs sm:text-sm text-gray-600">Avg/Day</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">
@@ -271,7 +277,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                     onClick={() => setIsExpensesExpanded(!isExpensesExpanded)}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-icon text-red-600 text-base sm:text-xl">receipt_long</span>
+                      <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                       <span className="font-medium text-gray-900 text-sm sm:text-base">
                         Expenses
                       </span>
@@ -286,59 +292,60 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
 
                   {isExpensesExpanded && (
                     <div className="border-t divide-y">
-                      {expenses.map((expense) => (
-                        <div
-                          key={expense.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50 gap-2"
-                        >
-                          <div className="flex items-start sm:items-center gap-2 sm:gap-3">
-                            <span className={`material-icon ${categoryIcons[expense.category].color} text-base sm:text-xl`}>
-                              {categoryIcons[expense.category].icon}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                <span className="font-medium text-gray-900 text-sm">
-                                  {formatExpenseDate(expense.date)}
-                                </span>
-                                <span className="text-gray-600 text-sm">
-                                  {categoryLabels[expense.category]}
-                                </span>
-                                {expense.isRecurring && (
-                                  <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">
-                                    Auto
+                      {expenses.map((expense) => {
+                        const { Icon: CategoryIcon, color } = categoryIcons[expense.category];
+                        return (
+                          <div
+                            key={expense.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50 gap-2"
+                          >
+                            <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                              <CategoryIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${color}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                  <span className="font-medium text-gray-900 text-sm">
+                                    {formatExpenseDate(expense.date)}
                                   </span>
+                                  <span className="text-gray-600 text-sm">
+                                    {categoryLabels[expense.category]}
+                                  </span>
+                                  {expense.isRecurring && (
+                                    <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">
+                                      Auto
+                                    </span>
+                                  )}
+                                </div>
+                                {expense.description && (
+                                  <div className="text-xs sm:text-sm text-gray-500 truncate">{expense.description}</div>
                                 )}
                               </div>
-                              {expense.description && (
-                                <div className="text-xs sm:text-sm text-gray-500 truncate">{expense.description}</div>
-                              )}
+                            </div>
+                            <div className="flex items-center justify-between sm:justify-end gap-2 pl-6 sm:pl-0">
+                              <span className="font-bold text-red-600 text-sm sm:text-base">
+                                {currencySymbol}{expense.amount.toFixed(2)}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditExpense(expense)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between sm:justify-end gap-2 pl-6 sm:pl-0">
-                            <span className="font-bold text-red-600 text-sm sm:text-base">
-                              {currencySymbol}{expense.amount.toFixed(2)}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditExpense(expense)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                              >
-                                <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteExpense(expense.id)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

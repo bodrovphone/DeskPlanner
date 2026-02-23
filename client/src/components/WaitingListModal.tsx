@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { WaitingListEntry } from '@shared/schema';
+import { UserPlus, Plus } from 'lucide-react';
 
 interface WaitingListModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function WaitingListModal({
   const handleSave = () => {
     const trimmedName = name.trim();
     const trimmedDates = preferredDates.trim();
-    
+
     if (trimmedName && trimmedDates) {
       onSave({
         name: trimmedName,
@@ -33,7 +34,7 @@ export default function WaitingListModal({
         contactInfo: contactInfo.trim() || undefined,
         notes: notes.trim() || undefined,
       });
-      
+
       // Reset form
       setName('');
       setPreferredDates('');
@@ -54,11 +55,11 @@ export default function WaitingListModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-blue-600">person_add</span>
+            <UserPlus className="h-5 w-5 text-blue-600" />
             Add to Waiting List
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div>
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -120,17 +121,17 @@ export default function WaitingListModal({
             />
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3 mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={!name.trim() || !preferredDates.trim()}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            <span className="material-icon text-sm mr-2">add</span>
+            <Plus className="h-4 w-4 mr-2" />
             Add to List
           </Button>
         </div>

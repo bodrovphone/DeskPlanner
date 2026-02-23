@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
-import { DESKS } from '@/lib/localStorage';
+import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
 import { currencySymbols } from '@/lib/settings';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check } from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -51,12 +52,12 @@ export default function BookingModal({
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || '8');
       setStatus(booking?.status || 'assigned');
-      
+
       // Handle date logic more carefully
       if (booking) {
         // For existing bookings, check if it's a single-day or multi-day booking
         const isSingleDay = booking.startDate === booking.endDate;
-        
+
         if (isSingleDay) {
           // Single-day booking: use the clicked date for both start and end
           setStartDate(date);
@@ -71,7 +72,7 @@ export default function BookingModal({
         setStartDate(date);
         setEndDate(date);
       }
-      
+
       setConflictError('');
     }
   }, [isOpen, booking, date]);
@@ -80,7 +81,7 @@ export default function BookingModal({
     const trimmedName = personName.trim();
     const trimmedTitle = title.trim();
     const parsedPrice = parseFloat(price);
-    
+
     if (trimmedName && parsedPrice >= 0 && startDate && endDate) {
       try {
         setIsLoading(true);
@@ -116,18 +117,18 @@ export default function BookingModal({
   };
 
   const desk = DESKS.find(d => d.id === deskId);
-  
+
   // Safely format the date
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Invalid Date';
-    
+
     try {
       // Ensure the date string is in YYYY-MM-DD format
       const parsedDate = new Date(dateStr + 'T00:00:00');
       if (isNaN(parsedDate.getTime())) {
         return dateStr; // Return original string if parsing fails
       }
-      
+
       return parsedDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -139,10 +140,10 @@ export default function BookingModal({
       return dateStr; // Return original string if error
     }
   };
-  
+
   const formattedDate = formatDate(date);
 
-  const isValidForm = personName.trim() && 
+  const isValidForm = personName.trim() &&
                      price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0 &&
                      startDate && endDate && startDate <= endDate;
 
@@ -151,11 +152,11 @@ export default function BookingModal({
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-blue-600">event_seat</span>
+            <Armchair className="h-5 w-5 text-blue-600" />
             Book Desk
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <Label className="text-sm font-medium text-blue-900">Desk Information</Label>
@@ -163,7 +164,7 @@ export default function BookingModal({
               {desk?.label} - {formattedDate}
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
@@ -240,7 +241,7 @@ export default function BookingModal({
               <SelectContent>
                 <SelectItem value="booked">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-orange-600 text-sm">event_busy</span>
+                    <CalendarX className="h-4 w-4 text-orange-600" />
                     <div>
                       <div className="font-medium">Booked</div>
                       <div className="text-xs text-gray-500">Reserved but not paid</div>
@@ -249,7 +250,7 @@ export default function BookingModal({
                 </SelectItem>
                 <SelectItem value="assigned">
                   <div className="flex items-center gap-2">
-                    <span className="material-icon text-blue-600 text-sm">person</span>
+                    <User className="h-4 w-4 text-blue-600" />
                     <div>
                       <div className="font-medium">Assigned (Paid)</div>
                       <div className="text-xs text-gray-500">Paid and confirmed</div>
@@ -291,7 +292,7 @@ export default function BookingModal({
           {conflictError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-start">
-                <span className="material-icon text-red-500 text-lg mr-2 mt-0.5">error</span>
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <h4 className="text-sm font-medium text-red-800">Booking Conflict</h4>
                   <p className="text-sm text-red-700 mt-1 whitespace-pre-line">{conflictError}</p>
@@ -300,30 +301,30 @@ export default function BookingModal({
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-end space-x-3 mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={!isValidForm || isLoading}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? (
               <>
-                <span className="material-icon text-sm mr-2 animate-spin">hourglass_empty</span>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
               <>
-                <span className="material-icon text-sm mr-2">check</span>
+                <Check className="h-4 w-4 mr-2" />
                 Book Desk
               </>
             )}
           </Button>
         </div>
-        
+
         <div className="text-xs text-gray-500 mt-2">
           Tip: Press Ctrl+Enter to save quickly
         </div>

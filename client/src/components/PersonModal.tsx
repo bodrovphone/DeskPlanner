@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DeskBooking } from '@shared/schema';
-import { DESKS } from '@/lib/localStorage';
+import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
+import { User } from 'lucide-react';
 
 interface PersonModalProps {
   isOpen: boolean;
@@ -59,11 +60,11 @@ export default function PersonModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-blue-600">person</span>
+            <User className="h-5 w-5 text-blue-600" />
             Assign Person to Desk
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-gray-700">Desk Information</Label>
@@ -71,7 +72,7 @@ export default function PersonModal({
               {desk?.label} - {formattedDate}
             </p>
           </div>
-          
+
           <div>
             <Label htmlFor="personName" className="text-sm font-medium text-gray-700">
               Person Name
@@ -88,12 +89,12 @@ export default function PersonModal({
             />
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3 mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={!personName.trim()}
             className="bg-blue-600 hover:bg-blue-700"

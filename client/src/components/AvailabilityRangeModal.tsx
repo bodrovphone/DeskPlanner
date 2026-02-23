@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeskStatus } from '@shared/schema';
-import { DESKS } from '@/lib/localStorage';
+import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
 import { formatDateRange } from '@/lib/dateUtils';
+import { CalendarRange } from 'lucide-react';
 import dayjs from 'dayjs';
 
 interface AvailabilityRangeModalProps {
@@ -39,8 +40,8 @@ export default function AvailabilityRangeModal({
   }, [isOpen]);
 
   const handleDeskToggle = (deskId: string, checked: boolean) => {
-    setSelectedDeskIds(prev => 
-      checked 
+    setSelectedDeskIds(prev =>
+      checked
         ? [...prev, deskId]
         : prev.filter(id => id !== deskId)
     );
@@ -67,7 +68,7 @@ export default function AvailabilityRangeModal({
     onClose();
   };
 
-  const isValidForm = startDate && endDate && selectedDeskIds.length > 0 && 
+  const isValidForm = startDate && endDate && selectedDeskIds.length > 0 &&
                      (dayjs(startDate).isSame(dayjs(endDate)) || dayjs(startDate).isBefore(dayjs(endDate)));
 
   const dateRangeText = startDate && endDate ? formatDateRange(startDate, endDate) : '';
@@ -77,11 +78,11 @@ export default function AvailabilityRangeModal({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="material-icon text-blue-600">date_range</span>
+            <CalendarRange className="h-5 w-5 text-blue-600" />
             Set Desk Availability Range
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -163,12 +164,12 @@ export default function AvailabilityRangeModal({
             </Select>
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3 mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleApply}
             disabled={!isValidForm}
             className="bg-blue-600 hover:bg-blue-700"

@@ -1,4 +1,5 @@
 import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense } from '@/../../shared/schema';
+import { DESK_COUNT } from './deskConfig';
 
 /**
  * Abstract data store interface for desk bookings
@@ -235,7 +236,7 @@ export class LocalStorageDataStore implements IDataStore {
     booked: number;
   }> {
     const data = this.getStorageData();
-    const DESK_COUNT = 8; // 2 rooms × 4 desks
+    // Uses DESK_COUNT from deskConfig
     const totalSlots = DESK_COUNT * dates.length;
 
     let assigned = 0;
@@ -260,7 +261,7 @@ export class LocalStorageDataStore implements IDataStore {
 
   async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
     const data = this.getStorageData();
-    const DESK_COUNT = 8; // 2 rooms × 4 desks
+    // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
 
@@ -358,7 +359,7 @@ export class LocalStorageDataStore implements IDataStore {
 
   async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
     const data = this.getStorageData();
-    const DESK_COUNT = 8;
+    // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
 
@@ -593,56 +594,26 @@ export class LocalStorageDataStore implements IDataStore {
   }
 }
 
-// Import MongoDB implementation
-import { MongoDataStore } from './mongoDataStore';
-import { MongoDBDataAPIClient } from './mongodbDataApi';
-
-// Import Supabase implementation
 import { SupabaseDataStore } from './supabaseDataStore';
-// Import Hybrid implementation
-import { HybridDataStore } from './hybridDataStore';
 
-// Data store factory - easily switch between implementations
-export function createDataStore(type?: 'localStorage' | 'mongodb' | 'supabase' | 'hybrid'): IDataStore {
-  // Determine storage type from environment or parameter
-  const storageType = type || (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'mongodb' | 'supabase' | 'hybrid') || 'localStorage';
-  
-  console.log('DataStore factory - Storage type:', storageType);
-  console.log('VITE_STORAGE_TYPE from env:', import.meta.env.VITE_STORAGE_TYPE);
-  
+export function createDataStore(type?: 'localStorage' | 'supabase', organizationId?: string): IDataStore {
+  const storageType = type || (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'supabase') || 'localStorage';
+
   switch (storageType) {
     case 'localStorage':
-      console.log('Using LocalStorage for data persistence');
       return new LocalStorageDataStore();
-    case 'mongodb':
-      // Check if MongoDB is configured before trying to use it
-      const client = new MongoDBDataAPIClient();
-      if (!client.isConfigured()) {
-        console.warn('MongoDB not configured, falling back to localStorage');
-        return new LocalStorageDataStore();
-      }
-      console.log('Using MongoDB Data API for data persistence');
-      return new MongoDataStore();
     case 'supabase':
       try {
-        console.log('Attempting to initialize Supabase...');
-        console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-        console.log('VITE_SUPABASE_ANON_KEY present:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-        
-        const supabaseStore = new SupabaseDataStore();
+        const supabaseStore = new SupabaseDataStore(organizationId);
         if (!supabaseStore.isConfigured()) {
           console.warn('Supabase not configured, falling back to localStorage');
           return new LocalStorageDataStore();
         }
-        console.log('Using Supabase for data persistence');
         return supabaseStore;
       } catch (error) {
         console.error('Error initializing Supabase, falling back to localStorage:', error);
         return new LocalStorageDataStore();
       }
-    case 'hybrid':
-      console.log('Using Hybrid storage (localStorage + Supabase sync)');
-      return new HybridDataStore();
     default:
       console.warn(`Unknown data store type: ${storageType}, using localStorage`);
       return new LocalStorageDataStore();

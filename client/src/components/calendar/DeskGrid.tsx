@@ -1,0 +1,133 @@
+import { forwardRef } from 'react';
+import { Card } from '@/components/ui/card';
+import DeskCell from '@/components/DeskCell';
+import { DeskBooking, Desk } from '@shared/schema';
+
+interface DateInfo {
+  dateString: string;
+  dayName: string;
+  fullDate: string;
+}
+
+interface DeskGridProps {
+  desks: Desk[];
+  currentDates: DateInfo[];
+  bookings: Record<string, DeskBooking>;
+  onDeskClick: (deskId: string, date: string, event?: React.MouseEvent) => void;
+}
+
+function isToday(dateString: string): boolean {
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
+  return dateString === todayString;
+}
+
+function isWeekend(dateString: string): boolean {
+  const date = new Date(dateString + 'T00:00:00');
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
+const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
+  ({ desks, currentDates, bookings, onDeskClick }, ref) => {
+    const getBookingForCell = (deskId: string, date: string): DeskBooking | null => {
+      const key = `${deskId}-${date}`;
+      return bookings[key] || null;
+    };
+
+    return (
+      <Card className="overflow-hidden">
+        <div ref={ref} className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+              <tr>
+                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-32 sticky left-0 bg-gray-50 z-20">
+                  <span className="hidden sm:inline">Desk</span>
+                  <span className="sm:hidden">D</span>
+                </th>
+                {currentDates.map((day) => {
+                  const isTodayColumn = isToday(day.dateString);
+                  const isWeekendColumn = isWeekend(day.dateString);
+                  return (
+                    <th
+                      key={day.dateString}
+                      className={`px-2 sm:px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[100px] sm:min-w-[120px] ${
+                        isTodayColumn
+                          ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300'
+                          : isWeekendColumn
+                          ? 'bg-gray-100 text-gray-400'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className={`font-semibold ${
+                          isTodayColumn ? 'text-blue-900' : isWeekendColumn ? 'text-gray-400' : 'text-gray-900'
+                        }`}>
+                          {day.dayName}
+                        </span>
+                        <span className="text-xs">{day.fullDate}</span>
+                        {isTodayColumn && (
+                          <span className="text-xs font-medium text-blue-600 mt-1">TODAY</span>
+                        )}
+                        {isWeekendColumn && (
+                          <span className="text-xs font-medium text-gray-400 mt-1">WEEKEND</span>
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {desks.map((desk) => (
+                <tr key={desk.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-2 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                    <div className="flex flex-col">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                        <span className="sm:hidden">{desk.number}</span>
+                        <span className="hidden sm:inline">Desk {desk.number}</span>
+                      </span>
+                      <span className={`text-[10px] sm:text-xs ${
+                        desk.room === 1 ? 'text-blue-600' : 'text-pink-600'
+                      }`}>
+                        <span className="sm:hidden">R{desk.room}</span>
+                        <span className="hidden sm:inline">Room {desk.room}</span>
+                      </span>
+                    </div>
+                  </td>
+                  {currentDates.map((day) => {
+                    const isTodayColumn = isToday(day.dateString);
+                    const isWeekendColumn = isWeekend(day.dateString);
+                    return (
+                      <td
+                        key={day.dateString}
+                        className={`px-1 sm:px-2 py-2 sm:py-3 text-center ${
+                          isTodayColumn
+                            ? 'bg-blue-50 border-l-2 border-r-2 border-blue-300'
+                            : isWeekendColumn
+                            ? 'bg-gray-100'
+                            : ''
+                        }`}
+                      >
+                        <DeskCell
+                          deskId={desk.id}
+                          date={day.dateString}
+                          booking={getBookingForCell(desk.id, day.dateString)}
+                          onClick={(e) => onDeskClick(desk.id, day.dateString, e)}
+                          isWeekend={isWeekendColumn}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+  }
+);
+
+DeskGrid.displayName = 'DeskGrid';
+export default DeskGrid;

@@ -55,8 +55,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await supabaseClient.auth.signOut();
       setUser(null);
-      // Clear any cached data
-      window.location.reload();
     } catch (error) {
       console.error('Error signing out:', error);
     }

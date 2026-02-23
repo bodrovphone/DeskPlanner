@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Currency } from '@shared/schema';
-import { getCurrency, setCurrency, currencySymbols, currencyLabels } from '@/lib/settings';
+import { getCurrency, setCurrency, currencySymbols, activeCurrencies } from '@/lib/settings';
 
 interface CurrencySelectorProps {
   onCurrencyChange?: (currency: Currency) => void;
@@ -28,18 +28,14 @@ export default function CurrencySelector({ onCurrencyChange }: CurrencySelectorP
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="USD">
-            <div className="flex items-center gap-2">
-              <span>{currencySymbols.USD}</span>
-              <span>USD</span>
-            </div>
-          </SelectItem>
-          <SelectItem value="EUR">
-            <div className="flex items-center gap-2">
-              <span>{currencySymbols.EUR}</span>
-              <span>EUR</span>
-            </div>
-          </SelectItem>
+          {activeCurrencies.map(c => (
+            <SelectItem key={c} value={c}>
+              <div className="flex items-center gap-2">
+                <span>{currencySymbols[c]}</span>
+                <span>{c}</span>
+              </div>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

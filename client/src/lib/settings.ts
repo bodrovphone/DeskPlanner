@@ -48,9 +48,16 @@ export function setCurrency(currency: Currency): void {
 export const currencySymbols: Record<Currency, string> = {
   USD: '$',
   EUR: '€',
+  GBP: '£',
+  BGN: 'лв',
 };
 
 export const currencyLabels: Record<Currency, string> = {
   USD: 'US Dollar',
   EUR: 'Euro',
+  GBP: 'British Pound',
+  BGN: 'Bulgarian Lev',
 };
+
+// Currencies available for new bookings/expenses (excludes legacy currencies)
+export const activeCurrencies: Currency[] = ['USD', 'EUR', 'GBP'];

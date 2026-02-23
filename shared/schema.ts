@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const deskStatusSchema = z.enum(["available", "booked", "assigned"]);
 
-export const currencySchema = z.enum(["USD", "EUR"]);
+export const currencySchema = z.enum(["USD", "EUR", "GBP", "BGN"]);
+
+export const orgMemberRoleSchema = z.enum(["owner", "admin", "member"]);
 
 export const deskBookingSchema = z.object({
   id: z.string(),
@@ -12,18 +14,20 @@ export const deskBookingSchema = z.object({
   endDate: z.string(), // YYYY-MM-DD format
   status: deskStatusSchema,
   personName: z.string().optional(),
-  title: z.string().optional(), // Booking title/description
-  price: z.number().optional(), // Daily price for the booking
-  currency: currencySchema.optional(), // Currency for the price
+  title: z.string().optional(),
+  price: z.number().optional(),
+  currency: currencySchema.optional(),
+  organizationId: z.string().optional(),
   createdAt: z.string(),
 });
 
 export const waitingListEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
-  preferredDates: z.string(), // Comma-separated date ranges or specific dates
-  contactInfo: z.string().optional(), // Phone or email
+  preferredDates: z.string(),
+  contactInfo: z.string().optional(),
   notes: z.string().optional(),
+  organizationId: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -47,6 +51,45 @@ export const bulkAvailabilitySchema = z.object({
   status: deskStatusSchema,
 });
 
+// Multi-tenancy schemas
+export const organizationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  roomsCount: z.number().default(2),
+  desksPerRoom: z.number().default(4),
+  currency: currencySchema.default("EUR"),
+  timezone: z.string().default("Europe/Sofia"),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const organizationMemberSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  userId: z.string(),
+  role: orgMemberRoleSchema,
+  createdAt: z.string(),
+});
+
+export const roomSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  name: z.string(),
+  sortOrder: z.number().default(0),
+  createdAt: z.string(),
+});
+
+export const orgDeskSchema = z.object({
+  id: z.string(),
+  roomId: z.string(),
+  organizationId: z.string(),
+  label: z.string(),
+  deskId: z.string(), // legacy desk_id like "room1-desk1"
+  sortOrder: z.number().default(0),
+  createdAt: z.string(),
+});
+
 export type DeskStatus = z.infer<typeof deskStatusSchema>;
 export type DeskBooking = z.infer<typeof deskBookingSchema>;
 export type Desk = z.infer<typeof deskSchema>;
@@ -54,6 +97,11 @@ export type BulkAvailability = z.infer<typeof bulkAvailabilitySchema>;
 export type Currency = z.infer<typeof currencySchema>;
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 export type WaitingListEntry = z.infer<typeof waitingListEntrySchema>;
+export type Organization = z.infer<typeof organizationSchema>;
+export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
+export type Room = z.infer<typeof roomSchema>;
+export type OrgDesk = z.infer<typeof orgDeskSchema>;
+export type OrgMemberRole = z.infer<typeof orgMemberRoleSchema>;
 
 export interface MonthlyStats {
   totalRevenue: number;
@@ -78,6 +126,7 @@ export const expenseSchema = z.object({
   description: z.string().optional(),
   isRecurring: z.boolean().default(false),
   recurringExpenseId: z.string().optional(),
+  organizationId: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -89,6 +138,7 @@ export const recurringExpenseSchema = z.object({
   description: z.string().optional(),
   dayOfMonth: z.number().min(1).max(28).default(1),
   isActive: z.boolean().default(true),
+  organizationId: z.string().optional(),
   createdAt: z.string(),
 });
 
