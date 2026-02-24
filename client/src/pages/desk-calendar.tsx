@@ -27,7 +27,9 @@ export default function DeskCalendar() {
   const { legacyDesks, currentOrg } = useOrganization();
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
 
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>(
+    () => window.innerWidth < 640 ? 'week' : 'month'
+  );
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<{

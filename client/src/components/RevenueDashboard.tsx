@@ -76,26 +76,6 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
   // Calculate net profit
   const netProfit = (stats?.totalRevenue || 0) - totalExpenses;
 
-  // Owner's desk payment (€100/month, prorated for weekly view)
-  const OWNER_MONTHLY_PAYMENT = 100;
-  const ownerPayment = isWeekView && startDate && endDate
-    ? (() => {
-        // Calculate business days in the week
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        let weekBusinessDays = 0;
-        const current = new Date(start);
-        while (current <= end) {
-          const day = current.getDay();
-          if (day !== 0 && day !== 6) weekBusinessDays++;
-          current.setDate(current.getDate() + 1);
-        }
-        // Approximate business days in a month (~22)
-        return (weekBusinessDays / 22) * OWNER_MONTHLY_PAYMENT;
-      })()
-    : OWNER_MONTHLY_PAYMENT;
-  const optimisticNetProfit = netProfit + ownerPayment;
-
   // Format period label based on view mode
   const periodLabel = isWeekView && startDate && endDate
     ? `${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
@@ -205,9 +185,6 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                     netProfit >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {formatCurrency(netProfit)}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {formatCurrency(optimisticNetProfit)} (if I paid)
                   </div>
                 </div>
 
