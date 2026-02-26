@@ -6,7 +6,7 @@
     <script>
       // GitHub Pages SPA redirect
       // Converts the path to a query string so index.html can handle it
-      var pathSegmentsToKeep = 1; // Keep /DeskPlanner/ prefix
+      var pathSegmentsToKeep = 0; // Custom domain, no subdirectory prefix
       var l = window.location;
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
