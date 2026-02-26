@@ -31,7 +31,7 @@ export default function DashboardLayout() {
         <div className="p-4 border-b">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-6 w-6 text-blue-600" />
-            <span className="font-bold text-lg">DeskPlanner</span>
+            <span className="font-bold text-lg">OhMyDesk</span>
           </div>
           {currentOrg && (
             <p className="text-sm text-gray-500 mt-1 truncate">{currentOrg.name}</p>
@@ -79,7 +79,7 @@ export default function DashboardLayout() {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-blue-600" />
-            <span className="font-bold">DeskPlanner</span>
+            <span className="font-bold">OhMyDesk</span>
           </div>
           <Button
             variant="ghost"

@@ -95,7 +95,7 @@ const steps = [
 ];
 
 const pricingTiers = [
-  { name: 'Free', price: '0', period: '/mo', desc: 'Try DeskPlanner free for 3 months.', features: ['Up to 3 rooms', 'Up to 18 desks', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
+  { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 3 rooms', 'Up to 18 desks', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '29', period: '/mo', desc: 'For growing spaces that need more.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Coming Soon', href: '#', highlighted: true, disabled: true },
   { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true },
 ];
@@ -306,7 +306,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace', fontSize: 18, fontWeight: 700, color: T.green, letterSpacing: -0.5 }}>
-              <span style={{ opacity: 0.5 }}>&gt;</span> DeskPlanner<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
+              <span style={{ opacity: 0.5 }}>&gt;</span> OhMyDesk<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -528,10 +528,10 @@ export default function LandingPage() {
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: '40px 0' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 14, color: T.textMuted }}>
-            <span style={{ opacity: 0.4 }}>&gt;</span> DeskPlanner<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
+            <span style={{ opacity: 0.4 }}>&gt;</span> OhMyDesk<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
           </span>
           <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted }}>
-            &copy; {new Date().getFullYear()} DeskPlanner. All rights reserved.
+            &copy; {new Date().getFullYear()} OhMyDesk. All rights reserved.
           </span>
         </div>
       </footer>
@@ -726,7 +726,7 @@ function CtaSection() {
         Ready to stop juggling spreadsheets?
       </h2>
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-        Join hundreds of coworking operators who manage their desks with DeskPlanner. Free forever for small spaces.
+        Join hundreds of coworking operators who manage their desks with OhMyDesk. Free forever for small spaces.
       </p>
       <Link to="/signup" style={{ textDecoration: 'none' }}>
         <button style={{

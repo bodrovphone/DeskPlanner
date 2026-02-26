@@ -43,7 +43,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">DeskPlanner</CardTitle>
+          <CardTitle className="text-2xl text-center">OhMyDesk</CardTitle>
           <CardDescription className="text-center">
             Sign in to manage your coworking desk bookings
           </CardDescription>
