@@ -60,6 +60,7 @@ export const organizationSchema = z.object({
   roomsCount: z.number().default(2),
   desksPerRoom: z.number().default(4),
   currency: currencySchema.default("EUR"),
+  defaultPricePerDay: z.number().default(8),
   timezone: z.string().default("Europe/Sofia"),
   createdAt: z.string(),
   updatedAt: z.string(),

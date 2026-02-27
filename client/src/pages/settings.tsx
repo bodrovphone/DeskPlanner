@@ -80,6 +80,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState(currentOrg?.name || '');
+  const [defaultPrice, setDefaultPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
   const renameRoom = useRenameRoom();
   const renameDesk = useRenameDesk();
 
@@ -89,7 +90,7 @@ export default function SettingsPage() {
     try {
       const { error } = await supabaseClient
         .from('organizations')
-        .update({ name: orgName })
+        .update({ name: orgName, default_price_per_day: parseFloat(defaultPrice) || 8 })
         .eq('id', currentOrg.id);
 
       if (error) throw error;
@@ -155,6 +156,17 @@ export default function SettingsPage() {
             <div>
               <Label>Currency</Label>
               <Input value={currentOrg.currency} disabled />
+            </div>
+            <div>
+              <Label htmlFor="defaultPrice">Default price per desk/day ({currentOrg.currency})</Label>
+              <Input
+                id="defaultPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                value={defaultPrice}
+                onChange={(e) => setDefaultPrice(e.target.value)}
+              />
             </div>
             <Button onClick={handleSave} disabled={saving}>
               <Save className="mr-2 h-4 w-4" />

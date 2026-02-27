@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, LayoutGrid, Menu, X, Lightbulb } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, LayoutGrid, Menu, X, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
@@ -18,6 +18,7 @@ export default function DashboardLayout() {
   const { currentOrg } = useOrganization();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleSignOut = async () => {
     await signOut();
@@ -27,49 +28,77 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-64 bg-white border-r">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-blue-600" />
-            <span className="font-bold text-lg">OhMyDesk</span>
-          </div>
-          {currentOrg && (
-            <p className="text-sm text-gray-500 mt-1 truncate">{currentOrg.name}</p>
+      <aside
+        className={`hidden lg:flex lg:flex-col bg-white border-r transition-all duration-200 ${
+          sidebarOpen ? 'w-64' : 'w-16'
+        }`}
+      >
+        <div className="p-4 border-b flex items-center justify-between">
+          {sidebarOpen ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                <LayoutGrid className="h-6 w-6 text-blue-600 shrink-0" />
+                <span className="font-bold text-lg truncate">OhMyDesk</span>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="text-gray-400 hover:text-gray-600 shrink-0"
+              >
+                <PanelLeftClose className="h-5 w-5" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="text-gray-400 hover:text-gray-600 mx-auto"
+            >
+              <PanelLeftOpen className="h-5 w-5" />
+            </button>
           )}
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        {sidebarOpen && currentOrg && (
+          <div className="px-4 py-2 border-b">
+            <p className="text-sm text-gray-500 truncate">{currentOrg.name}</p>
+          </div>
+        )}
+
+        <nav className={`flex-1 p-3 space-y-1 ${sidebarOpen ? '' : 'px-2'}`}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              title={sidebarOpen ? undefined : item.label}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-3 ${sidebarOpen ? 'px-3' : 'justify-center px-0'} py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`
               }
             >
-              <item.icon className="h-5 w-5" />
-              {item.label}
+              <item.icon className="h-5 w-5 shrink-0" />
+              {sidebarOpen && item.label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-3 border-t">
-          <div className="px-3 py-2 mb-2">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.user_metadata?.full_name || user?.email}
-            </p>
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-          </div>
+        <div className={`p-3 border-t ${sidebarOpen ? '' : 'px-2'}`}>
+          {sidebarOpen && (
+            <div className="px-3 py-2 mb-2">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.user_metadata?.full_name || user?.email}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            </div>
+          )}
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            title={sidebarOpen ? undefined : 'Sign Out'}
+            className={`flex items-center gap-3 w-full ${sidebarOpen ? 'px-3' : 'justify-center px-0'} py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors`}
           >
-            <LogOut className="h-5 w-5" />
-            Sign Out
+            <LogOut className="h-5 w-5 shrink-0" />
+            {sidebarOpen && 'Sign Out'}
           </button>
         </div>
       </aside>

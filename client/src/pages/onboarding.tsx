@@ -20,7 +20,7 @@ function generateSlug(name: string): string {
     .slice(0, 48);
 }
 
-const STEPS = ['Space Info', 'Rooms & Desks', 'Currency'] as const;
+const STEPS = ['Space Info', 'Rooms & Desks', 'Pricing'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -44,6 +44,7 @@ export default function OnboardingPage() {
   const [desksPerRoom, setDesksPerRoom] = useState(4);
   const [roomNames, setRoomNames] = useState<string[]>(['Room 1', 'Room 2']);
   const [currency, setCurrency] = useState<Currency>('EUR');
+  const [defaultPricePerDay, setDefaultPricePerDay] = useState('8');
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function OnboardingPage() {
         roomsCount,
         desksPerRoom,
         currency,
+        defaultPricePerDay: parseFloat(defaultPricePerDay) || 8,
         roomNames,
       });
       navigate('/app/calendar', { replace: true });
@@ -271,6 +273,21 @@ export default function OnboardingPage() {
                     <div className="text-xs text-gray-500">{currencyLabels[c]}</div>
                   </button>
                 ))}
+              </div>
+
+              <div>
+                <Label htmlFor="defaultPrice">Default price per desk/day ({currencySymbols[currency]})</Label>
+                <Input
+                  id="defaultPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={defaultPricePerDay}
+                  onChange={(e) => setDefaultPricePerDay(e.target.value)}
+                  className="mt-1"
+                  placeholder="8"
+                />
+                <p className="text-xs text-gray-500 mt-1">You can change this later in settings.</p>
               </div>
 
               <div className="flex gap-2">

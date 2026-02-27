@@ -55,11 +55,11 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
 
     return (
       <Card className="overflow-hidden">
-        <div ref={ref} className="overflow-x-auto">
+        <div ref={ref} className="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-30">
               <tr>
-                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 sm:w-32 sticky left-0 bg-gray-50 z-20">
+                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 sm:w-40 sticky left-0 bg-gray-50 z-40">
                   <span className="hidden sm:inline">Desk</span>
                   <span className="sm:hidden">D</span>
                 </th>
@@ -105,7 +105,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                     {/* Room header row */}
                     <tr className={`${bgClass} ${groupIdx > 0 ? 'border-t-4 border-gray-300' : 'border-t border-gray-200'}`}>
                       <td
-                        className={`px-2 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${colorClass} sticky left-0 ${bgClass} z-10`}
+                        className={`px-2 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${colorClass} sticky left-0 ${bgClass} z-10 max-w-[6rem] sm:max-w-[10rem] truncate`}
                       >
                         {group.roomName}
                       </td>
@@ -116,13 +116,13 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                     {/* Desk rows */}
                     {group.desks.map((desk) => (
                       <tr key={desk.id} className="hover:bg-gray-50 transition-colors border-t border-gray-200">
-                        <td className="px-2 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
-                          <div className="flex flex-col">
-                            <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                        <td className="px-2 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200 max-w-[6rem] sm:max-w-[10rem]">
+                          <div className="flex flex-col truncate">
+                            <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                               <span className="sm:hidden">{desk.number}</span>
                               <span className="hidden sm:inline">Desk {desk.number}</span>
                             </span>
-                            <span className={`text-[10px] sm:text-xs text-gray-400`}>
+                            <span className="text-[10px] sm:text-xs text-gray-400 truncate">
                               <span className="sm:hidden">{desk.roomName || `R${desk.room}`}</span>
                               <span className="hidden sm:inline">{desk.roomName || `Room ${desk.room}`}</span>
                             </span>

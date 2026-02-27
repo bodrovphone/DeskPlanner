@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
 import { currencySymbols } from '@/lib/settings';
 import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X } from 'lucide-react';
@@ -39,6 +40,8 @@ export default function BookingModal({
   onSave,
   onDiscard,
 }: BookingModalProps) {
+  const { currentOrg } = useOrganization();
+  const defaultPrice = currentOrg?.defaultPricePerDay ?? 8;
   const [personName, setPersonName] = useState('');
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -53,7 +56,7 @@ export default function BookingModal({
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setTitle(booking?.title || '');
-      setPrice(booking?.price?.toString() || '8');
+      setPrice(booking?.price?.toString() || String(defaultPrice));
       setStatus(booking?.status || 'assigned');
 
       // Handle date logic more carefully
@@ -252,7 +255,10 @@ export default function BookingModal({
             <Label htmlFor="status" className="text-sm font-medium text-gray-700">
               Booking Status *
             </Label>
-            <Select value={status} onValueChange={(value: DeskStatus) => setStatus(value)}>
+            <Select value={status} onValueChange={(value: DeskStatus) => {
+              setStatus(value);
+              if (value === 'booked') setPrice('0');
+            }}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
