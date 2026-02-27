@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WaitingListEntry } from '@shared/schema';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
 import WaitingListModal from './WaitingListModal';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, UserPlus, Users, User, CalendarRange, Mail, StickyNote, Trash2 } from 'lucide-react';
@@ -11,6 +11,7 @@ export default function WaitingList() {
   const [entries, setEntries] = useState<WaitingListEntry[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+  const dataStore = useDataStore();
 
   useEffect(() => {
     loadEntries();

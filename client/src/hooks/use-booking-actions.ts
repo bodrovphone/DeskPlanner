@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
 import { DeskBooking, DeskStatus, Currency, Desk } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,7 @@ export function useBookingActions(
 ) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const dataStore = useDataStore();
 
   const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent) => {
     if (isWeekend(date)) return;
@@ -96,7 +97,7 @@ export function useBookingActions(
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [toast, currentCurrency, queryClient, setSelectedBooking, setIsBookingModalOpen]);
+  }, [toast, currentCurrency, queryClient, setSelectedBooking, setIsBookingModalOpen, dataStore]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;
@@ -172,7 +173,7 @@ export function useBookingActions(
       title: isUpdate ? 'Desk Booking Updated' : 'Desk Booking Created',
       description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
     });
-  }, [selectedBooking, toast, queryClient, currentCurrency]);
+  }, [selectedBooking, toast, queryClient, currentCurrency, dataStore]);
 
   const handlePersonSave = useCallback(async (personName: string) => {
     if (!selectedBooking) return;
@@ -199,7 +200,7 @@ export function useBookingActions(
       title: 'Person Assigned',
       description: `${personName} assigned to desk`,
     });
-  }, [selectedBooking, toast, currentCurrency, queryClient, setSelectedBooking]);
+  }, [selectedBooking, toast, currentCurrency, queryClient, setSelectedBooking, dataStore]);
 
   const handleBulkAvailability = useCallback(async (
     startDate: string,
@@ -251,7 +252,7 @@ export function useBookingActions(
       title: 'Bulk Update Applied',
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,
     });
-  }, [toast, currentCurrency, queryClient]);
+  }, [toast, currentCurrency, queryClient, dataStore]);
 
   const handleExport = useCallback(async () => {
     try {
@@ -284,7 +285,7 @@ export function useBookingActions(
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [toast, dataStore]);
 
   const handleQuickBook = useCallback(async () => {
     if (nextAvailableDates.length === 0) {
@@ -311,7 +312,7 @@ export function useBookingActions(
       description: 'Could not find an available desk',
       variant: 'destructive',
     });
-  }, [nextAvailableDates, toast, setSelectedBooking, setIsBookingModalOpen]);
+  }, [nextAvailableDates, toast, setSelectedBooking, setIsBookingModalOpen, dataStore]);
 
   const handleDiscardBooking = useCallback(async () => {
     if (!selectedBooking) return;
@@ -331,7 +332,7 @@ export function useBookingActions(
       title: 'Booking Discarded',
       description: `Removed booking for ${booking.personName}`,
     });
-  }, [selectedBooking, queryClient, toast]);
+  }, [selectedBooking, queryClient, toast, dataStore]);
 
   return {
     handleDeskClick,

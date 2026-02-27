@@ -186,17 +186,6 @@ export function useCreateOrganization() {
 
       if (deskError) throw deskError;
 
-      // 5. Claim existing data with NULL organization_id for this user
-      // This ensures historical bookings/expenses are preserved when
-      // an existing user goes through onboarding for the first time
-      const tables = ['desk_bookings', 'waiting_list_entries', 'expenses', 'recurring_expenses'];
-      for (const table of tables) {
-        await supabaseClient
-          .from(table)
-          .update({ organization_id: org.id })
-          .is('organization_id', null);
-      }
-
       return mapOrg(org);
     },
     onSuccess: () => {

@@ -190,7 +190,7 @@ export default function OnboardingPage() {
                   <Select value={String(roomsCount)} onValueChange={v => setRoomsCount(Number(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                      {[1, 2, 3, 4].map(n => (
                         <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                       ))}
                     </SelectContent>
@@ -201,7 +201,7 @@ export default function OnboardingPage() {
                   <Select value={String(desksPerRoom)} onValueChange={v => setDesksPerRoom(Number(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12].map(n => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
                         <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                       ))}
                     </SelectContent>

@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
 import { Expense, RecurringExpense } from '@shared/schema';
 
 export function useExpenses(startDate: string, endDate: string) {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['expenses', startDate, endDate],
     queryFn: () => dataStore.getExpenses?.(startDate, endDate) ?? Promise.resolve([]),
@@ -15,6 +16,7 @@ export function useExpenses(startDate: string, endDate: string) {
 }
 
 export function useRecurringExpenses() {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['recurring-expenses'],
     queryFn: () => dataStore.getRecurringExpenses?.() ?? Promise.resolve([]),
@@ -26,6 +28,7 @@ export function useRecurringExpenses() {
 }
 
 export function useSaveExpense() {
+  const dataStore = useDataStore();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -44,6 +47,7 @@ export function useSaveExpense() {
 }
 
 export function useDeleteExpense() {
+  const dataStore = useDataStore();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -62,6 +66,7 @@ export function useDeleteExpense() {
 }
 
 export function useSaveRecurringExpense() {
+  const dataStore = useDataStore();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -78,6 +83,7 @@ export function useSaveRecurringExpense() {
 }
 
 export function useDeleteRecurringExpense() {
+  const dataStore = useDataStore();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -94,6 +100,7 @@ export function useDeleteRecurringExpense() {
 }
 
 export function useGenerateRecurringExpenses() {
+  const dataStore = useDataStore();
   const queryClient = useQueryClient();
 
   return useMutation({

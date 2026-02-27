@@ -95,7 +95,7 @@ const steps = [
 ];
 
 const pricingTiers = [
-  { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 3 rooms', 'Up to 18 desks', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
+  { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '29', period: '/mo', desc: 'For growing spaces that need more.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Coming Soon', href: '#', highlighted: true, disabled: true },
   { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true },
 ];

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
 import { MonthlyStats } from '@shared/schema';
 
 export interface RevenueHistoryEntry {
@@ -10,6 +10,7 @@ export interface RevenueHistoryEntry {
 }
 
 export function useRevenueHistory(monthCount = 6) {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['revenue-history', monthCount],
     queryFn: async (): Promise<RevenueHistoryEntry[]> => {
@@ -51,6 +52,7 @@ export function useRevenueHistory(monthCount = 6) {
 }
 
 export function useMonthlyStats(year: number, month: number) {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['monthly-stats', year, month],
     queryFn: () => dataStore.getMonthlyStats(year, month),
@@ -62,6 +64,7 @@ export function useMonthlyStats(year: number, month: number) {
 }
 
 export function useDateRangeStats(startDate: string, endDate: string) {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['date-range-stats', startDate, endDate],
     queryFn: () => dataStore.getStatsForDateRange(startDate, endDate),

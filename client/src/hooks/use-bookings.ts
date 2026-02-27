@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
 
 export function useBookings(startDate?: string, endDate?: string) {
+  const dataStore = useDataStore();
   // Create a stable query key based on date range
   const dateRangeKey = startDate && endDate ? `${startDate}_${endDate}` : 'all';
 
@@ -18,10 +19,11 @@ export function useBookings(startDate?: string, endDate?: string) {
 }
 
 export function useBookingStats(dates: string[]) {
+  const dataStore = useDataStore();
   // Create a stable query key by sorting dates to avoid duplicate queries
   const sortedDates = [...dates].sort();
   const dateRangeKey = sortedDates.length > 0 ? `${sortedDates[0]}_${sortedDates[sortedDates.length - 1]}_${sortedDates.length}` : 'empty';
-  
+
   return useQuery({
     queryKey: ['desk-stats', dateRangeKey],
     queryFn: () => dataStore.getDeskStats(sortedDates),

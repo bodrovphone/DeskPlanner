@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { dataStore } from '@/lib/dataStore';
+import { useDataStore } from '@/contexts/DataStoreContext';
+import { IDataStore } from '@/lib/dataStore';
 import { DeskBooking } from '@shared/schema';
 
 const DESKS = [
@@ -35,7 +36,7 @@ export interface ExpiringAssignment {
   deskId: string;
 }
 
-async function calculateNextDates() {
+async function calculateNextDates(dataStore: IDataStore) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -160,9 +161,10 @@ async function calculateNextDates() {
 }
 
 export function useNextDates() {
+  const dataStore = useDataStore();
   return useQuery({
     queryKey: ['next-dates'],
-    queryFn: calculateNextDates,
+    queryFn: () => calculateNextDates(dataStore),
     staleTime: 5 * 60 * 1000, // 5 minutes - don't refetch too often
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     refetchOnWindowFocus: false, // Don't refetch on window focus
