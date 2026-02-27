@@ -18,6 +18,7 @@ function mapOrg(row: Record<string, unknown>): Organization {
     currency: row.currency as Organization['currency'],
     defaultPricePerDay: (row.default_price_per_day as number) ?? 8,
     timezone: row.timezone as string,
+    floorPlanUrl: (row.floor_plan_url as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

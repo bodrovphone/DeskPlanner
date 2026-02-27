@@ -62,6 +62,7 @@ export const organizationSchema = z.object({
   currency: currencySchema.default("EUR"),
   defaultPricePerDay: z.number().default(8),
   timezone: z.string().default("Europe/Sofia"),
+  floorPlanUrl: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
