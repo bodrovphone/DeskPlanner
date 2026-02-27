@@ -42,6 +42,7 @@ export const deskSchema = z.object({
   room: z.number(),
   number: z.number(),
   label: z.string(),
+  roomName: z.string().optional(),
 });
 
 export const bulkAvailabilitySchema = z.object({

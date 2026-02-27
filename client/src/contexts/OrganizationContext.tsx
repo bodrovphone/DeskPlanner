@@ -43,17 +43,27 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const { data: rooms = [], isLoading: roomsLoading } = useOrganizationRooms(effectiveOrgId);
   const { data: desks = [], isLoading: desksLoading } = useOrganizationDesks(effectiveOrgId);
 
-  // Convert org desks to legacy Desk format for backward compatibility
-  const legacyDesks: Desk[] = desks.map((d, i) => {
-    const room = rooms.find(r => r.id === d.roomId);
-    const roomIndex = room ? rooms.indexOf(room) + 1 : 1;
-    return {
-      id: d.deskId,
-      room: roomIndex,
-      number: i + 1,
-      label: d.label,
-    };
-  });
+  // Convert org desks to legacy Desk format, sorted by room then desk order
+  const legacyDesks: Desk[] = [...desks]
+    .sort((a, b) => {
+      const roomA = rooms.find(r => r.id === a.roomId);
+      const roomB = rooms.find(r => r.id === b.roomId);
+      const roomSortA = roomA ? rooms.indexOf(roomA) : 0;
+      const roomSortB = roomB ? rooms.indexOf(roomB) : 0;
+      if (roomSortA !== roomSortB) return roomSortA - roomSortB;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    })
+    .map((d, i) => {
+      const room = rooms.find(r => r.id === d.roomId);
+      const roomIndex = room ? rooms.indexOf(room) + 1 : 1;
+      return {
+        id: d.deskId,
+        room: roomIndex,
+        number: i + 1,
+        label: d.label,
+        roomName: room?.name,
+      };
+    });
 
   const setCurrentOrg = (org: Organization) => {
     setCurrentOrgId(org.id);
