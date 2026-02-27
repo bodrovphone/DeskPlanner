@@ -601,8 +601,9 @@ export class SupabaseDataStore implements IDataStore {
 
   // Helper methods for data mapping
   private mapToDatabase(booking: DeskBooking): any {
-    // Convert string ID to integer for Supabase
-    const numericId = this.stringToNumericId(booking.id);
+    // Include organizationId in hash to avoid cross-org ID collisions
+    const hashInput = this.organizationId ? `${this.organizationId}:${booking.id}` : booking.id;
+    const numericId = this.stringToNumericId(hashInput);
 
     const record: any = {
       id: numericId,
