@@ -119,8 +119,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                         <td className="px-2 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200 max-w-[6rem] sm:max-w-[10rem]">
                           <div className="flex flex-col truncate">
                             <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                              <span className="sm:hidden">{desk.number}</span>
-                              <span className="hidden sm:inline">Desk {desk.number}</span>
+                              {desk.label || `Desk ${desk.number}`}
                             </span>
                             <span className="text-[10px] sm:text-xs text-gray-400 truncate">
                               <span className="sm:hidden">{desk.roomName || `R${desk.room}`}</span>

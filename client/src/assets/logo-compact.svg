@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" role="img" aria-label="OhMyDesk compact logo">
+  <defs>
+    <linearGradient id="compact-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon in rounded square -->
+  <g transform="translate(2, 4)">
+    <rect width="40" height="40" rx="10" fill="url(#compact-bg)"/>
+
+    <!-- Desk surface -->
+    <rect x="6" y="20" width="28" height="3" rx="1.5" fill="#ffffff"/>
+
+    <!-- Desk legs -->
+    <rect x="9" y="23" width="2" height="10" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+    <rect x="29" y="23" width="2" height="10" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+
+    <!-- Monitor -->
+    <rect x="11" y="7" width="18" height="12" rx="2" fill="rgba(255,255,255,0.95)"/>
+
+    <!-- Monitor stand -->
+    <rect x="18" y="19" width="4" height="2" rx="0.5" fill="rgba(255,255,255,0.85)"/>
+
+    <!-- Calendar dots -->
+    <circle cx="16" cy="11.5" r="1.2" fill="#4F46E5"/>
+    <circle cx="20" cy="11.5" r="1.2" fill="#F97066"/>
+    <circle cx="24" cy="11.5" r="1.2" fill="#4F46E5"/>
+    <circle cx="16" cy="15.5" r="1.2" fill="#F97066"/>
+    <circle cx="20" cy="15.5" r="1.2" fill="#4F46E5"/>
+    <circle cx="24" cy="15.5" r="1.2" fill="#4F46E5"/>
+  </g>
+
+  <!-- Compact wordmark -->
+  <g transform="translate(50, 0)">
+    <text x="0" y="31" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#1E1B4B" letter-spacing="-0.3">
+      OhMy
+    </text>
+    <text x="64" y="31" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#4F46E5" letter-spacing="-0.3">
+      Desk
+    </text>
+    <!-- Coral dot accent -->
+    <circle cx="124" cy="28" r="2.2" fill="#F97066"/>
+  </g>
+</svg>

@@ -1,7 +1,9 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, LayoutGrid, Menu, X, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, Menu, X, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import logoCompact from '@/assets/logo-compact.svg';
+import logoIcon from '@/assets/logo-icon.svg';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
@@ -37,8 +39,7 @@ export default function DashboardLayout() {
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-2 min-w-0">
-                <LayoutGrid className="h-6 w-6 text-blue-600 shrink-0" />
-                <span className="font-bold text-lg truncate">OhMyDesk</span>
+                <img src={logoCompact} alt="OhMyDesk" className="h-8 shrink-0" />
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -107,7 +108,7 @@ export default function DashboardLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-blue-600" />
+            <img src={logoIcon} alt="OhMyDesk" className="h-7" />
             <span className="font-bold">OhMyDesk</span>
           </div>
           <Button

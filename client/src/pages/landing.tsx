@@ -9,6 +9,8 @@ import {
   Zap,
   Shield,
 } from 'lucide-react';
+import logoLanding from '@/assets/logo-landing.svg';
+import logoLandingIcon from '@/assets/logo-landing-icon.svg';
 
 /* ─── palette tokens (scoped via inline styles) ─── */
 const T = {
@@ -305,9 +307,7 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace', fontSize: 18, fontWeight: 700, color: T.green, letterSpacing: -0.5 }}>
-              <span style={{ opacity: 0.5 }}>&gt;</span> OhMyDesk<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
-            </span>
+            <img src={logoLanding} alt="OhMyDesk" style={{ height: 32 }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link to="/login" style={{ textDecoration: 'none' }}>
@@ -527,9 +527,7 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: '40px 0' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 14, color: T.textMuted }}>
-            <span style={{ opacity: 0.4 }}>&gt;</span> OhMyDesk<span style={{ animation: 'blink 1.1s step-end infinite', color: T.green }}>_</span>
-          </span>
+          <img src={logoLanding} alt="OhMyDesk" style={{ height: 24, opacity: 0.7 }} />
           <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted }}>
             &copy; {new Date().getFullYear()} OhMyDesk. All rights reserved.
           </span>

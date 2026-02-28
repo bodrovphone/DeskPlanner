@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="OhMyDesk icon">
+  <defs>
+    <linearGradient id="icon-bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="48" height="48" rx="12" fill="url(#icon-bg)"/>
+
+  <!-- Desk surface -->
+  <rect x="8" y="24" width="32" height="3.5" rx="1.75" fill="#ffffff"/>
+
+  <!-- Desk legs -->
+  <rect x="11" y="27.5" width="2.5" height="12" rx="1" fill="rgba(255,255,255,0.85)"/>
+  <rect x="34.5" y="27.5" width="2.5" height="12" rx="1" fill="rgba(255,255,255,0.85)"/>
+
+  <!-- Monitor -->
+  <rect x="14" y="8" width="20" height="14" rx="2.5" fill="rgba(255,255,255,0.95)"/>
+
+  <!-- Monitor stand -->
+  <rect x="21.5" y="22" width="5" height="2.5" rx="0.5" fill="rgba(255,255,255,0.85)"/>
+
+  <!-- Calendar grid dots on monitor -->
+  <circle cx="19" cy="13" r="1.5" fill="#4F46E5"/>
+  <circle cx="24" cy="13" r="1.5" fill="#F97066"/>
+  <circle cx="29" cy="13" r="1.5" fill="#4F46E5"/>
+  <circle cx="19" cy="18" r="1.5" fill="#F97066"/>
+  <circle cx="24" cy="18" r="1.5" fill="#4F46E5"/>
+  <circle cx="29" cy="18" r="1.5" fill="#4F46E5"/>
+</svg>
