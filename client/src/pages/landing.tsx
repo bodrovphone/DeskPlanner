@@ -98,7 +98,7 @@ const steps = [
 
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
-  { name: 'Pro', price: '29', period: '/mo', desc: 'For growing spaces that need more.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Coming Soon', href: '#', highlighted: true, disabled: true },
+  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
   { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true },
 ];
 
@@ -650,10 +650,13 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
         }}>POPULAR</span>
       )}
       <h3 style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: isHighlighted ? T.green : T.textSecondary, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>{tier.name}</h3>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
         {tier.price !== 'Custom' ? (
           <>
-            <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 40, fontWeight: 700, color: T.textPrimary, lineHeight: 1 }}>${tier.price}</span>
+            {'originalPrice' in tier && tier.originalPrice && (
+              <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 22, fontWeight: 500, color: T.textMuted, lineHeight: 1, textDecoration: 'line-through', textDecorationColor: '#F97066', opacity: 0.6 }}>${tier.originalPrice}</span>
+            )}
+            <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 40, fontWeight: 700, color: isHighlighted && 'originalPrice' in tier ? T.green : T.textPrimary, lineHeight: 1 }}>${tier.price}</span>
             <span style={{ fontFamily: 'monospace', fontSize: 14, color: T.textMuted }}>{tier.period}</span>
           </>
         ) : (
