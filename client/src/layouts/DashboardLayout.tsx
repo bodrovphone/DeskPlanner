@@ -1,25 +1,22 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, Menu, X, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
-import logoIcon from '@/assets/logo-icon.svg';
-import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 const navItems = [
-  { to: '/app/calendar', label: 'Calendar', icon: Calendar },
-  { to: '/app/insights', label: 'Insights', icon: Lightbulb },
-  { to: '/app/revenue', label: 'Revenue', icon: BarChart3 },
-  { to: '/app/waiting-list', label: 'Waiting List', icon: Users },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
+  { to: '/app/calendar', label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
+  { to: '/app/insights', label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
+  { to: '/app/revenue', label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
+  { to: '/app/waiting-list', label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
+  { to: '/app/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
 ];
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { currentOrg } = useOrganization();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleSignOut = async () => {
@@ -104,60 +101,32 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2">
-            <img src={logoIcon} alt="OhMyDesk" className="h-7" />
-            <span className="font-bold">OhMyDesk</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="bg-white border-b shadow-lg">
-            <nav className="p-3 space-y-1">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`
-                  }
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </NavLink>
-              ))}
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
-              >
-                <LogOut className="h-5 w-5" />
-                Sign Out
-              </button>
-            </nav>
-          </div>
-        )}
-      </div>
-
       {/* Main Content */}
-      <main className="flex-1 lg:overflow-auto">
-        <div className="lg:hidden h-14" /> {/* Spacer for mobile header */}
+      <main className="flex-1 min-w-0 overflow-x-hidden pb-16 lg:pb-0">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t safe-area-bottom">
+        <div className="flex items-stretch">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-medium transition-colors ${
+                  isActive
+                    ? 'text-blue-600'
+                    : 'text-gray-500'
+                }`
+              }
+            >
+              <item.icon className="h-5 w-5 mb-0.5" />
+              {item.shortLabel}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

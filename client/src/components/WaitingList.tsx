@@ -89,20 +89,18 @@ export default function WaitingList() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-600" />
-            Waiting List
-          </CardTitle>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            size="sm"
-            className="bg-orange-600 hover:bg-orange-700"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Person
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-orange-600" />
+          Waiting List
+        </CardTitle>
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          size="sm"
+          className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto mt-2"
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add Person
+        </Button>
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (

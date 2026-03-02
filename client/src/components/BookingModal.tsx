@@ -170,7 +170,7 @@ export default function BookingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Armchair className="h-5 w-5 text-blue-600" />
@@ -186,7 +186,7 @@ export default function BookingModal({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div>
               <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
                 Start Date *
@@ -283,8 +283,8 @@ export default function BookingModal({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500 mt-1">
-              Choose "Booked" for reservations or "Assigned" for paid bookings
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              "Booked" = reserved, "Assigned" = paid
             </p>
           </div>
 
@@ -326,7 +326,7 @@ export default function BookingModal({
           )}
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mt-6">
           {isExistingBooking && onDiscard && (
             <Button
               variant="outline"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import PersonModal from '@/components/PersonModal';
 import BookingModal from '@/components/BookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
@@ -7,6 +7,7 @@ import DataMigrationModal from '@/components/DataMigrationModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarNavigation from '@/components/calendar/CalendarNavigation';
 import DeskGrid from '@/components/calendar/DeskGrid';
+import MobileCalendar from '@/components/calendar/MobileCalendar';
 import { DEFAULT_DESKS } from '@/lib/deskConfig';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import {
@@ -23,13 +24,14 @@ import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { getCurrency } from '@/lib/settings';
 import { useBookingActions } from '@/hooks/use-booking-actions';
 
+const MOBILE_BREAKPOINT = 1024;
+
 export default function DeskCalendar() {
   const { legacyDesks, currentOrg } = useOrganization();
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
 
-  const [viewMode, setViewMode] = useState<'week' | 'month'>(
-    () => window.innerWidth < 640 ? 'week' : 'month'
-  );
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<{
@@ -44,6 +46,12 @@ export default function DeskCalendar() {
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const currentWeek = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
   const currentMonth = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
@@ -90,11 +98,11 @@ export default function DeskCalendar() {
     }
   }, [currentOrg?.currency]);
 
-  // Auto-scroll to today's column
+  // Auto-scroll to today's column (desktop only)
   useEffect(() => {
-    if (viewMode === 'month' && monthOffset === 0 && tableRef.current) {
-      const isToday = (ds: string) => ds === new Date().toISOString().split('T')[0];
-      const todayIndex = currentDates.findIndex((day) => isToday(day.dateString));
+    if (viewMode === 'month' && monthOffset === 0 && tableRef.current && !isMobile) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayIndex = currentDates.findIndex((day) => day.dateString === todayStr);
       if (todayIndex >= 0) {
         setTimeout(() => {
           if (tableRef.current) {
@@ -104,7 +112,7 @@ export default function DeskCalendar() {
         }, 100);
       }
     }
-  }, [viewMode, monthOffset, currentDates]);
+  }, [viewMode, monthOffset, currentDates, isMobile]);
 
   const {
     handleDeskClick,
@@ -126,40 +134,54 @@ export default function DeskCalendar() {
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <CalendarHeader
-        onFloorPlan={() => setIsFloorPlanModalOpen(true)}
-        onSetAvailability={() => setIsRangeModalOpen(true)}
-        onExport={handleExport}
-        onMigrate={() => setIsMigrationModalOpen(true)}
-      />
-
-      <div>
-        <CalendarNavigation
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          rangeString={rangeString}
-          onPrev={() => {
-            if (viewMode === 'week') setWeekOffset(weekOffset - 1);
-            else setMonthOffset(monthOffset - 1);
-          }}
-          onNext={() => {
-            if (viewMode === 'week') setWeekOffset(weekOffset + 1);
-            else setMonthOffset(monthOffset + 1);
-          }}
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      {isMobile ? (
+        <MobileCalendar
+          desks={desks}
+          bookings={bookings}
+          onDeskClick={handleDeskClick}
           onQuickBook={handleQuickBook}
           quickBookDisabled={nextAvailableDates.length === 0}
           quickBookLoading={nextDatesLoading}
+          onFloorPlan={() => setIsFloorPlanModalOpen(true)}
+          onSetAvailability={() => setIsRangeModalOpen(true)}
+          onExport={handleExport}
         />
+      ) : (
+        <>
+          <CalendarHeader
+            onFloorPlan={() => setIsFloorPlanModalOpen(true)}
+            onSetAvailability={() => setIsRangeModalOpen(true)}
+            onExport={handleExport}
+            onMigrate={() => setIsMigrationModalOpen(true)}
+          />
 
-        <DeskGrid
-          ref={tableRef}
-          desks={desks}
-          currentDates={currentDates}
-          bookings={bookings}
-          onDeskClick={handleDeskClick}
-        />
-      </div>
+          <CalendarNavigation
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            rangeString={rangeString}
+            onPrev={() => {
+              if (viewMode === 'week') setWeekOffset(weekOffset - 1);
+              else setMonthOffset(monthOffset - 1);
+            }}
+            onNext={() => {
+              if (viewMode === 'week') setWeekOffset(weekOffset + 1);
+              else setMonthOffset(monthOffset + 1);
+            }}
+            onQuickBook={handleQuickBook}
+            quickBookDisabled={nextAvailableDates.length === 0}
+            quickBookLoading={nextDatesLoading}
+          />
+
+          <DeskGrid
+            ref={tableRef}
+            desks={desks}
+            currentDates={currentDates}
+            bookings={bookings}
+            onDeskClick={handleDeskClick}
+          />
+        </>
+      )}
 
       <BookingModal
         isOpen={isBookingModalOpen}

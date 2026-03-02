@@ -97,6 +97,18 @@
     border-radius: 4px;
   }
 
+  /* Bottom tab bar safe area for notched devices */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Prevent iOS auto-zoom on input focus (requires >= 16px) */
+  @media screen and (max-width: 1023px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
   /* Ensure date inputs show calendar icon */
   input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;

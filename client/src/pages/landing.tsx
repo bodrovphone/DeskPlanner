@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import {
   Calendar,
   BarChart3,
@@ -46,6 +46,19 @@ const KEYFRAMES = `
 @keyframes numberRoll{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 `;
 
+/* ─── touch hover helper ─── */
+function touchHoverProps(
+  onEnter: (e: { currentTarget: HTMLElement }) => void,
+  onLeave: (e: { currentTarget: HTMLElement }) => void,
+) {
+  return {
+    onMouseEnter: onEnter,
+    onMouseLeave: onLeave,
+    onTouchStart: onEnter,
+    onTouchEnd: onLeave,
+  };
+}
+
 /* ─── scroll reveal hook ─── */
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -82,6 +95,17 @@ function useTyping(text: string, speed = 55, startDelay = 600) {
   return { displayed, done };
 }
 
+/* ─── narrow breakpoint hook ─── */
+function useNarrow(breakpoint = 768) {
+  const [narrow, setNarrow] = useState(() => window.innerWidth < breakpoint);
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return narrow;
+}
+
 /* ─── data ─── */
 const features = [
   { icon: Calendar, title: 'Visual Calendar', desc: 'Weekly and monthly views for every desk. See availability at a glance across all your rooms.' },
@@ -104,7 +128,8 @@ const pricingTiers = [
 
 /* ─── faux calendar data ─── */
 const DESKS = ['Room 1 / Desk 1', 'Room 1 / Desk 2', 'Room 1 / Desk 3', 'Room 1 / Desk 4', 'Room 2 / Desk 1', 'Room 2 / Desk 2', 'Room 2 / Desk 3', 'Room 2 / Desk 4'];
-const DATES = ['Mon 24', 'Tue 25', 'Wed 26', 'Thu 27', 'Fri 28', 'Sat 29', 'Sun 30'];
+const ALL_DATES = ['Mon 24', 'Tue 25', 'Wed 26', 'Thu 27', 'Fri 28', 'Sat 29', 'Sun 30'];
+const WEEKDAY_DATES = ['Mon 24', 'Tue 25', 'Wed 26', 'Thu 27', 'Fri 28'];
 
 type CellStatus = 'available' | 'booked' | 'assigned';
 interface CellData { status: CellStatus; person?: string }
@@ -141,6 +166,10 @@ function SectionHeading({ tag, title, sub }: { tag: string; title: string; sub?:
 
 function FauxCalendar() {
   const { ref, visible } = useReveal(0.1);
+  const isMobile = useNarrow(768);
+  const dates = isMobile ? WEEKDAY_DATES : ALL_DATES;
+  const colCount = dates.length;
+
   return (
     <div ref={ref} style={{ overflow: 'hidden', borderRadius: 12, border: `1px solid ${T.borderBright}`, background: T.bgCard, position: 'relative' }}>
       {/* scanline overlay */}
@@ -159,12 +188,12 @@ function FauxCalendar() {
       </div>
       {/* grid */}
       <div style={{ overflowX: 'auto', padding: 0 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '10px 16px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, position: 'sticky', left: 0, background: T.bgCard, zIndex: 1, minWidth: 140 }}>Desk</th>
-              {DATES.map(d => (
-                <th key={d} style={{ textAlign: 'center', padding: '10px 8px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, minWidth: 72 }}>{d}</th>
+              <th style={{ textAlign: 'left', padding: '10px 16px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, position: 'sticky', left: 0, background: T.bgCard, zIndex: 1, minWidth: isMobile ? 100 : 140 }}>Desk</th>
+              {dates.map(d => (
+                <th key={d} style={{ textAlign: 'center', padding: '10px 8px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, minWidth: isMobile ? 56 : 72 }}>{d}</th>
               ))}
             </tr>
           </thead>
@@ -172,9 +201,9 @@ function FauxCalendar() {
             {DESKS.map((desk, ri) => (
               <tr key={desk}>
                 <td style={{ padding: '6px 16px', fontFamily: 'monospace', fontSize: 12, color: T.textSecondary, borderBottom: `1px solid ${T.border}`, position: 'sticky', left: 0, background: T.bgCard, zIndex: 1, whiteSpace: 'nowrap' }}>{desk}</td>
-                {CELL_MAP[ri].map((cell, ci) => {
+                {CELL_MAP[ri].slice(0, colCount).map((cell, ci) => {
                   const c = cellColor(cell.status);
-                  const delay = (ri * 7 + ci) * 35;
+                  const delay = (ri * colCount + ci) * 35;
                   return (
                     <td key={ci} style={{ padding: 3, borderBottom: `1px solid ${T.border}` }}>
                       <div style={{
@@ -213,13 +242,14 @@ function FauxCalendar() {
 
 function FauxStats() {
   const { ref, visible } = useReveal(0.1);
+  const isVeryNarrow = useNarrow(480);
   const stats = [
     { label: 'Available', value: 23, color: T.greenDim, bg: T.greenFaint },
     { label: 'Booked', value: 18, color: T.orange, bg: T.orangeFaint },
     { label: 'Assigned', value: 15, color: T.blue, bg: T.blueFaint },
   ];
   return (
-    <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 20 }}>
+    <div ref={ref} style={{ display: 'grid', gridTemplateColumns: isVeryNarrow ? '1fr' : 'repeat(3, 1fr)', gap: 16, marginTop: 20 }}>
       {stats.map((s, i) => (
         <div key={s.label} style={{
           background: T.bgCard,
@@ -272,6 +302,7 @@ function FauxRevenue() {
 export default function LandingPage() {
   const heroTyping = useTyping('Desk management for operators who ship.', 45, 800);
   const [navScrolled, setNavScrolled] = useState(false);
+  const isMobile = useNarrow(768);
 
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 20);
@@ -311,15 +342,19 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link to="/login" style={{ textDecoration: 'none' }}>
-              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; }}
+              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                {...touchHoverProps(
+                  e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
+                  e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
+                )}
               >Log In</button>
             </Link>
             <Link to="/signup" style={{ textDecoration: 'none' }}>
-              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; }}
-                onMouseLeave={e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; }}
+              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
+                {...touchHoverProps(
+                  e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
+                  e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; },
+                )}
               >Sign Up Free</button>
             </Link>
           </div>
@@ -404,9 +439,12 @@ export default function LandingPage() {
                 gap: 8,
                 transition: 'all 0.25s ease',
                 boxShadow: `0 0 24px ${T.greenGlow}`,
+                minHeight: 48,
               }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 40px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; }}
+                {...touchHoverProps(
+                  e => { e.currentTarget.style.boxShadow = `0 0 40px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-1px)'; },
+                  e => { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; },
+                )}
               >
                 Start Free <ArrowRight size={16} />
               </button>
@@ -423,9 +461,12 @@ export default function LandingPage() {
                 color: T.textSecondary,
                 cursor: 'pointer',
                 transition: 'all 0.25s ease',
+                minHeight: 48,
               }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.textPrimary; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; }}
+                {...touchHoverProps(
+                  e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.textPrimary; },
+                  e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; },
+                )}
               >
                 Log In
               </button>
@@ -468,7 +509,7 @@ export default function LandingPage() {
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '110%', height: '110%', background: `radial-gradient(ellipse at center, ${T.greenFaint} 0%, transparent 60%)`, pointerEvents: 'none', zIndex: 0 }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <FauxCalendar />
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginTop: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 16, marginTop: 0 }}>
               <FauxStats />
               <FauxRevenue />
             </div>
@@ -545,8 +586,7 @@ function FeatureCard({ icon: Icon, title, desc, index }: { icon: typeof Calendar
   return (
     <div
       ref={ref}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      {...touchHoverProps(() => setHovered(true), () => setHovered(false))}
       style={{
         background: hovered ? T.bgCardHover : T.bgCard,
         border: `1px solid ${hovered ? T.green + '33' : T.borderBright}`,
@@ -619,8 +659,7 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
   return (
     <div
       ref={ref}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      {...touchHoverProps(() => setHovered(true), () => setHovered(false))}
       style={{
         background: isHighlighted ? T.greenFaint : T.bgCard,
         border: `1px solid ${isHighlighted ? T.green + '44' : hovered ? T.borderBright : T.border}`,
@@ -684,6 +723,7 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
           background: 'transparent',
           color: T.textMuted,
           cursor: 'not-allowed',
+          minHeight: 44,
         }}>{tier.cta}</button>
       ) : (
         <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>
@@ -699,9 +739,12 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
             color: isHighlighted ? T.bg : T.green,
             cursor: 'pointer',
             transition: 'all 0.25s ease',
+            minHeight: 44,
           }}
-            onMouseEnter={e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } }}
-            onMouseLeave={e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } }}
+            {...touchHoverProps(
+              e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
+              e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
+            )}
           >{tier.cta}</button>
         </Link>
       )}
@@ -745,9 +788,12 @@ function CtaSection() {
           gap: 8,
           transition: 'all 0.25s ease',
           boxShadow: `0 0 32px ${T.greenGlow}`,
+          minHeight: 48,
         }}
-          onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 48px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 0 32px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; }}
+          {...touchHoverProps(
+            e => { e.currentTarget.style.boxShadow = `0 0 48px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-2px)'; },
+            e => { e.currentTarget.style.boxShadow = `0 0 32px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; },
+          )}
         >
           Get Started Free <ArrowRight size={16} />
         </button>

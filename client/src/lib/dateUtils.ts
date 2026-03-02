@@ -110,6 +110,24 @@ export function formatDateRange(startDate: string, endDate: string): string {
   }
 }
 
+export function getThreeDayRange(offset: number = 0): WeekDay[] {
+  const today = dayjs().add(offset * 3, 'day');
+  return [0, 1, 2].map(i => {
+    const date = today.add(i, 'day');
+    return {
+      date,
+      dayName: date.format('ddd'),
+      fullDate: date.format('MMM D'),
+      dateString: date.format('YYYY-MM-DD'),
+    };
+  });
+}
+
+export function getThreeDayRangeString(offset: number = 0): string {
+  const days = getThreeDayRange(offset);
+  return `${days[0].date.format('MMM D')} – ${days[2].date.format('D, YYYY')}`;
+}
+
 export function generateDateRange(startDate: string, endDate: string): string[] {
   const start = dayjs(startDate);
   const end = dayjs(endDate);

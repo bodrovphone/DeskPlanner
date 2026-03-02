@@ -11,7 +11,7 @@ export default function RevenuePage() {
   const endDate = currentMonth[currentMonth.length - 1]?.dateString;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-x-hidden">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Revenue Dashboard</h1>
       <RevenueChart />
       <div className="mt-6">

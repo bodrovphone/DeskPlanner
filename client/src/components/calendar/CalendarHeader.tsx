@@ -15,14 +15,14 @@ export default function CalendarHeader({
   onExport,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={onFloorPlan}
         >
-          <Map className="h-4 w-4 mr-1" />
+          <Map className="h-4 w-4 mr-2" />
           Floor Plan
         </Button>
         <Button
@@ -30,15 +30,15 @@ export default function CalendarHeader({
           size="sm"
           onClick={onSetAvailability}
         >
-          <CalendarRange className="h-4 w-4 mr-1" />
-          Set Availability
+          <CalendarRange className="h-4 w-4 mr-2" />
+          Availability
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onExport}
         >
-          <Download className="h-4 w-4 mr-1" />
+          <Download className="h-4 w-4 mr-2" />
           Export
         </Button>
       </div>

@@ -141,7 +141,6 @@ export default function FloorPlanModal({ isOpen, onClose }: FloorPlanModalProps)
                 src={floorPlanUrl}
                 alt="Floor Plan"
                 className="w-auto h-auto max-w-full max-h-full object-contain rounded-md shadow-lg"
-                style={{ minWidth: '400px', minHeight: '300px' }}
               />
             </div>
             <div className="flex gap-2 justify-end">
