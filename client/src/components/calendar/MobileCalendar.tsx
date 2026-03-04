@@ -159,7 +159,9 @@ export default function MobileCalendar({
                 <div key={desk.id} className="bg-white rounded-lg border overflow-hidden">
                   <div className="px-3 py-1.5 border-b border-gray-100 bg-gray-50">
                     <span className="text-sm font-semibold text-gray-900">
-                      {desk.label || `Desk ${desk.number}`}
+                      {desk.label
+                        ? desk.label.replace(/^.+,\s*/, '')
+                        : `Desk ${desk.number}`}
                     </span>
                   </div>
                   {/* 3-column grid */}

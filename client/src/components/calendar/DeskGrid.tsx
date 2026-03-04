@@ -103,7 +103,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                   <React.Fragment key={group.room}>
                     <tr className={`${bgClass} ${groupIdx > 0 ? 'border-t-4 border-gray-300' : 'border-t border-gray-200'}`}>
                       <td
-                        className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${colorClass} sticky left-0 ${bgClass} z-10`}
+                        className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${colorClass} sticky left-0 ${bgClass} z-10 whitespace-nowrap overflow-visible`}
                       >
                         {group.roomName}
                       </td>
@@ -116,7 +116,9 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                         <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-gray-900">
-                              {desk.label || `Desk ${desk.number}`}
+                              {desk.label
+                                ? desk.label.replace(/^.+,\s*/, '')
+                                : `Desk ${desk.number}`}
                             </span>
                             <span className="text-xs text-gray-400">
                               {desk.roomName || `Room ${desk.room}`}

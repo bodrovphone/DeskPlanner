@@ -29,7 +29,7 @@ export default function DashboardLayout() {
       {/* Desktop Sidebar */}
       <aside
         className={`hidden lg:flex lg:flex-col bg-white border-r transition-all duration-200 ${
-          sidebarOpen ? 'w-64' : 'w-16'
+          sidebarOpen ? 'w-48' : 'w-16'
         }`}
       >
         <div className="p-4 border-b flex items-center justify-between">
