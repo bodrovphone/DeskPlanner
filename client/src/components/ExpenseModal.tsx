@@ -9,7 +9,7 @@ import { Expense, ExpenseCategory, Currency } from '@shared/schema';
 import { currencySymbols, getCurrency } from '@/lib/settings';
 import { useSaveExpense } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
-import { Receipt, Loader2, Check, Home, Coffee, Wifi, Zap, Calculator } from 'lucide-react';
+import { Receipt, Loader2, Check, Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -23,6 +23,7 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   internet: 'Internet',
   bills: 'Bills (electricity, water)',
   accountant: 'Accountant',
+  other: 'Other',
 };
 
 export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalProps) {
@@ -167,6 +168,12 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
                   <div className="flex items-center gap-2">
                     <Calculator className="h-4 w-4 text-indigo-600" />
                     <span>Accountant</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="other">
+                  <div className="flex items-center gap-2">
+                    <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                    <span>Other</span>
                   </div>
                 </SelectItem>
               </SelectContent>

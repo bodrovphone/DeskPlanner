@@ -119,7 +119,7 @@ export interface MonthlyStats {
 }
 
 // Expense tracking schemas
-export const expenseCategorySchema = z.enum(['rent', 'supplies', 'internet', 'bills', 'accountant']);
+export const expenseCategorySchema = z.enum(['rent', 'supplies', 'internet', 'bills', 'accountant', 'other']);
 
 export const expenseSchema = z.object({
   id: z.string(),

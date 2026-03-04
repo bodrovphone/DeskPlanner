@@ -16,7 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   Trash2, Plus, Edit2, Repeat, Loader2, Check,
-  Home, Coffee, Wifi, Zap, Calculator
+  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal
 } from 'lucide-react';
 
 interface RecurringExpenseModalProps {
@@ -30,6 +30,7 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   internet: 'Internet',
   bills: 'Bills',
   accountant: 'Accountant',
+  other: 'Other',
 };
 
 const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
@@ -38,6 +39,7 @@ const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ class
   internet: { Icon: Wifi, color: 'text-blue-600' },
   bills: { Icon: Zap, color: 'text-yellow-600' },
   accountant: { Icon: Calculator, color: 'text-indigo-600' },
+  other: { Icon: MoreHorizontal, color: 'text-gray-600' },
 };
 
 export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpenseModalProps) {
@@ -263,6 +265,12 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
                     <div className="flex items-center gap-2">
                       <Calculator className="h-4 w-4 text-indigo-600" />
                       <span>Accountant</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="other">
+                    <div className="flex items-center gap-2">
+                      <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                      <span>Other</span>
                     </div>
                   </SelectItem>
                 </SelectContent>

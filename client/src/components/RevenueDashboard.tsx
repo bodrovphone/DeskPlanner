@@ -12,7 +12,7 @@ import RecurringExpenseModal from './RecurringExpenseModal';
 import {
   ChevronDown, ChevronUp, Plus, Settings, Trash2, Edit2,
   TrendingUp, TrendingDown, Banknote, Receipt, Armchair, BarChart3,
-  Home, Coffee, Wifi, Zap, Calculator
+  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,6 +29,7 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   internet: 'Internet',
   bills: 'Bills',
   accountant: 'Accountant',
+  other: 'Other',
 };
 
 const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
@@ -37,6 +38,7 @@ const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ class
   internet: { Icon: Wifi, color: 'text-blue-600' },
   bills: { Icon: Zap, color: 'text-yellow-600' },
   accountant: { Icon: Calculator, color: 'text-indigo-600' },
+  other: { Icon: MoreHorizontal, color: 'text-gray-600' },
 };
 
 export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate, endDate }: RevenueDashboardProps) {
