@@ -38,10 +38,11 @@ export default function OnboardingPage() {
   const [slugEditMode, setSlugEditMode] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [roomsCount, setRoomsCount] = useState(2);
-  const [desksPerRoom, setDesksPerRoom] = useState(4);
+  const [desksPerRoom, setDesksPerRoom] = useState<number[]>([4, 4]);
   const [roomNames, setRoomNames] = useState<string[]>(['Room 1', 'Room 2']);
   const [workingDays, setWorkingDays] = useState<number[]>([...DEFAULT_WORKING_DAYS]);
   const [currency, setCurrency] = useState<Currency>('EUR');
+  const [customCurrency, setCustomCurrency] = useState('');
   const [defaultPricePerDay, setDefaultPricePerDay] = useState('8');
 
   // Auto-generate slug from name
@@ -66,7 +67,7 @@ export default function OnboardingPage() {
     return () => clearTimeout(timer);
   }, [slug]);
 
-  // Update room names when count changes
+  // Update room names and desksPerRoom when count changes
   useEffect(() => {
     setRoomNames(prev => {
       const newNames = [...prev];
@@ -74,6 +75,13 @@ export default function OnboardingPage() {
         newNames.push(`Room ${newNames.length + 1}`);
       }
       return newNames.slice(0, roomsCount);
+    });
+    setDesksPerRoom(prev => {
+      const newDesks = [...prev];
+      while (newDesks.length < roomsCount) {
+        newDesks.push(4);
+      }
+      return newDesks.slice(0, roomsCount);
     });
   }, [roomsCount]);
 
@@ -107,7 +115,7 @@ export default function OnboardingPage() {
   };
 
   const canProceedStep0 = name.trim().length > 0 && slug.length > 0 && slugAvailable === true;
-  const canProceedStep1 = roomsCount > 0 && desksPerRoom > 0 && roomNames.every(n => n.trim().length > 0);
+  const canProceedStep1 = roomsCount > 0 && desksPerRoom.every(d => d > 0) && roomNames.every(n => n.trim().length > 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -234,44 +242,53 @@ export default function OnboardingPage() {
               <CardDescription>Configure how many rooms and desks you have.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Number of Rooms</Label>
-                  <Select value={String(roomsCount)} onValueChange={v => setRoomsCount(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4].map(n => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Desks per Room</Label>
-                  <Select value={String(desksPerRoom)} onValueChange={v => setDesksPerRoom(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Number of Rooms</Label>
+                <Select value={String(roomsCount)} onValueChange={v => setRoomsCount(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Room Names</Label>
+                <Label>Rooms & Desks</Label>
                 {roomNames.map((rn, i) => (
-                  <Input
-                    key={i}
-                    value={rn}
-                    onChange={e => {
-                      const updated = [...roomNames];
-                      updated[i] = e.target.value;
-                      setRoomNames(updated);
-                    }}
-                    placeholder={`Room ${i + 1}`}
-                  />
+                  <div key={i} className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <Input
+                        className="pr-8"
+                        value={rn}
+                        onChange={e => {
+                          const updated = [...roomNames];
+                          updated[i] = e.target.value;
+                          setRoomNames(updated);
+                        }}
+                        placeholder={`Room ${i + 1}`}
+                      />
+                      <Pencil className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                    <Select
+                      value={String(desksPerRoom[i] ?? 4)}
+                      onValueChange={v => {
+                        const updated = [...desksPerRoom];
+                        updated[i] = Number(v);
+                        setDesksPerRoom(updated);
+                      }}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                          <SelectItem key={n} value={String(n)}>{n} {n === 1 ? 'desk' : 'desks'}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ))}
               </div>
 
@@ -300,7 +317,7 @@ export default function OnboardingPage() {
               {/* Preview */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-700 font-medium">
-                  Preview: {roomsCount} room{roomsCount > 1 ? 's' : ''} x {desksPerRoom} desks = {roomsCount * desksPerRoom} total desks
+                  Preview: {roomsCount} room{roomsCount > 1 ? 's' : ''}, {desksPerRoom.reduce((a, b) => a + b, 0)} total desks
                 </p>
               </div>
 
@@ -327,13 +344,13 @@ export default function OnboardingPage() {
               <CardDescription>This will be used for all pricing and revenue tracking.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-3">
                 {activeCurrencies.map(c => (
                   <button
                     key={c}
-                    onClick={() => setCurrency(c)}
-                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                      currency === c
+                    onClick={() => { setCurrency(c); setCustomCurrency(''); }}
+                    className={`flex-1 p-4 rounded-lg border-2 text-left transition-colors ${
+                      currency === c && !customCurrency
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -343,6 +360,29 @@ export default function OnboardingPage() {
                     <div className="text-xs text-gray-500">{currencyLabels[c]}</div>
                   </button>
                 ))}
+              </div>
+
+              <div>
+                <Label htmlFor="customCurrency" className="text-sm">Or enter ISO currency code</Label>
+                <Input
+                  id="customCurrency"
+                  value={customCurrency}
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+                    setCustomCurrency(val);
+                    if (val.length === 3) {
+                      setCurrency(val as Currency);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (!customCurrency && !activeCurrencies.includes(currency)) {
+                      setCustomCurrency(currency);
+                    }
+                  }}
+                  placeholder="e.g. GBP, JPY, CHF"
+                  maxLength={3}
+                  className="mt-1"
+                />
               </div>
 
               <div>

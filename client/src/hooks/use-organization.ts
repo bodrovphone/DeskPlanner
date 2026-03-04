@@ -114,7 +114,7 @@ interface CreateOrgInput {
   name: string;
   slug: string;
   roomsCount: number;
-  desksPerRoom: number;
+  desksPerRoom: number[];
   currency: string;
   defaultPricePerDay: number;
   roomNames: string[];
@@ -136,7 +136,7 @@ export function useCreateOrganization() {
           name: input.name,
           slug: input.slug,
           rooms_count: input.roomsCount,
-          desks_per_room: input.desksPerRoom,
+          desks_per_room: input.desksPerRoom[0],
           currency: input.currency,
           default_price_per_day: input.defaultPricePerDay,
           working_days: input.workingDays ?? [1, 2, 3, 4, 5],
@@ -174,14 +174,15 @@ export function useCreateOrganization() {
       // 4. Create desks for each room
       const deskInserts: Record<string, unknown>[] = [];
       for (const room of rooms) {
-        for (let d = 0; d < input.desksPerRoom; d++) {
-          const roomIndex = rooms.indexOf(room) + 1;
+        const roomIndex = rooms.indexOf(room);
+        const deskCount = input.desksPerRoom[roomIndex] ?? 4;
+        for (let d = 0; d < deskCount; d++) {
           const deskNum = d + 1;
           deskInserts.push({
             room_id: room.id,
             organization_id: org.id,
             label: `${room.name}, Desk ${deskNum}`,
-            desk_id: `room${roomIndex}-desk${deskNum}`,
+            desk_id: `room${roomIndex + 1}-desk${deskNum}`,
             sort_order: d,
           });
         }
@@ -231,6 +232,129 @@ export function useRenameDesk() {
         .eq('id', deskId);
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    },
+  });
+}
+
+export function useAddRoom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      name,
+      deskCount,
+      sortOrder,
+    }: {
+      orgId: string;
+      name: string;
+      deskCount: number;
+      sortOrder: number;
+    }) => {
+      const { data: room, error: roomError } = await supabaseClient
+        .from('rooms')
+        .insert({ organization_id: orgId, name, sort_order: sortOrder })
+        .select()
+        .single();
+
+      if (roomError) throw roomError;
+
+      const deskInserts = [];
+      for (let d = 0; d < deskCount; d++) {
+        const deskNum = d + 1;
+        deskInserts.push({
+          room_id: room.id,
+          organization_id: orgId,
+          label: `${name}, Desk ${deskNum}`,
+          desk_id: `${room.id}-desk${deskNum}`,
+          sort_order: d,
+        });
+      }
+
+      const { error: deskError } = await supabaseClient
+        .from('desks')
+        .insert(deskInserts);
+
+      if (deskError) throw deskError;
+
+      return mapRoom(room);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    },
+  });
+}
+
+export function useSetRoomDeskCount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      roomId,
+      orgId,
+      roomName,
+      targetCount,
+      currentDesks,
+    }: {
+      roomId: string;
+      orgId: string;
+      roomName: string;
+      targetCount: number;
+      currentDesks: OrgDesk[];
+    }) => {
+      const currentCount = currentDesks.length;
+      if (targetCount === currentCount) return;
+
+      if (targetCount > currentCount) {
+        // Add desks
+        const maxSortOrder = currentDesks.reduce((max, d) => Math.max(max, d.sortOrder), -1);
+        const deskInserts = [];
+        for (let i = 0; i < targetCount - currentCount; i++) {
+          const deskNum = currentCount + i + 1;
+          deskInserts.push({
+            room_id: roomId,
+            organization_id: orgId,
+            label: `${roomName}, Desk ${deskNum}`,
+            desk_id: `${roomId}-desk${deskNum}`,
+            sort_order: maxSortOrder + 1 + i,
+          });
+        }
+        const { error } = await supabaseClient.from('desks').insert(deskInserts);
+        if (error) throw error;
+      } else {
+        // Remove desks (highest sort_order first)
+        const sorted = [...currentDesks].sort((a, b) => b.sortOrder - a.sortOrder);
+        const toRemove = sorted.slice(0, currentCount - targetCount);
+
+        // Check for future bookings on desks being removed
+        const deskIds = toRemove.map(d => d.deskId);
+        const today = new Date().toISOString().split('T')[0];
+        const { data: bookings, error: checkError } = await supabaseClient
+          .from('desk_bookings')
+          .select('id')
+          .eq('organization_id', orgId)
+          .in('desk', deskIds)
+          .gte('date', today)
+          .limit(1);
+
+        if (checkError) throw checkError;
+        if (bookings && bookings.length > 0) {
+          throw new Error('DESKS_HAVE_BOOKINGS');
+        }
+
+        const ids = toRemove.map(d => d.id);
+        const { error } = await supabaseClient
+          .from('desks')
+          .delete()
+          .in('id', ids);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-desks'] });

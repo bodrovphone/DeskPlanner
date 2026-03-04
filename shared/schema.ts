@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const deskStatusSchema = z.enum(["available", "booked", "assigned"]);
 
-export const currencySchema = z.enum(["USD", "EUR", "GBP", "BGN"]);
+export const currencySchema = z.string().regex(/^[A-Z]{3}$/, 'Must be a 3-letter ISO currency code');
 
 export const orgMemberRoleSchema = z.enum(["owner", "admin", "member"]);
 

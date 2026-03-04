@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRenameRoom, useRenameDesk } from '@/hooks/use-organization';
-import { Building2, LayoutGrid, Save, Pencil } from 'lucide-react';
+import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X } from 'lucide-react';
 
 function InlineEdit({
   value,
@@ -83,6 +84,19 @@ export default function SettingsPage() {
   const [defaultPrice, setDefaultPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
   const renameRoom = useRenameRoom();
   const renameDesk = useRenameDesk();
+  const addRoom = useAddRoom();
+  const setRoomDeskCount = useSetRoomDeskCount();
+
+  const [addingRoom, setAddingRoom] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomDesks, setNewRoomDesks] = useState(4);
+  const newRoomInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addingRoom) {
+      newRoomInputRef.current?.focus();
+    }
+  }, [addingRoom]);
 
   const handleSave = async () => {
     if (!currentOrg) return;
@@ -120,6 +134,41 @@ export default function SettingsPage() {
       {
         onSuccess: () => toast({ title: 'Desk renamed', description: `Desk is now "${newLabel}".` }),
         onError: () => toast({ title: 'Error', description: 'Failed to rename desk.', variant: 'destructive' }),
+      },
+    );
+  };
+
+  const handleDeskCountChange = (roomId: string, roomName: string, targetCount: number) => {
+    if (!currentOrg) return;
+    const roomDesks = desks.filter((d) => d.roomId === roomId);
+    setRoomDeskCount.mutate(
+      { roomId, orgId: currentOrg.id, roomName, targetCount, currentDesks: roomDesks },
+      {
+        onSuccess: () => toast({ title: 'Desks updated', description: `Room now has ${targetCount} desk${targetCount !== 1 ? 's' : ''}.` }),
+        onError: (err) => {
+          if (err instanceof Error && err.message === 'DESKS_HAVE_BOOKINGS') {
+            toast({ title: 'Cannot remove desks', description: 'Some desks have existing bookings. Remove or reassign bookings first.', variant: 'destructive' });
+          } else {
+            toast({ title: 'Error', description: 'Failed to update desk count.', variant: 'destructive' });
+          }
+        },
+      },
+    );
+  };
+
+  const handleAddRoom = () => {
+    if (!currentOrg || !newRoomName.trim()) return;
+    const maxSortOrder = rooms.reduce((max, r) => Math.max(max, r.sortOrder), -1);
+    addRoom.mutate(
+      { orgId: currentOrg.id, name: newRoomName.trim(), deskCount: newRoomDesks, sortOrder: maxSortOrder + 1 },
+      {
+        onSuccess: () => {
+          toast({ title: 'Room added', description: `"${newRoomName.trim()}" created with ${newRoomDesks} desks.` });
+          setAddingRoom(false);
+          setNewRoomName('');
+          setNewRoomDesks(4);
+        },
+        onError: () => toast({ title: 'Error', description: 'Failed to add room.', variant: 'destructive' }),
       },
     );
   };
@@ -181,7 +230,7 @@ export default function SettingsPage() {
               <LayoutGrid className="h-5 w-5 text-blue-600" />
               <CardTitle>Rooms & Desks</CardTitle>
             </div>
-            <CardDescription>Click any name to rename it.</CardDescription>
+            <CardDescription>Click any name to rename it. Change desk counts with the dropdown.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -189,14 +238,28 @@ export default function SettingsPage() {
                 const roomDesks = desks.filter((d) => d.roomId === room.id);
                 return (
                   <div key={room.id} className="bg-gray-50 rounded-lg p-4">
-                    <InlineEdit
-                      value={room.name}
-                      onSave={(newName) => handleRenameRoom(room.id, newName)}
-                      className="font-medium text-gray-900"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      {roomDesks.length} desk{roomDesks.length !== 1 ? 's' : ''}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <InlineEdit
+                        value={room.name}
+                        onSave={(newName) => handleRenameRoom(room.id, newName)}
+                        className="font-medium text-gray-900"
+                      />
+                      <Select
+                        value={String(roomDesks.length)}
+                        onValueChange={(v) => handleDeskCountChange(room.id, room.name, Number(v))}
+                      >
+                        <SelectTrigger className="w-28 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                            <SelectItem key={n} value={String(n)}>
+                              {n} {n === 1 ? 'desk' : 'desks'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {roomDesks.map((desk) => (
                         <div
@@ -214,7 +277,55 @@ export default function SettingsPage() {
                   </div>
                 );
               })}
-              {rooms.length === 0 && (
+
+              {addingRoom ? (
+                <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-blue-300">
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      ref={newRoomInputRef}
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      placeholder="Room name"
+                      className="flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newRoomName.trim()) handleAddRoom();
+                        if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
+                      }}
+                    />
+                    <Select value={String(newRoomDesks)} onValueChange={(v) => setNewRoomDesks(Number(v))}>
+                      <SelectTrigger className="w-28 h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n} {n === 1 ? 'desk' : 'desks'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim() || addRoom.isPending}>
+                      {addRoom.isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setAddingRoom(false); setNewRoomName(''); }}>
+                      <X className="h-4 w-4 mr-1" /> Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setAddingRoom(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Room
+                </Button>
+              )}
+
+              {rooms.length === 0 && !addingRoom && (
                 <p className="text-sm text-gray-500">No rooms configured yet.</p>
               )}
             </div>
