@@ -6,6 +6,7 @@ const ORG_STORAGE_KEY = 'deskplanner-current-org';
 
 interface OrganizationContextType {
   currentOrg: Organization | null;
+  organizations: Organization[];
   setCurrentOrg: (org: Organization) => void;
   rooms: Room[];
   desks: OrgDesk[];
@@ -83,11 +84,13 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
   const loading = orgsLoading || roomsLoading || desksLoading;
   const hasOrganization = memberships.length > 0;
+  const organizations = memberships.map(m => m.organization);
 
   return (
     <OrganizationContext.Provider
       value={{
         currentOrg,
+        organizations,
         setCurrentOrg,
         rooms,
         desks,

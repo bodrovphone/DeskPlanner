@@ -5,17 +5,21 @@ import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose
 import logoCompact from '@/assets/logo-compact.svg';
 import { useState } from 'react';
 
-const navItems = [
-  { to: '/app/calendar', label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
-  { to: '/app/insights', label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
-  { to: '/app/revenue', label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
-  { to: '/app/waiting-list', label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
-  { to: '/app/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
-];
+function getNavItems(slug: string) {
+  const base = `/${slug}`;
+  return [
+    { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
+    { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
+    { to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
+    { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
+    { to: `${base}/settings`, label: 'Settings', shortLabel: 'Settings', icon: Settings },
+  ];
+}
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { currentOrg } = useOrganization();
+  const navItems = getNavItems(currentOrg?.slug || 'app');
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 

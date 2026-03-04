@@ -23,12 +23,14 @@ import { useBookings } from '@/hooks/use-bookings';
 import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { getCurrency } from '@/lib/settings';
 import { useBookingActions } from '@/hooks/use-booking-actions';
+import { DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 const MOBILE_BREAKPOINT = 1024;
 
 export default function DeskCalendar() {
   const { legacyDesks, currentOrg } = useOrganization();
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
+  const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
@@ -128,7 +130,8 @@ export default function DeskCalendar() {
     setSelectedBooking,
     setIsBookingModalOpen,
     nextAvailableDates,
-    desks
+    desks,
+    workingDays
   );
 
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
@@ -146,6 +149,7 @@ export default function DeskCalendar() {
           onFloorPlan={() => setIsFloorPlanModalOpen(true)}
           onSetAvailability={() => setIsRangeModalOpen(true)}
           onExport={handleExport}
+          workingDays={workingDays}
         />
       ) : (
         <>
@@ -179,6 +183,7 @@ export default function DeskCalendar() {
             currentDates={currentDates}
             bookings={bookings}
             onDeskClick={handleDeskClick}
+            workingDays={workingDays}
           />
         </>
       )}

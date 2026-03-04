@@ -39,7 +39,7 @@ export default function SignupPage() {
       if (error) {
         setError(error.message);
       } else if (data.user) {
-        navigate('/app/onboarding');
+        navigate('/onboarding');
       }
     } catch (err) {
       setError('An unexpected error occurred');

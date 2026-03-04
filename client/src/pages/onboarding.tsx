@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateOrganization, useCheckSlugAvailable } from '@/hooks/use-organization';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { currencyLabels, currencySymbols, activeCurrencies } from '@/lib/settings';
 import { Currency } from '@shared/schema';
-import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { DAY_LABELS, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
+import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil } from 'lucide-react';
 
 function generateSlug(name: string): string {
   return name
@@ -26,23 +28,19 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const createOrg = useCreateOrganization();
   const checkSlug = useCheckSlugAvailable();
-  const { hasOrganization } = useOrganization();
-
-  // Redirect to calendar if user already has an org
-  useEffect(() => {
-    if (hasOrganization) {
-      navigate('/app/calendar', { replace: true });
-    }
-  }, [hasOrganization, navigate]);
+  const { hasOrganization, currentOrg } = useOrganization();
+  const { signOut } = useAuth();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [slugEditMode, setSlugEditMode] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [roomsCount, setRoomsCount] = useState(2);
   const [desksPerRoom, setDesksPerRoom] = useState(4);
   const [roomNames, setRoomNames] = useState<string[]>(['Room 1', 'Room 2']);
+  const [workingDays, setWorkingDays] = useState<number[]>([...DEFAULT_WORKING_DAYS]);
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [defaultPricePerDay, setDefaultPricePerDay] = useState('8');
 
@@ -79,6 +77,17 @@ export default function OnboardingPage() {
     });
   }, [roomsCount]);
 
+  const toggleWorkingDay = (day: number) => {
+    setWorkingDays(prev => {
+      if (prev.includes(day)) {
+        // Don't allow removing all days
+        if (prev.length <= 1) return prev;
+        return prev.filter(d => d !== day);
+      }
+      return [...prev, day].sort((a, b) => a - b);
+    });
+  };
+
   const handleSubmit = async () => {
     try {
       await createOrg.mutateAsync({
@@ -89,8 +98,9 @@ export default function OnboardingPage() {
         currency,
         defaultPricePerDay: parseFloat(defaultPricePerDay) || 8,
         roomNames,
+        workingDays,
       });
-      navigate('/app/calendar', { replace: true });
+      navigate(`/${slug}/calendar`, { replace: true });
     } catch (error) {
       console.error('Failed to create organization:', error);
     }
@@ -147,21 +157,39 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="slug">URL Slug</Label>
-                <Input
-                  id="slug"
-                  value={slug}
-                  onChange={e => {
-                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
-                    setSlugManuallyEdited(true);
-                  }}
-                  placeholder="downtown-hub"
-                />
+                <Label htmlFor="slug">Your space URL</Label>
+                {slugEditMode ? (
+                  <Input
+                    id="slug"
+                    value={slug}
+                    onChange={e => {
+                      setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                      setSlugManuallyEdited(true);
+                    }}
+                    placeholder="downtown-hub"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 bg-gray-50 border rounded-md px-3 py-2 text-sm">
+                      <span className="text-gray-400">ohmydesk.app/</span>
+                      <span className="text-gray-900 font-medium">{slug || 'your-space'}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSlugEditMode(true)}
+                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                  </div>
+                )}
                 {slug && slugAvailable === true && (
-                  <p className="text-sm text-green-600 mt-1">Slug is available</p>
+                  <p className="text-sm text-green-600 mt-1">This URL is available</p>
                 )}
                 {slug && slugAvailable === false && (
-                  <p className="text-sm text-red-600 mt-1">Slug is already taken</p>
+                  <p className="text-sm text-red-600 mt-1">This URL is already taken</p>
                 )}
               </div>
               <Button
@@ -171,6 +199,26 @@ export default function OnboardingPage() {
               >
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+              {hasOrganization && currentOrg ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  asChild
+                >
+                  <Link to={`/${currentOrg.slug}/calendar`}>Back to workspace</Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    await signOut();
+                    navigate('/login');
+                  }}
+                >
+                  Already have an account? Sign in
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
@@ -225,6 +273,28 @@ export default function OnboardingPage() {
                     placeholder={`Room ${i + 1}`}
                   />
                 ))}
+              </div>
+
+              {/* Working Days */}
+              <div>
+                <Label>Working Days</Label>
+                <p className="text-xs text-gray-500 mb-2">Select which days your space is open for bookings.</p>
+                <div className="flex gap-1.5">
+                  {([1, 2, 3, 4, 5, 6, 7] as const).map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleWorkingDay(day)}
+                      className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
+                        workingDays.includes(day)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {DAY_LABELS[day]}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Preview */}

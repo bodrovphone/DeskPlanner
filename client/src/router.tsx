@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext';
 import { DataStoreProvider } from '@/contexts/DataStoreContext';
@@ -13,6 +13,15 @@ import WaitingListPage from '@/pages/waiting-list';
 import SettingsPage from '@/pages/settings';
 import InsightsPage from '@/pages/insights';
 
+const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="text-center">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+      <p className="text-gray-600">{message}</p>
+    </div>
+  </div>
+);
+
 function AuthLayout() {
   return (
     <AuthProvider>
@@ -25,14 +34,7 @@ function ProtectedRoute() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {
@@ -41,56 +43,89 @@ function ProtectedRoute() {
 
   return (
     <OrganizationProvider>
-      <OrgGate />
+      <Outlet />
     </OrganizationProvider>
   );
 }
 
-function OrgGate() {
-  const { hasOrganization, loading } = useOrganization();
+/** Resolves /:orgSlug param, sets currentOrg, redirects if slug is invalid */
+function OrgSlugGate() {
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const { currentOrg, organizations, setCurrentOrg, loading, hasOrganization } = useOrganization();
   const location = useLocation();
 
   if (loading) {
+    return <LoadingScreen message="Loading workspace..." />;
+  }
+
+  if (!hasOrganization) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // Try to find the org matching the URL slug
+  const matchedOrg = organizations.find(o => o.slug === orgSlug);
+
+  if (matchedOrg) {
+    // Switch to the matched org if it's different from current
+    if (currentOrg?.id !== matchedOrg.id) {
+      setCurrentOrg(matchedOrg);
+    }
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading workspace...</p>
-        </div>
-      </div>
+      <DataStoreProvider>
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
+      </DataStoreProvider>
     );
   }
 
-  // If no org and not already on onboarding, redirect
-  if (!hasOrganization && !location.pathname.endsWith('/onboarding')) {
-    return <Navigate to="/app/onboarding" replace />;
+  // Slug doesn't match any user org — redirect to current org's slug
+  const fallbackOrg = currentOrg || organizations[0];
+  const subPath = location.pathname.split('/').slice(2).join('/');
+  return <Navigate to={`/${fallbackOrg.slug}/${subPath}`} replace />;
+}
+
+/** Gate for onboarding — no slug needed, just auth + org context */
+function OnboardingGate() {
+  const { hasOrganization, loading } = useOrganization();
+
+  if (loading) {
+    return <LoadingScreen message="Loading workspace..." />;
   }
 
-  return (
-    <DataStoreProvider>
-      <ErrorBoundary>
-        <Outlet />
-      </ErrorBoundary>
-    </DataStoreProvider>
-  );
+  return <Outlet />;
+}
+
+/** Resolves /app and /app/* to the correct slug-based route */
+function AppResolver() {
+  const { currentOrg, loading, hasOrganization } = useOrganization();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!hasOrganization) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  const org = currentOrg!;
+  // Extract sub-path after /app (e.g., /app/calendar → calendar)
+  const match = location.pathname.match(/^\/app(?:\/(.+))?$/);
+  const subPath = match?.[1] || 'calendar';
+
+  return <Navigate to={`/${org.slug}/${subPath}`} replace />;
 }
 
 function PublicOnlyRoute() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (user) {
-    return <Navigate to="/app/calendar" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return <Outlet />;
@@ -100,19 +135,11 @@ function LandingRoute() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  // If logged in, go straight to app
   if (user) {
-    return <Navigate to="/app/calendar" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return <LandingPage />;
@@ -142,36 +169,70 @@ export const router = createBrowserRouter(
             },
           ],
         },
+        // Onboarding — protected but no slug
+        {
+          path: '/onboarding',
+          element: <ProtectedRoute />,
+          children: [
+            {
+              element: <OnboardingGate />,
+              children: [
+                {
+                  index: true,
+                  element: <OnboardingPage />,
+                },
+              ],
+            },
+          ],
+        },
+        // /app resolver — redirects to slug-based routes
         {
           path: '/app',
           element: <ProtectedRoute />,
           children: [
+            // /app and /app/* catch-all → redirect to /:slug/...
             {
-              path: 'onboarding',
-              element: <OnboardingPage />,
+              index: true,
+              element: <AppResolver />,
             },
             {
-              element: <DashboardLayout />,
+              path: '*',
+              element: <AppResolver />,
+            },
+          ],
+        },
+        // Slug-based routes
+        {
+          path: '/:orgSlug',
+          element: <ProtectedRoute />,
+          children: [
+            {
+              element: <OrgSlugGate />,
               children: [
                 {
-                  path: 'calendar',
-                  element: <DeskCalendar />,
-                },
-                {
-                  path: 'insights',
-                  element: <InsightsPage />,
-                },
-                {
-                  path: 'revenue',
-                  element: <RevenuePage />,
-                },
-                {
-                  path: 'waiting-list',
-                  element: <WaitingListPage />,
-                },
-                {
-                  path: 'settings',
-                  element: <SettingsPage />,
+                  element: <DashboardLayout />,
+                  children: [
+                    {
+                      path: 'calendar',
+                      element: <DeskCalendar />,
+                    },
+                    {
+                      path: 'insights',
+                      element: <InsightsPage />,
+                    },
+                    {
+                      path: 'revenue',
+                      element: <RevenuePage />,
+                    },
+                    {
+                      path: 'waiting-list',
+                      element: <WaitingListPage />,
+                    },
+                    {
+                      path: 'settings',
+                      element: <SettingsPage />,
+                    },
+                  ],
                 },
               ],
             },

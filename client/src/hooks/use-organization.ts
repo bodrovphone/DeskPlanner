@@ -19,6 +19,7 @@ function mapOrg(row: Record<string, unknown>): Organization {
     defaultPricePerDay: (row.default_price_per_day as number) ?? 8,
     timezone: row.timezone as string,
     floorPlanUrl: (row.floor_plan_url as string) ?? null,
+    workingDays: (row.working_days as number[]) ?? [1, 2, 3, 4, 5],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -117,6 +118,7 @@ interface CreateOrgInput {
   currency: string;
   defaultPricePerDay: number;
   roomNames: string[];
+  workingDays?: number[];
 }
 
 export function useCreateOrganization() {
@@ -137,6 +139,7 @@ export function useCreateOrganization() {
           desks_per_room: input.desksPerRoom,
           currency: input.currency,
           default_price_per_day: input.defaultPricePerDay,
+          working_days: input.workingDays ?? [1, 2, 3, 4, 5],
         })
         .select()
         .single();

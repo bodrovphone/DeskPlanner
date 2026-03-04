@@ -273,25 +273,22 @@ export class SupabaseDataStore implements IDataStore {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
 
-    // Generate all business days in month (exclude weekends)
-    const businessDaysInMonth: string[] = [];
+    // Generate all calendar days in month
+    const daysInMonth: string[] = [];
     let current = new Date(monthStart);
     while (current <= monthEnd) {
-      const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        businessDaysInMonth.push(current.toISOString().split('T')[0]);
-      }
+      daysInMonth.push(current.toISOString().split('T')[0]);
       current.setDate(current.getDate() + 1);
     }
 
-    const totalDeskDays = DESK_COUNT * businessDaysInMonth.length;
+    const totalDeskDays = DESK_COUNT * daysInMonth.length;
 
     try {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
-          .in('date', businessDaysInMonth)
+          .in('date', daysInMonth)
       );
 
       if (error) throw error;
@@ -315,10 +312,10 @@ export class SupabaseDataStore implements IDataStore {
         // Calculate pro-rated revenue for this month
         const bookingStart = new Date(row.start_date);
         const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countBusinessDays(bookingStart, bookingEnd);
+        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
         const effectiveStart = bookingStart > monthStart ? bookingStart : monthStart;
         const effectiveEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
-        const daysInThisMonth = this.countBusinessDays(effectiveStart, effectiveEnd);
+        const daysInThisMonth = this.countCalendarDays(effectiveStart, effectiveEnd);
 
         const bookingPrice = row.price || 0;
         const proratedPrice = totalBookingDays > 0
@@ -361,17 +358,11 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  private countBusinessDays(start: Date, end: Date): number {
-    let count = 0;
-    const current = new Date(start);
-    while (current <= end) {
-      const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    return count;
+  private countCalendarDays(start: Date, end: Date): number {
+    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const diffMs = e.getTime() - s.getTime();
+    return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
   async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
@@ -382,24 +373,21 @@ export class SupabaseDataStore implements IDataStore {
     const rangeStart = new Date(startDate);
     const rangeEnd = new Date(endDate);
 
-    const businessDaysInRange: string[] = [];
+    const daysInRange: string[] = [];
     let current = new Date(rangeStart);
     while (current <= rangeEnd) {
-      const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        businessDaysInRange.push(current.toISOString().split('T')[0]);
-      }
+      daysInRange.push(current.toISOString().split('T')[0]);
       current.setDate(current.getDate() + 1);
     }
 
-    const totalDeskDays = DESK_COUNT * businessDaysInRange.length;
+    const totalDeskDays = DESK_COUNT * daysInRange.length;
 
     try {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
-          .in('date', businessDaysInRange)
+          .in('date', daysInRange)
       );
 
       if (error) throw error;
@@ -420,10 +408,10 @@ export class SupabaseDataStore implements IDataStore {
 
         const bookingStart = new Date(row.start_date);
         const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countBusinessDays(bookingStart, bookingEnd);
+        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
         const effectiveStart = bookingStart > rangeStart ? bookingStart : rangeStart;
         const effectiveEnd = bookingEnd < rangeEnd ? bookingEnd : rangeEnd;
-        const daysInThisRange = this.countBusinessDays(effectiveStart, effectiveEnd);
+        const daysInThisRange = this.countCalendarDays(effectiveStart, effectiveEnd);
 
         const bookingPrice = row.price || 0;
         const proratedPrice = totalBookingDays > 0

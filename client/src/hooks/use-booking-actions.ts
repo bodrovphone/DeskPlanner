@@ -5,12 +5,7 @@ import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols } from '@/lib/settings';
-
-function isWeekend(dateString: string): boolean {
-  const date = new Date(dateString + 'T00:00:00');
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6;
-}
+import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 function invalidateBookingQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
@@ -44,13 +39,14 @@ export function useBookingActions(
   setIsBookingModalOpen: (v: boolean) => void,
   nextAvailableDates: string[],
   desks: Desk[],
+  workingDays: number[] = DEFAULT_WORKING_DAYS,
 ) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const dataStore = useDataStore();
 
   const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent) => {
-    if (isWeekend(date)) return;
+    if (isNonWorkingDay(date, workingDays)) return;
 
     const booking = await dataStore.getBooking(deskId, date);
 
@@ -97,7 +93,7 @@ export function useBookingActions(
       setSelectedBooking({ booking: null, deskId, date });
       setIsBookingModalOpen(true);
     }
-  }, [toast, currentCurrency, queryClient, setSelectedBooking, setIsBookingModalOpen, dataStore]);
+  }, [toast, currentCurrency, queryClient, setSelectedBooking, setIsBookingModalOpen, dataStore, workingDays]);
 
   const handleBookingSave = useCallback(async (bookingData: {
     personName: string;

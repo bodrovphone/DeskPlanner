@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import { Card } from '@/components/ui/card';
 import DeskCell from '@/components/DeskCell';
 import { DeskBooking, Desk } from '@shared/schema';
+import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 interface DateInfo {
   dateString: string;
@@ -14,6 +15,7 @@ interface DeskGridProps {
   currentDates: DateInfo[];
   bookings: Record<string, DeskBooking>;
   onDeskClick: (deskId: string, date: string, event?: React.MouseEvent) => void;
+  workingDays?: number[];
 }
 
 function isToday(dateString: string): boolean {
@@ -22,17 +24,11 @@ function isToday(dateString: string): boolean {
   return dateString === todayString;
 }
 
-function isWeekend(dateString: string): boolean {
-  const date = new Date(dateString + 'T00:00:00');
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6;
-}
-
 const ROOM_COLORS = ['text-blue-600', 'text-pink-600', 'text-emerald-600', 'text-amber-600', 'text-purple-600', 'text-cyan-600'];
 const ROOM_BG_COLORS = ['bg-blue-50', 'bg-pink-50', 'bg-emerald-50', 'bg-amber-50', 'bg-purple-50', 'bg-cyan-50'];
 
 const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
-  ({ desks, currentDates, bookings, onDeskClick }, ref) => {
+  ({ desks, currentDates, bookings, onDeskClick, workingDays = DEFAULT_WORKING_DAYS }, ref) => {
     const getBookingForCell = (deskId: string, date: string): DeskBooking | null => {
       const key = `${deskId}-${date}`;
       return bookings[key] || null;
@@ -64,21 +60,21 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                 </th>
                 {currentDates.map((day) => {
                   const isTodayColumn = isToday(day.dateString);
-                  const isWeekendColumn = isWeekend(day.dateString);
+                  const isNonWorking = isNonWorkingDay(day.dateString, workingDays);
                   return (
                     <th
                       key={day.dateString}
                       className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[120px] ${
                         isTodayColumn
                           ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300'
-                          : isWeekendColumn
+                          : isNonWorking
                           ? 'bg-gray-100 text-gray-400'
                           : 'text-gray-500'
                       }`}
                     >
                       <div className="flex flex-col">
                         <span className={`font-semibold ${
-                          isTodayColumn ? 'text-blue-900' : isWeekendColumn ? 'text-gray-400' : 'text-gray-900'
+                          isTodayColumn ? 'text-blue-900' : isNonWorking ? 'text-gray-400' : 'text-gray-900'
                         }`}>
                           {day.dayName}
                         </span>
@@ -86,8 +82,8 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                         {isTodayColumn && (
                           <span className="text-xs font-medium text-blue-600 mt-1">TODAY</span>
                         )}
-                        {isWeekendColumn && (
-                          <span className="text-xs font-medium text-gray-400 mt-1">WEEKEND</span>
+                        {isNonWorking && (
+                          <span className="text-xs font-medium text-gray-400 mt-1">DAY OFF</span>
                         )}
                       </div>
                     </th>
@@ -127,14 +123,14 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                         </td>
                         {currentDates.map((day) => {
                           const isTodayColumn = isToday(day.dateString);
-                          const isWeekendColumn = isWeekend(day.dateString);
+                          const isNonWorking = isNonWorkingDay(day.dateString, workingDays);
                           return (
                             <td
                               key={day.dateString}
                               className={`px-2 py-3 text-center ${
                                 isTodayColumn
                                   ? 'bg-blue-50 border-l-2 border-r-2 border-blue-300'
-                                  : isWeekendColumn
+                                  : isNonWorking
                                   ? 'bg-gray-100'
                                   : ''
                               }`}
@@ -144,7 +140,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                                 date={day.dateString}
                                 booking={getBookingForCell(desk.id, day.dateString)}
                                 onClick={(e) => onDeskClick(desk.id, day.dateString, e)}
-                                isWeekend={isWeekendColumn}
+                                isNonWorkingDay={isNonWorking}
                               />
                             </td>
                           );

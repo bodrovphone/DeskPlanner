@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else if (data.user) {
-        navigate('/app/calendar');
+        navigate('/app');
       }
     } catch (err) {
       setError('An unexpected error occurred');

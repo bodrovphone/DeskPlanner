@@ -9,22 +9,23 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { DEFAULT_DESKS } from '@/lib/deskConfig';
 import { getMonthRange, getMonthRangeString } from '@/lib/dateUtils';
 import { DeskBooking, Currency } from '@shared/schema';
+import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 export default function InsightsPage() {
   const { legacyDesks, currentOrg } = useOrganization();
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
+  const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
 
   const monthDays = useMemo(() => getMonthRange(0), []);
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
   const dates = useMemo(() => {
     return monthDays
       .filter(d => {
-        if (d.dateString <= today) return false; // Only future dates (starting tomorrow)
-        const day = new Date(d.dateString + 'T00:00:00').getDay();
-        return day !== 0 && day !== 6; // Exclude weekends
+        if (d.dateString <= today) return false;
+        return !isNonWorkingDay(d.dateString, workingDays);
       })
       .map(d => d.dateString);
-  }, [monthDays, today]);
+  }, [monthDays, today, workingDays]);
 
   const { data: nextDatesData } = useNextDates();
   const { data: stats = { available: 0, assigned: 0, booked: 0 } } = useBookingStats(dates);

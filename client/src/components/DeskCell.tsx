@@ -8,6 +8,8 @@ interface DeskCellProps {
   date: string;
   booking: DeskBooking | null;
   onClick: (event?: React.MouseEvent) => void;
+  isNonWorkingDay?: boolean;
+  /** @deprecated Use isNonWorkingDay instead */
   isWeekend?: boolean;
 }
 
@@ -32,7 +34,8 @@ const statusConfig = {
   }
 };
 
-export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps) {
+export default function DeskCell({ booking, onClick, isNonWorkingDay, isWeekend }: DeskCellProps) {
+  const nonWorking = isNonWorkingDay ?? isWeekend ?? false;
   const rawStatus = booking?.status || 'available';
   // Handle legacy 'unavailable' status by converting to 'available'
   const status: DeskStatus = (rawStatus as any) === 'unavailable' ? 'available' : rawStatus as DeskStatus;
@@ -42,8 +45,8 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
   const hasBooking = isBooked || isAssigned;
   const StatusIcon = config.Icon;
 
-  // For weekends with no booking, show weekend indicator
-  if (isWeekend && !hasBooking) {
+  // For non-working days with no booking, show day off indicator
+  if (nonWorking && !hasBooking) {
     return (
       <div
         className="desk-cell rounded-lg p-1 sm:p-2 min-h-[52px] sm:min-h-[80px] bg-gray-100 cursor-not-allowed flex flex-col items-center justify-center text-center"
@@ -51,7 +54,7 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
       >
         <Sofa className="h-4 w-4 text-gray-400" />
         <div className="text-xs font-medium mt-1 text-gray-400">
-          Weekend
+          Day off
         </div>
       </div>
     );
@@ -62,12 +65,12 @@ export default function DeskCell({ booking, onClick, isWeekend }: DeskCellProps)
       className={cn(
         'desk-cell rounded-lg p-1 sm:p-2 min-h-[52px] sm:min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer select-none touch-manipulation',
         config.className,
-        isWeekend && 'opacity-50 cursor-not-allowed',
+        nonWorking && 'opacity-50 cursor-not-allowed',
         'hover:shadow-md active:scale-95 transition-all duration-150'
       )}
-      onClick={(e) => !isWeekend && onClick(e)}
-      onContextMenu={(e) => !isWeekend && onClick(e)}
-      style={{ pointerEvents: isWeekend ? 'none' : 'auto' }}
+      onClick={(e) => !nonWorking && onClick(e)}
+      onContextMenu={(e) => !nonWorking && onClick(e)}
+      style={{ pointerEvents: nonWorking ? 'none' : 'auto' }}
     >
       <StatusIcon className={cn('h-4 w-4', config.iconColor)} />
 

@@ -4,6 +4,7 @@ import DeskCell from '@/components/DeskCell';
 import { useSwipe } from '@/hooks/use-mobile';
 import { getThreeDayRange, getThreeDayRangeString } from '@/lib/dateUtils';
 import { DeskBooking, Desk } from '@shared/schema';
+import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 import {
   PlusCircle,
   Map,
@@ -23,15 +24,11 @@ interface MobileCalendarProps {
   onFloorPlan: () => void;
   onSetAvailability: () => void;
   onExport: () => void;
+  workingDays?: number[];
 }
 
 function isToday(dateString: string): boolean {
   return dateString === new Date().toISOString().split('T')[0];
-}
-
-function isWeekend(dateString: string): boolean {
-  const day = new Date(dateString + 'T00:00:00').getDay();
-  return day === 0 || day === 6;
 }
 
 const ROOM_COLORS = ['text-blue-600', 'text-pink-600', 'text-emerald-600', 'text-amber-600', 'text-purple-600', 'text-cyan-600'];
@@ -47,6 +44,7 @@ export default function MobileCalendar({
   onFloorPlan,
   onSetAvailability,
   onExport,
+  workingDays = DEFAULT_WORKING_DAYS,
 }: MobileCalendarProps) {
   const [offset, setOffset] = useState(0);
 
@@ -168,20 +166,20 @@ export default function MobileCalendar({
                   <div className="grid grid-cols-3">
                     {days.map((day) => {
                       const today = isToday(day.dateString);
-                      const weekend = isWeekend(day.dateString);
+                      const nonWorking = isNonWorkingDay(day.dateString, workingDays);
                       return (
                         <div
                           key={day.dateString}
                           className={`p-1.5 ${
                             today
                               ? 'bg-blue-50 border-x border-blue-200'
-                              : weekend
+                              : nonWorking
                               ? 'bg-gray-50'
                               : ''
                           }`}
                         >
                           <div className={`text-center mb-1 ${
-                            today ? 'text-blue-700' : weekend ? 'text-gray-400' : 'text-gray-500'
+                            today ? 'text-blue-700' : nonWorking ? 'text-gray-400' : 'text-gray-500'
                           }`}>
                             <div className="text-[11px] font-medium">
                               {day.dayName}
@@ -194,7 +192,7 @@ export default function MobileCalendar({
                             date={day.dateString}
                             booking={getBooking(desk.id, day.dateString)}
                             onClick={(e) => onDeskClick(desk.id, day.dateString, e)}
-                            isWeekend={weekend}
+                            isNonWorkingDay={nonWorking}
                           />
                         </div>
                       );
