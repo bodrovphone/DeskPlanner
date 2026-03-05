@@ -1,5 +1,6 @@
 import { DeskBooking, MonthlyStats, Currency } from '@shared/schema';
 import { DESK_COUNT } from './deskConfig';
+import { isNonWorkingDay } from './workingDays';
 
 function formatLocalDate(date: Date): string {
   const year = date.getFullYear();
@@ -67,9 +68,11 @@ export function calculateProratedRevenue(
 
 export function countOccupiedDays(
   bookings: DeskBooking[],
-  daysInPeriod: string[]
-): number {
+  daysInPeriod: string[],
+  workingDays?: number[]
+): { occupiedDays: number; assignedDays: number } {
   let occupiedDays = 0;
+  let assignedDays = 0;
 
   for (const booking of bookings) {
     if (!daysInPeriod.includes(booking.date)) continue;
@@ -77,9 +80,12 @@ export function countOccupiedDays(
     if (booking.status === 'assigned' || booking.status === 'booked') {
       occupiedDays++;
     }
+    if (booking.status === 'assigned' && (!workingDays || !isNonWorkingDay(booking.date, workingDays))) {
+      assignedDays++;
+    }
   }
 
-  return occupiedDays;
+  return { occupiedDays, assignedDays };
 }
 
 export interface RevenueBreakdown {
@@ -128,11 +134,12 @@ export interface DerivedMetrics {
 
 export function calculateDerivedMetrics(
   occupiedDays: number,
+  assignedDays: number,
   totalDeskDays: number,
-  totalRevenue: number
+  confirmedRevenue: number
 ): DerivedMetrics {
   const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
-  const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+  const revenuePerOccupiedDay = assignedDays > 0 ? confirmedRevenue / assignedDays : 0;
 
   return { occupancyRate, revenuePerOccupiedDay };
 }
@@ -143,15 +150,16 @@ export interface StatsInput {
   periodStart: Date;
   periodEnd: Date;
   currency: Currency;
+  workingDays?: number[];
 }
 
 export function calculateStats(input: StatsInput): MonthlyStats {
-  const { bookings, daysInPeriod, periodStart, periodEnd, currency } = input;
+  const { bookings, daysInPeriod, periodStart, periodEnd, currency, workingDays } = input;
   const totalDeskDays = DESK_COUNT * daysInPeriod.length;
 
-  const occupiedDays = countOccupiedDays(bookings, daysInPeriod);
+  const { occupiedDays, assignedDays } = countOccupiedDays(bookings, daysInPeriod, workingDays);
   const revenue = calculateRevenueByStatus(bookings, daysInPeriod, periodStart, periodEnd);
-  const metrics = calculateDerivedMetrics(occupiedDays, totalDeskDays, revenue.totalRevenue);
+  const metrics = calculateDerivedMetrics(occupiedDays, assignedDays, totalDeskDays, revenue.confirmedRevenue);
 
   return {
     totalRevenue: revenue.totalRevenue,

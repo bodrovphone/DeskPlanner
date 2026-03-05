@@ -92,6 +92,23 @@ export default function SettingsPage() {
   const [newRoomDesks, setNewRoomDesks] = useState(4);
   const newRoomInputRef = useRef<HTMLInputElement>(null);
 
+  // Draft state for Rooms & Desks (buffered until Save)
+  const [draftRoomNames, setDraftRoomNames] = useState<Record<string, string>>({});
+  const [draftDeskLabels, setDraftDeskLabels] = useState<Record<string, string>>({});
+  const [draftDeskCounts, setDraftDeskCounts] = useState<Record<string, number>>({});
+  const [pendingNewRooms, setPendingNewRooms] = useState<Array<{ name: string; deskCount: number }>>([]);
+  const [savingRooms, setSavingRooms] = useState(false);
+
+  const hasOrgChanges =
+    orgName !== (currentOrg?.name || '') ||
+    defaultPrice !== (currentOrg?.defaultPricePerDay?.toString() || '8');
+
+  const hasRoomChanges =
+    Object.keys(draftRoomNames).length > 0 ||
+    Object.keys(draftDeskLabels).length > 0 ||
+    Object.keys(draftDeskCounts).length > 0 ||
+    pendingNewRooms.length > 0;
+
   useEffect(() => {
     if (addingRoom) {
       newRoomInputRef.current?.focus();
@@ -118,59 +135,121 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRenameRoom = (roomId: string, newName: string) => {
-    renameRoom.mutate(
-      { roomId, newName },
-      {
-        onSuccess: () => toast({ title: 'Room renamed', description: `Room is now "${newName}".` }),
-        onError: () => toast({ title: 'Error', description: 'Failed to rename room.', variant: 'destructive' }),
-      },
-    );
+  const handleDraftRoomRename = (roomId: string, newName: string) => {
+    const original = rooms.find((r) => r.id === roomId);
+    if (original && newName === original.name) {
+      setDraftRoomNames((prev) => { const next = { ...prev }; delete next[roomId]; return next; });
+    } else {
+      setDraftRoomNames((prev) => ({ ...prev, [roomId]: newName }));
+    }
   };
 
-  const handleRenameDesk = (deskId: string, newLabel: string) => {
-    renameDesk.mutate(
-      { deskId, newLabel },
-      {
-        onSuccess: () => toast({ title: 'Desk renamed', description: `Desk is now "${newLabel}".` }),
-        onError: () => toast({ title: 'Error', description: 'Failed to rename desk.', variant: 'destructive' }),
-      },
-    );
+  const handleDraftDeskRename = (deskId: string, newLabel: string) => {
+    const original = desks.find((d) => d.id === deskId);
+    if (original && newLabel === original.label) {
+      setDraftDeskLabels((prev) => { const next = { ...prev }; delete next[deskId]; return next; });
+    } else {
+      setDraftDeskLabels((prev) => ({ ...prev, [deskId]: newLabel }));
+    }
   };
 
-  const handleDeskCountChange = (roomId: string, roomName: string, targetCount: number) => {
-    if (!currentOrg) return;
+  const handleDraftDeskCountChange = (roomId: string, targetCount: number) => {
     const roomDesks = desks.filter((d) => d.roomId === roomId);
-    setRoomDeskCount.mutate(
-      { roomId, orgId: currentOrg.id, roomName, targetCount, currentDesks: roomDesks },
-      {
-        onSuccess: () => toast({ title: 'Desks updated', description: `Room now has ${targetCount} desk${targetCount !== 1 ? 's' : ''}.` }),
-        onError: (err) => {
-          if (err instanceof Error && err.message === 'DESKS_HAVE_BOOKINGS') {
-            toast({ title: 'Cannot remove desks', description: 'Some desks have existing bookings. Remove or reassign bookings first.', variant: 'destructive' });
-          } else {
-            toast({ title: 'Error', description: 'Failed to update desk count.', variant: 'destructive' });
-          }
-        },
-      },
-    );
+    if (targetCount === roomDesks.length) {
+      setDraftDeskCounts((prev) => { const next = { ...prev }; delete next[roomId]; return next; });
+    } else {
+      setDraftDeskCounts((prev) => ({ ...prev, [roomId]: targetCount }));
+    }
   };
 
   const handleAddRoom = () => {
-    if (!currentOrg || !newRoomName.trim()) return;
-    const maxSortOrder = rooms.reduce((max, r) => Math.max(max, r.sortOrder), -1);
-    addRoom.mutate(
-      { orgId: currentOrg.id, name: newRoomName.trim(), deskCount: newRoomDesks, sortOrder: maxSortOrder + 1 },
-      {
-        onSuccess: () => {
-          toast({ title: 'Room added', description: `"${newRoomName.trim()}" created with ${newRoomDesks} desks.` });
-          setAddingRoom(false);
-          setNewRoomName('');
-          setNewRoomDesks(4);
-        },
-        onError: () => toast({ title: 'Error', description: 'Failed to add room.', variant: 'destructive' }),
-      },
-    );
+    if (!newRoomName.trim()) return;
+    setPendingNewRooms((prev) => [...prev, { name: newRoomName.trim(), deskCount: newRoomDesks }]);
+    setAddingRoom(false);
+    setNewRoomName('');
+    setNewRoomDesks(4);
+  };
+
+  const handleRemovePendingRoom = (index: number) => {
+    setPendingNewRooms((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveRooms = async () => {
+    if (!currentOrg) return;
+    setSavingRooms(true);
+    try {
+      const promises: Promise<void>[] = [];
+
+      // Room renames
+      for (const [roomId, newName] of Object.entries(draftRoomNames)) {
+        promises.push(
+          new Promise((resolve, reject) =>
+            renameRoom.mutate({ roomId, newName }, { onSuccess: () => resolve(), onError: reject })
+          )
+        );
+      }
+
+      // Desk label renames
+      for (const [deskId, newLabel] of Object.entries(draftDeskLabels)) {
+        promises.push(
+          new Promise((resolve, reject) =>
+            renameDesk.mutate({ deskId, newLabel }, { onSuccess: () => resolve(), onError: reject })
+          )
+        );
+      }
+
+      // Desk count changes
+      for (const [roomId, targetCount] of Object.entries(draftDeskCounts)) {
+        const room = rooms.find((r) => r.id === roomId);
+        const roomDesks = desks.filter((d) => d.roomId === roomId);
+        if (room) {
+          promises.push(
+            new Promise((resolve, reject) =>
+              setRoomDeskCount.mutate(
+                { roomId, orgId: currentOrg.id, roomName: room.name, targetCount, currentDesks: roomDesks },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (err) => {
+                    if (err instanceof Error && err.message === 'DESKS_HAVE_BOOKINGS') {
+                      toast({ title: 'Cannot remove desks', description: 'Some desks have existing bookings.', variant: 'destructive' });
+                    }
+                    reject(err);
+                  },
+                },
+              )
+            )
+          );
+        }
+      }
+
+      // New rooms
+      let maxSortOrder = rooms.reduce((max, r) => Math.max(max, r.sortOrder), -1);
+      for (const newRoom of pendingNewRooms) {
+        maxSortOrder += 1;
+        const sortOrder = maxSortOrder;
+        promises.push(
+          new Promise((resolve, reject) =>
+            addRoom.mutate(
+              { orgId: currentOrg.id, name: newRoom.name, deskCount: newRoom.deskCount, sortOrder },
+              { onSuccess: () => resolve(), onError: reject },
+            )
+          )
+        );
+      }
+
+      await Promise.all(promises);
+
+      // Clear draft state
+      setDraftRoomNames({});
+      setDraftDeskLabels({});
+      setDraftDeskCounts({});
+      setPendingNewRooms([]);
+      toast({ title: 'Rooms & Desks Saved', description: 'All changes have been applied.' });
+    } catch {
+      toast({ title: 'Error', description: 'Some changes failed to save.', variant: 'destructive' });
+    } finally {
+      setSavingRooms(false);
+    }
   };
 
   if (!currentOrg) return null;
@@ -179,8 +258,8 @@ export default function SettingsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" />
@@ -217,14 +296,14 @@ export default function SettingsPage() {
                 onChange={(e) => setDefaultPrice(e.target.value)}
               />
             </div>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || !hasOrgChanges}>
               <Save className="mr-2 h-4 w-4" />
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-2">
               <LayoutGrid className="h-5 w-5 text-blue-600" />
@@ -232,21 +311,22 @@ export default function SettingsPage() {
             </div>
             <CardDescription>Click any name to rename it. Change desk counts with the dropdown.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="flex flex-col flex-1">
+            <div className="space-y-3 flex-1">
               {rooms.map((room) => {
                 const roomDesks = desks.filter((d) => d.roomId === room.id);
+                const displayDeskCount = draftDeskCounts[room.id] ?? roomDesks.length;
                 return (
                   <div key={room.id} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center justify-between gap-2">
                       <InlineEdit
-                        value={room.name}
-                        onSave={(newName) => handleRenameRoom(room.id, newName)}
+                        value={draftRoomNames[room.id] ?? room.name}
+                        onSave={(newName) => handleDraftRoomRename(room.id, newName)}
                         className="font-medium text-gray-900"
                       />
                       <Select
-                        value={String(roomDesks.length)}
-                        onValueChange={(v) => handleDeskCountChange(room.id, room.name, Number(v))}
+                        value={String(displayDeskCount)}
+                        onValueChange={(v) => handleDraftDeskCountChange(room.id, Number(v))}
                       >
                         <SelectTrigger className="w-28 h-8 text-sm">
                           <SelectValue />
@@ -267,8 +347,8 @@ export default function SettingsPage() {
                           className="px-2 py-1 bg-white border rounded text-xs text-gray-600"
                         >
                           <InlineEdit
-                            value={desk.label}
-                            onSave={(newLabel) => handleRenameDesk(desk.id, newLabel)}
+                            value={draftDeskLabels[desk.id] ?? desk.label}
+                            onSave={(newLabel) => handleDraftDeskRename(desk.id, newLabel)}
                             className="text-xs"
                           />
                         </div>
@@ -277,6 +357,22 @@ export default function SettingsPage() {
                   </div>
                 );
               })}
+
+              {/* Pending new rooms (not yet saved) */}
+              {pendingNewRooms.map((newRoom, idx) => (
+                <div key={`pending-${idx}`} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-gray-900">{newRoom.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{newRoom.deskCount} {newRoom.deskCount === 1 ? 'desk' : 'desks'}</span>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleRemovePendingRoom(idx)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">New — will be created on save</p>
+                </div>
+              ))}
 
               {addingRoom ? (
                 <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-blue-300">
@@ -306,8 +402,8 @@ export default function SettingsPage() {
                     </Select>
                   </div>
                   <div className="flex gap-2 mt-2">
-                    <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim() || addRoom.isPending}>
-                      {addRoom.isPending ? 'Saving...' : 'Save'}
+                    <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim()}>
+                      Add
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => { setAddingRoom(false); setNewRoomName(''); }}>
                       <X className="h-4 w-4 mr-1" /> Cancel
@@ -325,9 +421,15 @@ export default function SettingsPage() {
                 </Button>
               )}
 
-              {rooms.length === 0 && !addingRoom && (
+              {rooms.length === 0 && pendingNewRooms.length === 0 && !addingRoom && (
                 <p className="text-sm text-gray-500">No rooms configured yet.</p>
               )}
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Button onClick={handleSaveRooms} disabled={!hasRoomChanges || savingRooms}>
+                <Save className="mr-2 h-4 w-4" />
+                {savingRooms ? 'Saving...' : 'Save Changes'}
+              </Button>
             </div>
           </CardContent>
         </Card>

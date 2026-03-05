@@ -3,6 +3,7 @@ import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, Recu
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
+import { isNonWorkingDay } from './workingDays';
 
 export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
@@ -269,7 +270,7 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
+  async getMonthlyStats(year: number, month: number, workingDays?: number[]): Promise<MonthlyStats> {
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
     // Uses DESK_COUNT from deskConfig
@@ -303,6 +304,7 @@ export class SupabaseDataStore implements IDataStore {
       let confirmedRevenue = 0;
       let expectedRevenue = 0;
       let occupiedDays = 0;
+      let assignedWorkingDays = 0;
 
       for (const row of data || []) {
         // Count occupied days, deduplicating by desk_id+date
@@ -311,6 +313,9 @@ export class SupabaseDataStore implements IDataStore {
           seenSlots.add(slotKey);
           if (row.status === 'assigned' || row.status === 'booked') {
             occupiedDays++;
+          }
+          if (row.status === 'assigned' && (!workingDays || !isNonWorkingDay(row.date, workingDays))) {
+            assignedWorkingDays++;
           }
         }
 
@@ -341,7 +346,7 @@ export class SupabaseDataStore implements IDataStore {
 
       const totalRevenue = confirmedRevenue + expectedRevenue;
       const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
 
       return {
         totalRevenue,
@@ -375,7 +380,7 @@ export class SupabaseDataStore implements IDataStore {
     return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
+  async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[]): Promise<MonthlyStats> {
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
     // Uses DESK_COUNT from deskConfig
@@ -407,6 +412,7 @@ export class SupabaseDataStore implements IDataStore {
       let confirmedRevenue = 0;
       let expectedRevenue = 0;
       let occupiedDays = 0;
+      let assignedWorkingDays = 0;
 
       for (const row of data || []) {
         // Count occupied days, deduplicating by desk_id+date
@@ -415,6 +421,9 @@ export class SupabaseDataStore implements IDataStore {
           seenSlots.add(slotKey);
           if (row.status === 'assigned' || row.status === 'booked') {
             occupiedDays++;
+          }
+          if (row.status === 'assigned' && (!workingDays || !isNonWorkingDay(row.date, workingDays))) {
+            assignedWorkingDays++;
           }
         }
 
@@ -443,7 +452,7 @@ export class SupabaseDataStore implements IDataStore {
 
       const totalRevenue = confirmedRevenue + expectedRevenue;
       const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
 
       return {
         totalRevenue, confirmedRevenue, expectedRevenue, occupiedDays,

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDataStore } from '@/contexts/DataStoreContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { MonthlyStats } from '@shared/schema';
+import { DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 export interface RevenueHistoryEntry {
   month: string;
@@ -11,8 +13,10 @@ export interface RevenueHistoryEntry {
 
 export function useRevenueHistory(monthCount = 6) {
   const dataStore = useDataStore();
+  const { currentOrg } = useOrganization();
+  const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
   return useQuery({
-    queryKey: ['revenue-history', monthCount],
+    queryKey: ['revenue-history', monthCount, workingDays],
     queryFn: async (): Promise<RevenueHistoryEntry[]> => {
       const now = new Date();
       const results: RevenueHistoryEntry[] = [];
@@ -22,7 +26,7 @@ export function useRevenueHistory(monthCount = 6) {
         const year = d.getFullYear();
         const month = d.getMonth();
 
-        const stats: MonthlyStats = await dataStore.getMonthlyStats(year, month);
+        const stats: MonthlyStats = await dataStore.getMonthlyStats(year, month, workingDays);
 
         let totalExpenses = 0;
         if (dataStore.getExpenses) {
@@ -53,9 +57,11 @@ export function useRevenueHistory(monthCount = 6) {
 
 export function useMonthlyStats(year: number, month: number) {
   const dataStore = useDataStore();
+  const { currentOrg } = useOrganization();
+  const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
   return useQuery({
-    queryKey: ['monthly-stats', year, month],
-    queryFn: () => dataStore.getMonthlyStats(year, month),
+    queryKey: ['monthly-stats', year, month, workingDays],
+    queryFn: () => dataStore.getMonthlyStats(year, month, workingDays),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
@@ -65,9 +71,11 @@ export function useMonthlyStats(year: number, month: number) {
 
 export function useDateRangeStats(startDate: string, endDate: string) {
   const dataStore = useDataStore();
+  const { currentOrg } = useOrganization();
+  const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
   return useQuery({
-    queryKey: ['date-range-stats', startDate, endDate],
-    queryFn: () => dataStore.getStatsForDateRange(startDate, endDate),
+    queryKey: ['date-range-stats', startDate, endDate, workingDays],
+    queryFn: () => dataStore.getStatsForDateRange(startDate, endDate, workingDays),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,

@@ -1,5 +1,6 @@
 import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense } from '@/../../shared/schema';
 import { DESK_COUNT } from './deskConfig';
+import { isNonWorkingDay } from './workingDays';
 
 /**
  * Abstract data store interface for desk bookings
@@ -28,8 +29,8 @@ export interface IDataStore {
     booked: number;
   }>;
 
-  getMonthlyStats(year: number, month: number): Promise<MonthlyStats>;
-  getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats>;
+  getMonthlyStats(year: number, month: number, workingDays?: number[]): Promise<MonthlyStats>;
+  getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[]): Promise<MonthlyStats>;
 
   // Utility
   clearAllBookings(): Promise<void>;
@@ -259,7 +260,7 @@ export class LocalStorageDataStore implements IDataStore {
     return { available, assigned, booked };
   }
 
-  async getMonthlyStats(year: number, month: number): Promise<MonthlyStats> {
+  async getMonthlyStats(year: number, month: number, workingDays?: number[]): Promise<MonthlyStats> {
     const data = this.getStorageData();
     // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
@@ -285,6 +286,7 @@ export class LocalStorageDataStore implements IDataStore {
     let confirmedRevenue = 0;
     let expectedRevenue = 0;
     let occupiedDays = 0;
+    let assignedWorkingDays = 0;
 
     // Process bookings
     for (const booking of Object.values(data)) {
@@ -293,6 +295,9 @@ export class LocalStorageDataStore implements IDataStore {
       // Count occupied days (each day counts once for occupancy)
       if (booking.status === 'assigned' || booking.status === 'booked') {
         occupiedDays++;
+      }
+      if (booking.status === 'assigned' && (!workingDays || !isNonWorkingDay(booking.date, workingDays))) {
+        assignedWorkingDays++;
       }
 
       // For revenue: only process each unique booking once, with pro-rata calculation
@@ -326,7 +331,7 @@ export class LocalStorageDataStore implements IDataStore {
 
     const totalRevenue = confirmedRevenue + expectedRevenue;
     const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
-    const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+    const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
 
     return {
       totalRevenue,
@@ -347,7 +352,7 @@ export class LocalStorageDataStore implements IDataStore {
     return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  async getStatsForDateRange(startDate: string, endDate: string): Promise<MonthlyStats> {
+  async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[]): Promise<MonthlyStats> {
     const data = this.getStorageData();
     // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
@@ -370,12 +375,16 @@ export class LocalStorageDataStore implements IDataStore {
     let confirmedRevenue = 0;
     let expectedRevenue = 0;
     let occupiedDays = 0;
+    let assignedWorkingDays = 0;
 
     for (const booking of Object.values(data)) {
       if (!daysInRange.includes(booking.date)) continue;
 
       if (booking.status === 'assigned' || booking.status === 'booked') {
         occupiedDays++;
+      }
+      if (booking.status === 'assigned' && (!workingDays || !isNonWorkingDay(booking.date, workingDays))) {
+        assignedWorkingDays++;
       }
 
       const bookingKey = `${booking.deskId}-${booking.startDate}`;
@@ -403,7 +412,7 @@ export class LocalStorageDataStore implements IDataStore {
 
     const totalRevenue = confirmedRevenue + expectedRevenue;
     const occupancyRate = totalDeskDays > 0 ? (occupiedDays / totalDeskDays) * 100 : 0;
-    const revenuePerOccupiedDay = occupiedDays > 0 ? totalRevenue / occupiedDays : 0;
+    const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
 
     return {
       totalRevenue,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useMonthlyStats, useDateRangeStats } from '@/hooks/use-monthly-stats';
@@ -227,16 +228,25 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                   </div>
                 </div>
 
-                {/* Revenue per Occupied Day */}
-                <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 col-span-2 md:col-span-1">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
-                    <span className="text-xs sm:text-sm text-gray-600">Avg/Day</span>
-                  </div>
-                  <div className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">
-                    {formatCurrency(stats.revenuePerOccupiedDay)}
-                  </div>
-                </div>
+                {/* Revenue per Assigned Day */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 col-span-2 md:col-span-1 cursor-help">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
+                          <span className="text-xs sm:text-sm text-gray-600">Avg/Day</span>
+                        </div>
+                        <div className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">
+                          {formatCurrency(stats.revenuePerOccupiedDay)}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>Paid revenue divided by assigned (paid) desk-days on working days only. Weekends, booked, and available days are excluded.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Occupancy Progress Bar */}
