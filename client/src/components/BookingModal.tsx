@@ -5,11 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DeskBooking, DeskStatus, Currency } from '@shared/schema';
+import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle } from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -17,6 +16,7 @@ interface BookingModalProps {
   booking: DeskBooking | null;
   deskId: string;
   date: string;
+  desks: Desk[];
   currency: Currency;
   onSave: (bookingData: {
     personName: string;
@@ -28,6 +28,7 @@ interface BookingModalProps {
     currency: Currency;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
+  onPause?: () => void;
 }
 
 export default function BookingModal({
@@ -36,9 +37,11 @@ export default function BookingModal({
   booking,
   deskId,
   date,
+  desks,
   currency,
   onSave,
   onDiscard,
+  onPause,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
   const defaultPrice = currentOrg?.defaultPricePerDay ?? 8;
@@ -136,8 +139,9 @@ export default function BookingModal({
   };
 
   const isExistingBooking = booking && booking.status !== 'available';
+  const isMultiDayBooking = isExistingBooking && booking.startDate !== booking.endDate;
 
-  const desk = DESKS.find(d => d.id === deskId);
+  const desk = desks.find(d => d.id === deskId);
 
   // Safely format the date
   const formatDate = (dateStr: string) => {
@@ -345,6 +349,17 @@ export default function BookingModal({
                   Discard
                 </>
               )}
+            </Button>
+          )}
+          {isMultiDayBooking && onPause && (
+            <Button
+              variant="outline"
+              onClick={() => onPause()}
+              disabled={isDiscarding || isLoading}
+              className="flex-1 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+            >
+              <PauseCircle className="h-4 w-4 mr-2" />
+              Pause & Extend
             </Button>
           )}
           <Button

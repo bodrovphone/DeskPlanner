@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import PersonModal from '@/components/PersonModal';
 import BookingModal from '@/components/BookingModal';
+import PauseBookingModal from '@/components/PauseBookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import FloorPlanModal from '@/components/FloorPlanModal';
 import DataMigrationModal from '@/components/DataMigrationModal';
@@ -23,6 +24,7 @@ import { useBookings } from '@/hooks/use-bookings';
 import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { getCurrency } from '@/lib/settings';
 import { useBookingActions } from '@/hooks/use-booking-actions';
+import { usePauseBooking } from '@/hooks/use-pause-booking';
 import { DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
 const MOBILE_BREAKPOINT = 1024;
@@ -47,6 +49,7 @@ export default function DeskCalendar() {
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,6 +137,8 @@ export default function DeskCalendar() {
     workingDays
   );
 
+  const { handlePauseBooking } = usePauseBooking();
+
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
   return (
@@ -197,10 +202,36 @@ export default function DeskCalendar() {
         booking={selectedBooking?.booking || null}
         deskId={selectedBooking?.deskId || ''}
         date={selectedBooking?.date || ''}
+        desks={desks}
         currency={currentCurrency}
         onSave={handleBookingSave}
         onDiscard={handleDiscardBooking}
+        onPause={() => {
+          setIsBookingModalOpen(false);
+          setIsPauseModalOpen(true);
+          // Don't clear selectedBooking — PauseBookingModal needs it
+        }}
       />
+
+      {selectedBooking?.booking && selectedBooking.booking.startDate !== selectedBooking.booking.endDate && (
+        <PauseBookingModal
+          isOpen={isPauseModalOpen}
+          onClose={() => {
+            setIsPauseModalOpen(false);
+            setSelectedBooking(null);
+          }}
+          booking={selectedBooking.booking}
+          currency={currentCurrency}
+          onConfirm={async (pauseStart, pauseEnd) => {
+            await handlePauseBooking(
+              selectedBooking.booking!,
+              selectedBooking.deskId,
+              pauseStart,
+              pauseEnd,
+            );
+          }}
+        />
+      )}
 
       <PersonModal
         isOpen={isPersonModalOpen}
@@ -211,12 +242,14 @@ export default function DeskCalendar() {
         booking={selectedBooking?.booking || null}
         deskId={selectedBooking?.deskId || ''}
         date={selectedBooking?.date || ''}
+        desks={desks}
         onSave={handlePersonSave}
       />
 
       <AvailabilityRangeModal
         isOpen={isRangeModalOpen}
         onClose={() => setIsRangeModalOpen(false)}
+        desks={desks}
         onApply={handleBulkAvailability}
       />
 

@@ -97,6 +97,7 @@ export default function InsightsPage() {
         booking={selectedBooking?.booking || null}
         deskId={selectedBooking?.deskId || ''}
         date={selectedBooking?.date || ''}
+        desks={desks}
         currency={currentCurrency}
         onSave={handleBookingSave}
         onDiscard={handleDiscardBooking}

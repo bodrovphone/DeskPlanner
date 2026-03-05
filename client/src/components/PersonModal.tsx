@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DeskBooking } from '@shared/schema';
-import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
+import { Desk, DeskBooking } from '@shared/schema';
 import { User } from 'lucide-react';
 
 interface PersonModalProps {
@@ -13,6 +12,7 @@ interface PersonModalProps {
   booking: DeskBooking | null;
   deskId: string;
   date: string;
+  desks: Desk[];
   onSave: (personName: string) => void;
 }
 
@@ -22,6 +22,7 @@ export default function PersonModal({
   booking,
   deskId,
   date,
+  desks,
   onSave
 }: PersonModalProps) {
   const [personName, setPersonName] = useState('');
@@ -47,7 +48,7 @@ export default function PersonModal({
     }
   };
 
-  const desk = DESKS.find(d => d.id === deskId);
+  const desk = desks.find(d => d.id === deskId);
   const formattedDate = new Date(date).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',

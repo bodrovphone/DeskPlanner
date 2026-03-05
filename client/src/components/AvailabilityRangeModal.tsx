@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DeskStatus } from '@shared/schema';
-import { DEFAULT_DESKS as DESKS } from '@/lib/deskConfig';
+import { Desk, DeskStatus } from '@shared/schema';
 import { formatDateRange } from '@/lib/dateUtils';
 import { CalendarRange } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -14,12 +13,14 @@ import dayjs from 'dayjs';
 interface AvailabilityRangeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  desks: Desk[];
   onApply: (startDate: string, endDate: string, deskIds: string[], status: DeskStatus) => void;
 }
 
 export default function AvailabilityRangeModal({
   isOpen,
   onClose,
+  desks,
   onApply
 }: AvailabilityRangeModalProps) {
   const [startDate, setStartDate] = useState('');
@@ -48,10 +49,10 @@ export default function AvailabilityRangeModal({
   };
 
   const handleSelectAllDesks = () => {
-    if (selectedDeskIds.length === DESKS.length) {
+    if (selectedDeskIds.length === desks.length) {
       setSelectedDeskIds([]);
     } else {
-      setSelectedDeskIds(DESKS.map(desk => desk.id));
+      setSelectedDeskIds(desks.map(desk => desk.id));
     }
   };
 
@@ -121,7 +122,7 @@ export default function AvailabilityRangeModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium text-gray-700">
-                Select Desks ({selectedDeskIds.length} of {DESKS.length} selected)
+                Select Desks ({selectedDeskIds.length} of {desks.length} selected)
               </Label>
               <Button
                 type="button"
@@ -129,11 +130,11 @@ export default function AvailabilityRangeModal({
                 size="sm"
                 onClick={handleSelectAllDesks}
               >
-                {selectedDeskIds.length === DESKS.length ? 'Deselect All' : 'Select All'}
+                {selectedDeskIds.length === desks.length ? 'Deselect All' : 'Select All'}
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-2">
-              {DESKS.map((desk) => (
+              {desks.map((desk) => (
                 <label
                   key={desk.id}
                   className="flex items-center p-2 rounded border hover:bg-gray-50 cursor-pointer"

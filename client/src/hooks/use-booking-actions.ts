@@ -7,13 +7,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols } from '@/lib/settings';
 import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 
-function invalidateBookingQueries(queryClient: ReturnType<typeof useQueryClient>) {
+export function invalidateBookingQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
   queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
   queryClient.invalidateQueries({ queryKey: ['next-dates'] });
 }
 
-async function refetchLocalStorageQueries(queryClient: ReturnType<typeof useQueryClient>) {
+export async function refetchLocalStorageQueries(queryClient: ReturnType<typeof useQueryClient>) {
   const storageType = import.meta.env.VITE_STORAGE_TYPE;
   if (storageType === 'localStorage') {
     await Promise.all([
@@ -320,9 +320,7 @@ export function useBookingActions(
       dateRange.map(date => dataStore.deleteBooking(deskId, date))
     );
 
-    queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    queryClient.invalidateQueries({ queryKey: ['desk-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['next-dates'] });
+    invalidateBookingQueries(queryClient);
 
     toast({
       title: 'Booking Discarded',
