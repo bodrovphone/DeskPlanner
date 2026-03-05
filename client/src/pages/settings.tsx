@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { Building2, LayoutGrid, Save, Pencil, Plus, X } from 'lucide-react';
+import { activeCurrencies, currencyLabels } from '@/lib/settings';
 
 function InlineEdit({
   value,
@@ -81,6 +82,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState(currentOrg?.name || '');
+  const [currency, setCurrency] = useState(currentOrg?.currency || 'EUR');
   const [defaultPrice, setDefaultPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
   const renameRoom = useRenameRoom();
   const renameDesk = useRenameDesk();
@@ -101,6 +103,7 @@ export default function SettingsPage() {
 
   const hasOrgChanges =
     orgName !== (currentOrg?.name || '') ||
+    currency !== (currentOrg?.currency || 'EUR') ||
     defaultPrice !== (currentOrg?.defaultPricePerDay?.toString() || '8');
 
   const hasRoomChanges =
@@ -121,7 +124,7 @@ export default function SettingsPage() {
     try {
       const { error } = await supabaseClient
         .from('organizations')
-        .update({ name: orgName, default_price_per_day: parseFloat(defaultPrice) || 8 })
+        .update({ name: orgName, currency, default_price_per_day: parseFloat(defaultPrice) || 8 })
         .eq('id', currentOrg.id);
 
       if (error) throw error;
@@ -283,10 +286,19 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label>Currency</Label>
-              <Input value={currentOrg.currency} disabled />
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeCurrencies.map(c => (
+                    <SelectItem key={c} value={c}>{currencyLabels[c] || c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <Label htmlFor="defaultPrice">Default price per desk/day ({currentOrg.currency})</Label>
+              <Label htmlFor="defaultPrice">Default price per desk/day ({currency})</Label>
               <Input
                 id="defaultPrice"
                 type="number"
