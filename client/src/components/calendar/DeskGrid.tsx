@@ -51,7 +51,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
 
     return (
       <Card className="overflow-hidden">
-        <div ref={ref} className="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto">
+        <div ref={ref} className="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto pr-4">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-30">
               <tr>

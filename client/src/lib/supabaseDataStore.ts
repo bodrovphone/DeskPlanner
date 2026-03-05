@@ -233,7 +233,7 @@ export class SupabaseDataStore implements IDataStore {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('desk_bookings')
-          .select('status')
+          .select('desk_id, date, status')
           .in('date', dates)
       );
 
@@ -245,7 +245,12 @@ export class SupabaseDataStore implements IDataStore {
       let assigned = 0;
       let booked = 0;
 
+      // Deduplicate by desk_id+date to avoid counting duplicate rows
+      const seen = new Set<string>();
       for (const row of data || []) {
+        const key = `${row.desk_id}:${row.date}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         switch (row.status) {
           case 'assigned':
             assigned++;
@@ -294,14 +299,19 @@ export class SupabaseDataStore implements IDataStore {
       if (error) throw error;
 
       const processedBookings = new Set<string>();
+      const seenSlots = new Set<string>();
       let confirmedRevenue = 0;
       let expectedRevenue = 0;
       let occupiedDays = 0;
 
       for (const row of data || []) {
-        // Count occupied days
-        if (row.status === 'assigned' || row.status === 'booked') {
-          occupiedDays++;
+        // Count occupied days, deduplicating by desk_id+date
+        const slotKey = `${row.desk_id}:${row.date}`;
+        if (!seenSlots.has(slotKey)) {
+          seenSlots.add(slotKey);
+          if (row.status === 'assigned' || row.status === 'booked') {
+            occupiedDays++;
+          }
         }
 
         // For revenue: only process each unique booking once, with pro-rata calculation
@@ -393,13 +403,19 @@ export class SupabaseDataStore implements IDataStore {
       if (error) throw error;
 
       const processedBookings = new Set<string>();
+      const seenSlots = new Set<string>();
       let confirmedRevenue = 0;
       let expectedRevenue = 0;
       let occupiedDays = 0;
 
       for (const row of data || []) {
-        if (row.status === 'assigned' || row.status === 'booked') {
-          occupiedDays++;
+        // Count occupied days, deduplicating by desk_id+date
+        const slotKey = `${row.desk_id}:${row.date}`;
+        if (!seenSlots.has(slotKey)) {
+          seenSlots.add(slotKey);
+          if (row.status === 'assigned' || row.status === 'booked') {
+            occupiedDays++;
+          }
         }
 
         const bookingKey = `${row.desk_id}-${row.start_date}`;
