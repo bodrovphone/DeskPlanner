@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Desk, DeskStatus } from '@shared/schema';
 import { formatDateRange } from '@/lib/dateUtils';
@@ -26,8 +25,6 @@ export default function AvailabilityRangeModal({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedDeskIds, setSelectedDeskIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<DeskStatus>('available');
-
   useEffect(() => {
     if (isOpen) {
       // Reset form when modal opens
@@ -36,7 +33,6 @@ export default function AvailabilityRangeModal({
       setStartDate(today);
       setEndDate(nextWeek);
       setSelectedDeskIds([]);
-      setStatus('available');
     }
   }, [isOpen]);
 
@@ -65,7 +61,7 @@ export default function AvailabilityRangeModal({
       return;
     }
 
-    onApply(startDate, endDate, selectedDeskIds, status);
+    onApply(startDate, endDate, selectedDeskIds, 'available');
     onClose();
   };
 
@@ -150,20 +146,6 @@ export default function AvailabilityRangeModal({
             </div>
           </div>
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
-              Status
-            </Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as DeskStatus)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="booked">Booked</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="flex justify-end space-x-3 mt-6">

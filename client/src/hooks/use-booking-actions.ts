@@ -45,10 +45,10 @@ export function useBookingActions(
   const queryClient = useQueryClient();
   const dataStore = useDataStore();
 
-  const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent) => {
+  const handleDeskClick = useCallback(async (deskId: string, date: string, event?: React.MouseEvent, existingBooking?: DeskBooking | null) => {
     if (isNonWorkingDay(date, workingDays)) return;
 
-    const booking = await dataStore.getBooking(deskId, date);
+    const booking = existingBooking ?? null;
 
     if (event?.ctrlKey || event?.button === 2) {
       event?.preventDefault();

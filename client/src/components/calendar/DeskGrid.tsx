@@ -14,7 +14,7 @@ interface DeskGridProps {
   desks: Desk[];
   currentDates: DateInfo[];
   bookings: Record<string, DeskBooking>;
-  onDeskClick: (deskId: string, date: string, event?: React.MouseEvent) => void;
+  onDeskClick: (deskId: string, date: string, event?: React.MouseEvent, booking?: DeskBooking | null) => void;
   workingDays?: number[];
 }
 
@@ -139,7 +139,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                                 deskId={desk.id}
                                 date={day.dateString}
                                 booking={getBookingForCell(desk.id, day.dateString)}
-                                onClick={(e) => onDeskClick(desk.id, day.dateString, e)}
+                                onClick={(e) => onDeskClick(desk.id, day.dateString, e, getBookingForCell(desk.id, day.dateString))}
                                 isNonWorkingDay={isNonWorking}
                               />
                             </td>

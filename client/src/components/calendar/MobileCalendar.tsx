@@ -17,7 +17,7 @@ import {
 interface MobileCalendarProps {
   desks: Desk[];
   bookings: Record<string, DeskBooking>;
-  onDeskClick: (deskId: string, date: string, event?: React.MouseEvent) => void;
+  onDeskClick: (deskId: string, date: string, event?: React.MouseEvent, booking?: DeskBooking | null) => void;
   onQuickBook: () => void;
   quickBookDisabled: boolean;
   quickBookLoading: boolean;
@@ -191,7 +191,7 @@ export default function MobileCalendar({
                             deskId={desk.id}
                             date={day.dateString}
                             booking={getBooking(desk.id, day.dateString)}
-                            onClick={(e) => onDeskClick(desk.id, day.dateString, e)}
+                            onClick={(e) => onDeskClick(desk.id, day.dateString, e, getBooking(desk.id, day.dateString))}
                             isNonWorkingDay={nonWorking}
                           />
                         </div>
