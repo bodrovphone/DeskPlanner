@@ -9,14 +9,17 @@ export interface RevenueHistoryEntry {
   revenue: number;
   expenses: number;
   netProfit: number;
+  occupancy: number;
+  avgPerDay: number;
 }
 
 export function useRevenueHistory(monthCount = 6) {
   const dataStore = useDataStore();
-  const { currentOrg } = useOrganization();
+  const { currentOrg, legacyDesks } = useOrganization();
   const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
+  const deskCount = legacyDesks.length || undefined;
   return useQuery({
-    queryKey: ['revenue-history', monthCount, workingDays],
+    queryKey: ['revenue-history', monthCount, workingDays, deskCount],
     queryFn: async (): Promise<RevenueHistoryEntry[]> => {
       const now = new Date();
       const results: RevenueHistoryEntry[] = [];
@@ -26,7 +29,7 @@ export function useRevenueHistory(monthCount = 6) {
         const year = d.getFullYear();
         const month = d.getMonth();
 
-        const stats: MonthlyStats = await dataStore.getMonthlyStats(year, month, workingDays);
+        const stats: MonthlyStats = await dataStore.getMonthlyStats(year, month, workingDays, deskCount);
 
         let totalExpenses = 0;
         if (dataStore.getExpenses) {
@@ -43,6 +46,8 @@ export function useRevenueHistory(monthCount = 6) {
           revenue: Math.round(stats.totalRevenue * 100) / 100,
           expenses: Math.round(totalExpenses * 100) / 100,
           netProfit: Math.round((stats.totalRevenue - totalExpenses) * 100) / 100,
+          occupancy: Math.floor(stats.occupancyRate),
+          avgPerDay: Math.round(stats.revenuePerOccupiedDay * 100) / 100,
         });
       }
 
@@ -57,11 +62,12 @@ export function useRevenueHistory(monthCount = 6) {
 
 export function useMonthlyStats(year: number, month: number) {
   const dataStore = useDataStore();
-  const { currentOrg } = useOrganization();
+  const { currentOrg, legacyDesks } = useOrganization();
   const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
+  const deskCount = legacyDesks.length || undefined;
   return useQuery({
-    queryKey: ['monthly-stats', year, month, workingDays],
-    queryFn: () => dataStore.getMonthlyStats(year, month, workingDays),
+    queryKey: ['monthly-stats', year, month, workingDays, deskCount],
+    queryFn: () => dataStore.getMonthlyStats(year, month, workingDays, deskCount),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
@@ -71,11 +77,12 @@ export function useMonthlyStats(year: number, month: number) {
 
 export function useDateRangeStats(startDate: string, endDate: string) {
   const dataStore = useDataStore();
-  const { currentOrg } = useOrganization();
+  const { currentOrg, legacyDesks } = useOrganization();
   const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
+  const deskCount = legacyDesks.length || undefined;
   return useQuery({
-    queryKey: ['date-range-stats', startDate, endDate, workingDays],
-    queryFn: () => dataStore.getStatsForDateRange(startDate, endDate, workingDays),
+    queryKey: ['date-range-stats', startDate, endDate, workingDays, deskCount],
+    queryFn: () => dataStore.getStatsForDateRange(startDate, endDate, workingDays, deskCount),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,

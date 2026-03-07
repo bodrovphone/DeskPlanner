@@ -29,8 +29,8 @@ export interface IDataStore {
     booked: number;
   }>;
 
-  getMonthlyStats(year: number, month: number, workingDays?: number[]): Promise<MonthlyStats>;
-  getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[]): Promise<MonthlyStats>;
+  getMonthlyStats(year: number, month: number, workingDays?: number[], deskCount?: number): Promise<MonthlyStats>;
+  getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[], deskCount?: number): Promise<MonthlyStats>;
 
   // Utility
   clearAllBookings(): Promise<void>;
@@ -260,7 +260,7 @@ export class LocalStorageDataStore implements IDataStore {
     return { available, assigned, booked };
   }
 
-  async getMonthlyStats(year: number, month: number, workingDays?: number[]): Promise<MonthlyStats> {
+  async getMonthlyStats(year: number, month: number, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
     const data = this.getStorageData();
     // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
@@ -274,11 +274,17 @@ export class LocalStorageDataStore implements IDataStore {
     const daysInMonth: string[] = [];
     let current = new Date(monthStart);
     while (current <= monthEnd) {
-      daysInMonth.push(current.toISOString().split('T')[0]);
+      const y = current.getFullYear();
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      const d = String(current.getDate()).padStart(2, '0');
+      daysInMonth.push(`${y}-${m}-${d}`);
       current.setDate(current.getDate() + 1);
     }
 
-    const totalDeskDays = DESK_COUNT * daysInMonth.length;
+    const workingDayCount = workingDays
+      ? daysInMonth.filter(d => !isNonWorkingDay(d, workingDays)).length
+      : daysInMonth.length;
+    const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
 
     // Track processed bookings to avoid double-counting multi-day bookings
     const processedBookings = new Set<string>();
@@ -352,24 +358,30 @@ export class LocalStorageDataStore implements IDataStore {
     return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[]): Promise<MonthlyStats> {
+  async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
     const data = this.getStorageData();
     // Uses DESK_COUNT from deskConfig
     const { getCurrency } = await import('./settings');
     const currency = getCurrency();
 
-    const rangeStart = new Date(startDate);
-    const rangeEnd = new Date(endDate);
+    const rangeStart = new Date(startDate + 'T00:00:00');
+    const rangeEnd = new Date(endDate + 'T00:00:00');
 
     // Generate all calendar days in the range
     const daysInRange: string[] = [];
     let current = new Date(rangeStart);
     while (current <= rangeEnd) {
-      daysInRange.push(current.toISOString().split('T')[0]);
+      const y = current.getFullYear();
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      const d = String(current.getDate()).padStart(2, '0');
+      daysInRange.push(`${y}-${m}-${d}`);
       current.setDate(current.getDate() + 1);
     }
 
-    const totalDeskDays = DESK_COUNT * daysInRange.length;
+    const workingDayCount = workingDays
+      ? daysInRange.filter(d => !isNonWorkingDay(d, workingDays)).length
+      : daysInRange.length;
+    const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
     const processedBookings = new Set<string>();
 
     let confirmedRevenue = 0;

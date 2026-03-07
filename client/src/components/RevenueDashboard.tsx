@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useMonthlyStats, useDateRangeStats } from '@/hooks/use-monthly-stats';
 import { useExpenses, useDeleteExpense } from '@/hooks/use-expenses';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Expense, ExpenseCategory } from '@shared/schema';
@@ -50,6 +51,8 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
 
   const { toast } = useToast();
   const deleteExpense = useDeleteExpense();
+  const { currentOrg } = useOrganization();
+  const defaultPricePerDay = currentOrg?.defaultPricePerDay ?? 8;
 
   // Calculate year and month from offset for monthly view
   const targetDate = new Date();
@@ -169,7 +172,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
           ) : stats ? (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-6">
                 {/* Net Profit - First */}
                 <div className={`p-3 sm:p-4 rounded-lg border ${
                   netProfit >= 0
@@ -221,7 +224,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                     <span className="text-xs sm:text-sm text-gray-600">Occupancy</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-purple-600 mt-1">
-                    {stats.occupancyRate.toFixed(1)}%
+                    {Math.floor(stats.occupancyRate)}%
                   </div>
                   <div className="text-xs text-gray-400">
                     {stats.occupiedDays}/{stats.totalDeskDays}
@@ -232,7 +235,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 col-span-2 md:col-span-1 cursor-help">
+                      <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 cursor-help">
                         <div className="flex items-center gap-1 sm:gap-2">
                           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
                           <span className="text-xs sm:text-sm text-gray-600">Avg/Day</span>
@@ -247,13 +250,36 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+
+                {/* Max Revenue */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-help">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                          <span className="text-xs sm:text-sm text-gray-600">Max Revenue</span>
+                        </div>
+                        <div className="text-lg sm:text-2xl font-bold text-gray-500 mt-1">
+                          {formatCurrency(stats.totalDeskDays * defaultPricePerDay)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {stats.totalDeskDays} × {currencySymbol}{defaultPricePerDay}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>Maximum possible revenue if every desk-day were occupied at the default price ({currencySymbol}{defaultPricePerDay}/day).</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Occupancy Progress Bar */}
               <div className="mb-6">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600">Occupancy Rate</span>
-                  <span className="font-medium">{stats.occupancyRate.toFixed(1)}%</span>
+                  <span className="font-medium">{Math.floor(stats.occupancyRate)}%</span>
                 </div>
                 <Progress value={stats.occupancyRate} className="h-3" />
               </div>

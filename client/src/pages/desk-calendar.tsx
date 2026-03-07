@@ -25,7 +25,7 @@ import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { getCurrency } from '@/lib/settings';
 import { useBookingActions } from '@/hooks/use-booking-actions';
 import { usePauseBooking } from '@/hooks/use-pause-booking';
-import { DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
+import { DEFAULT_WORKING_DAYS, isNonWorkingDay } from '@/lib/workingDays';
 
 const MOBILE_BREAKPOINT = 1024;
 
@@ -182,6 +182,7 @@ export default function DeskCalendar() {
     const counts = { available: 0, booked: 0, assigned: 0 };
     for (const desk of filteredDesks) {
       for (const day of currentDates) {
+        if (isNonWorkingDay(day.dateString, workingDays)) continue;
         const key = `${desk.id}-${day.dateString}`;
         const booking = bookings[key];
         const status = booking?.status;
@@ -191,7 +192,7 @@ export default function DeskCalendar() {
       }
     }
     return counts;
-  }, [filteredDesks, currentDates, bookings]);
+  }, [filteredDesks, currentDates, bookings, workingDays]);
 
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
