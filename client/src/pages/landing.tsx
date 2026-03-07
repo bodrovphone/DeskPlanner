@@ -8,6 +8,11 @@ import {
   Check,
   Zap,
   Shield,
+  Bell,
+  Send,
+  Mail,
+  Smartphone,
+  MessageCircle,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg';
@@ -532,6 +537,46 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── NOTIFICATIONS SHOWCASE ── */}
+      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+        <SectionHeading
+          tag="Notifications"
+          title="Stay in the loop, automatically."
+          sub="Get notified about upcoming bookings and ending assignments -- right where you already work."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 24, maxWidth: 900, margin: '0 auto' }}>
+          {/* Telegram - live */}
+          <NotificationChannelCard
+            icon={Send}
+            name="Telegram"
+            desc="Daily alerts for bookings starting and assignments ending tomorrow. Connect in one click during onboarding."
+            live
+            index={0}
+          />
+          {/* Email - coming soon */}
+          <NotificationChannelCard
+            icon={Mail}
+            name="Email"
+            desc="Same notifications delivered to your inbox. Daily digest or instant alerts -- your choice."
+            index={1}
+          />
+          {/* WhatsApp - coming soon */}
+          <NotificationChannelCard
+            icon={MessageCircle}
+            name="WhatsApp"
+            desc="Get updates in the messenger your team already uses. Perfect for on-the-go operators."
+            index={2}
+          />
+          {/* SMS - coming soon */}
+          <NotificationChannelCard
+            icon={Smartphone}
+            name="SMS"
+            desc="Critical alerts via text message. For operators who need guaranteed delivery."
+            index={3}
+          />
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ── */}
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
@@ -752,6 +797,73 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
   );
 }
 
+function NotificationChannelCard({ icon: Icon, name, desc, live, index }: { icon: typeof Calendar; name: string; desc: string; live?: boolean; index: number }) {
+  const { ref, visible } = useReveal();
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      ref={ref}
+      {...touchHoverProps(() => setHovered(true), () => setHovered(false))}
+      style={{
+        background: hovered ? T.bgCardHover : T.bgCard,
+        border: `1px solid ${live && hovered ? T.green + '33' : T.borderBright}`,
+        borderRadius: 10,
+        padding: 28,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: `all 0.5s cubic-bezier(.22,1,.36,1) ${index * 100}ms`,
+        cursor: 'default',
+        position: 'relative',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 8,
+          background: live ? T.greenFaint : `${T.textMuted}11`,
+          border: `1px solid ${live ? T.green + '22' : T.textMuted + '22'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease',
+          boxShadow: live && hovered ? `0 0 16px ${T.greenGlow}` : 'none',
+        }}>
+          <Icon size={18} color={live ? T.green : T.textMuted} />
+        </div>
+        {live ? (
+          <span style={{
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fontWeight: 600,
+            color: T.bg,
+            background: T.green,
+            padding: '3px 10px',
+            borderRadius: 20,
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+          }}>Live</span>
+        ) : (
+          <span style={{
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fontWeight: 600,
+            color: T.textMuted,
+            background: `${T.textMuted}18`,
+            padding: '3px 10px',
+            borderRadius: 20,
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+            border: `1px solid ${T.textMuted}22`,
+          }}>Coming Soon</span>
+        )}
+      </div>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: live ? T.textPrimary : T.textSecondary, marginBottom: 8 }}>{name}</h3>
+      <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6, margin: 0, opacity: live ? 1 : 0.7 }}>{desc}</p>
+    </div>
+  );
+}
+
 function CtaSection() {
   const { ref, visible } = useReveal();
   return (
@@ -770,7 +882,7 @@ function CtaSection() {
         Ready to stop juggling spreadsheets?
       </h2>
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-        Join hundreds of coworking operators who manage their desks with OhMyDesk. Free forever for small spaces.
+        Join hundreds of coworking operators who manage their desks with OhMyDesk. Start your free trial today.
       </p>
       <Link to="/signup" style={{ textDecoration: 'none' }}>
         <button style={{

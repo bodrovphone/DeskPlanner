@@ -288,16 +288,32 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeCurrencies.map(c => (
-                    <SelectItem key={c} value={c}>{currencyLabels[c] || c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                {activeCurrencies.map(c => (
+                  <Button
+                    key={c}
+                    type="button"
+                    variant={currency === c ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCurrency(c)}
+                  >
+                    {currencyLabels[c] || c}
+                  </Button>
+                ))}
+                <Input
+                  value={activeCurrencies.includes(currency) ? '' : currency}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+                    if (val) setCurrency(val);
+                  }}
+                  placeholder="Other (e.g. RSD)"
+                  className="w-32"
+                  maxLength={3}
+                />
+              </div>
+              {currency && !activeCurrencies.includes(currency) && currency.length === 3 && (
+                <p className="text-xs text-blue-600 mt-1">Using custom currency: {currency}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="defaultPrice">Default price per desk/day ({currency})</Label>
