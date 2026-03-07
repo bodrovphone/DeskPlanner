@@ -9,6 +9,16 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
 
+function formatNextDate(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const date = new Date(dateStr + 'T00:00:00');
+  const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 interface RoomInfo {
   room: number;
   roomName: string;
@@ -23,6 +33,7 @@ interface CalendarNavigationProps {
   onQuickBook: () => void;
   quickBookDisabled: boolean;
   quickBookLoading: boolean;
+  nextAvailableDate?: string;
   roomViewMode: 'all' | 'single';
   setRoomViewMode: (mode: 'all' | 'single') => void;
   rooms: RoomInfo[];
@@ -39,6 +50,7 @@ export default function CalendarNavigation({
   onQuickBook,
   quickBookDisabled,
   quickBookLoading,
+  nextAvailableDate,
   roomViewMode,
   setRoomViewMode,
   rooms,
@@ -128,7 +140,11 @@ export default function CalendarNavigation({
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
-              {quickBookLoading ? 'Loading...' : 'Book Now'}
+              {quickBookLoading
+                ? 'Loading...'
+                : nextAvailableDate
+                  ? `Book ${formatNextDate(nextAvailableDate)}`
+                  : 'Book Now'}
             </Button>
           </div>
         </div>

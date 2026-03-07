@@ -178,6 +178,21 @@ export default function DeskCalendar() {
 
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
+  const statusCounts = useMemo(() => {
+    const counts = { available: 0, booked: 0, assigned: 0 };
+    for (const desk of filteredDesks) {
+      for (const day of currentDates) {
+        const key = `${desk.id}-${day.dateString}`;
+        const booking = bookings[key];
+        const status = booking?.status;
+        if (status === 'booked' && booking?.personName) counts.booked++;
+        else if (status === 'assigned' && booking?.personName) counts.assigned++;
+        else counts.available++;
+      }
+    }
+    return counts;
+  }, [filteredDesks, currentDates, bookings]);
+
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
       {isMobile ? (
@@ -200,6 +215,8 @@ export default function DeskCalendar() {
             onSetAvailability={() => setIsRangeModalOpen(true)}
             onExport={handleExport}
             onMigrate={() => setIsMigrationModalOpen(true)}
+            statusCounts={statusCounts}
+            totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
           />
 
           <CalendarNavigation
@@ -217,6 +234,7 @@ export default function DeskCalendar() {
             onQuickBook={handleQuickBook}
             quickBookDisabled={nextAvailableDates.length === 0}
             quickBookLoading={nextDatesLoading}
+            nextAvailableDate={nextAvailableDates[0]}
             roomViewMode={roomViewMode}
             setRoomViewMode={handleRoomViewChange}
             rooms={rooms}

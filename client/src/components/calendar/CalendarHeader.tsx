@@ -2,17 +2,27 @@ import { Button } from '@/components/ui/button';
 import StatusLegend from '@/components/calendar/StatusLegend';
 import { Map, CalendarRange, Download } from 'lucide-react';
 
+interface StatusCounts {
+  available: number;
+  booked: number;
+  assigned: number;
+}
+
 interface CalendarHeaderProps {
   onFloorPlan: () => void;
   onSetAvailability: () => void;
   onExport: () => void;
   onMigrate: () => void;
+  statusCounts?: StatusCounts;
+  totalDeskDays?: number;
 }
 
 export default function CalendarHeader({
   onFloorPlan,
   onSetAvailability,
   onExport,
+  statusCounts,
+  totalDeskDays,
 }: CalendarHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-4 mb-4">
@@ -42,7 +52,7 @@ export default function CalendarHeader({
           Export
         </Button>
       </div>
-      <StatusLegend />
+      <StatusLegend counts={statusCounts} totalDeskDays={totalDeskDays} />
     </div>
   );
 }
