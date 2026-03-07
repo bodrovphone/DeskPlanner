@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X } from 'lucide-react';
+import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 
 function InlineEdit({
@@ -77,7 +79,7 @@ function InlineEdit({
 }
 
 export default function SettingsPage() {
-  const { currentOrg, rooms, desks } = useOrganization();
+  const { currentOrg, currentRole, rooms, desks } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -445,7 +447,244 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <TelegramNotificationsCard
+          orgId={currentOrg.id}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+        />
       </div>
     </div>
+  );
+}
+
+function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading } = useTelegramSettings(orgId);
+  const connectTelegram = useConnectTelegram();
+  const disconnectTelegram = useDisconnectTelegram();
+  const toggleNotifications = useToggleNotifications();
+  const manualConnect = useManualConnect();
+
+  const [polling, setPolling] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [manualChatId, setManualChatId] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Stop polling on unmount or when connected
+  useEffect(() => {
+    if (settings?.telegramChatId && polling) {
+      setPolling(false);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      toast({ title: 'Connected', description: 'Telegram notifications are now active.' });
+    }
+  }, [settings?.telegramChatId, polling]);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const startPolling = useCallback(() => {
+    setPolling(true);
+    // Poll every 3s for up to 5min
+    let elapsed = 0;
+    pollRef.current = setInterval(() => {
+      elapsed += 3000;
+      queryClient.invalidateQueries({ queryKey: ['telegram-settings', orgId] });
+      if (elapsed >= 300000) {
+        setPolling(false);
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }
+    }, 3000);
+  }, [orgId, queryClient]);
+
+  const handleConnect = async () => {
+    try {
+      // iOS Safari workaround: pre-open window before async call
+      const win = window.open('about:blank', '_blank');
+      const result = await connectTelegram.mutateAsync(orgId);
+      if (win) {
+        win.location.href = result.botLink;
+      } else {
+        window.open(result.botLink, '_blank');
+      }
+      startPolling();
+    } catch {
+      toast({ title: 'Error', description: 'Failed to generate connection link.', variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectTelegram.mutateAsync(orgId);
+      toast({ title: 'Disconnected', description: 'Telegram notifications disabled.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to disconnect.', variant: 'destructive' });
+    }
+  };
+
+  const handleToggle = async (enabled: boolean) => {
+    try {
+      await toggleNotifications.mutateAsync({ orgId, enabled });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update notifications.', variant: 'destructive' });
+    }
+  };
+
+  const handleManualConnect = async () => {
+    const chatId = parseInt(manualChatId.trim(), 10);
+    if (!chatId || isNaN(chatId)) {
+      toast({ title: 'Invalid Chat ID', description: 'Please enter a valid numeric Chat ID.', variant: 'destructive' });
+      return;
+    }
+    try {
+      await manualConnect.mutateAsync({ orgId, chatId });
+      setManualChatId('');
+      setShowManual(false);
+      toast({ title: 'Connected', description: 'Telegram connected via Chat ID.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to connect. Make sure the Chat ID is correct.', variant: 'destructive' });
+    }
+  };
+
+  const handleSendTest = async () => {
+    try {
+      const { error } = await supabaseClient.functions.invoke('telegram-notify', {
+        body: {},
+      });
+      if (error) throw error;
+      toast({ title: 'Test Sent', description: 'Check your Telegram for notifications (if any bookings match).' });
+    } catch {
+      toast({ title: 'Note', description: 'Test notification triggered. Check Telegram if bookings match tomorrow\'s date.' });
+    }
+  };
+
+  const isConnected = !!settings?.telegramChatId;
+
+  if (isLoading) {
+    return (
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-blue-600" />
+            <CardTitle>Notifications</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500">Loading...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-blue-600" />
+          <CardTitle>Notifications</CardTitle>
+        </div>
+        <CardDescription>
+          Get Telegram notifications when bookings start or assignments end.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isConnected ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+                {settings?.telegramUsername && (
+                  <span className="text-sm text-gray-600">@{settings.telegramUsername}</span>
+                )}
+              </div>
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="notif-toggle" className="text-sm">Enabled</Label>
+                  <Switch
+                    id="notif-toggle"
+                    checked={settings?.enabled ?? false}
+                    onCheckedChange={handleToggle}
+                  />
+                </div>
+              )}
+            </div>
+            {isAdmin && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleSendTest}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Test
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDisconnect} disabled={disconnectTelegram.isPending}>
+                  <Unplug className="mr-2 h-4 w-4" />
+                  {disconnectTelegram.isPending ? 'Disconnecting...' : 'Disconnect'}
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {isAdmin ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Button onClick={handleConnect} disabled={connectTelegram.isPending || polling}>
+                    <Send className="mr-2 h-4 w-4" />
+                    {polling ? 'Waiting for connection...' : connectTelegram.isPending ? 'Generating link...' : 'Connect Telegram'}
+                  </Button>
+                  {polling && (
+                    <span className="text-sm text-gray-500 animate-pulse">
+                      Open the bot and press Start
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => setShowManual(!showManual)}
+                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                  >
+                    <ChevronDown className={`h-3 w-3 transition-transform ${showManual ? 'rotate-180' : ''}`} />
+                    Manual connect (paste Chat ID)
+                  </button>
+                  {showManual && (
+                    <div className="mt-2 flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="chatId" className="text-xs text-gray-500">
+                          Send /start to the bot, copy the Chat ID, paste here
+                        </Label>
+                        <Input
+                          id="chatId"
+                          value={manualChatId}
+                          onChange={(e) => setManualChatId(e.target.value)}
+                          placeholder="e.g. 123456789"
+                          className="mt-1"
+                        />
+                      </div>
+                      <Button size="sm" onClick={handleManualConnect} disabled={!manualChatId.trim() || manualConnect.isPending}>
+                        {manualConnect.isPending ? 'Connecting...' : 'Connect'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Ask a space owner or admin to connect Telegram notifications.
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

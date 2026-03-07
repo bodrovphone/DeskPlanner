@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCreateOrganization, useCheckSlugAvailable } from '@/hooks/use-organization';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConnectTelegram, useTelegramSettings } from '@/hooks/use-telegram';
 import { currencyLabels, currencySymbols, activeCurrencies } from '@/lib/settings';
 import { Currency } from '@shared/schema';
 import { DAY_LABELS, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
-import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil } from 'lucide-react';
+import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil, Bell, Send } from 'lucide-react';
 
 function generateSlug(name: string): string {
   return name
@@ -22,7 +24,7 @@ function generateSlug(name: string): string {
     .slice(0, 48);
 }
 
-const STEPS = ['Space Info', 'Rooms & Desks', 'Pricing'] as const;
+const STEPS = ['Space Info', 'Rooms & Desks', 'Pricing', 'Notifications'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -31,9 +33,27 @@ export default function OnboardingPage() {
   const { hasOrganization, currentOrg } = useOrganization();
   const { signOut } = useAuth();
 
-  const [step, setStep] = useState(0);
+  // Persist step & createdOrgId in sessionStorage to survive re-mounts from query invalidation
+  const [step, _setStep] = useState(() => {
+    const saved = sessionStorage.getItem('onboarding-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const setStep = (s: number) => {
+    sessionStorage.setItem('onboarding-step', String(s));
+    _setStep(s);
+  };
+  const [createdOrgId, _setCreatedOrgId] = useState<string | null>(() => sessionStorage.getItem('onboarding-org-id'));
+  const setCreatedOrgId = (id: string | null) => {
+    if (id) sessionStorage.setItem('onboarding-org-id', id);
+    else sessionStorage.removeItem('onboarding-org-id');
+    _setCreatedOrgId(id);
+  };
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
+  const [slug, _setSlug] = useState(() => sessionStorage.getItem('onboarding-slug') || '');
+  const setSlug = (s: string) => {
+    sessionStorage.setItem('onboarding-slug', s);
+    _setSlug(s);
+  };
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [slugEditMode, setSlugEditMode] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -98,7 +118,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = async () => {
     try {
-      await createOrg.mutateAsync({
+      const org = await createOrg.mutateAsync({
         name,
         slug,
         roomsCount,
@@ -108,10 +128,18 @@ export default function OnboardingPage() {
         roomNames,
         workingDays,
       });
-      navigate(`/${slug}/calendar`, { replace: true });
+      setCreatedOrgId(org.id);
+      setStep(3);
     } catch (error) {
       console.error('Failed to create organization:', error);
     }
+  };
+
+  const finishOnboarding = () => {
+    sessionStorage.removeItem('onboarding-step');
+    sessionStorage.removeItem('onboarding-org-id');
+    sessionStorage.removeItem('onboarding-slug');
+    navigate(`/${slug}/calendar`, { replace: true });
   };
 
   const canProceedStep0 = name.trim().length > 0 && slug.length > 0 && slugAvailable === true;
@@ -430,7 +458,125 @@ export default function OnboardingPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Step 3: Telegram Notifications (optional) */}
+        {step === 3 && createdOrgId && (
+          <TelegramOnboardingStep
+            orgId={createdOrgId}
+            onSkip={finishOnboarding}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+function TelegramOnboardingStep({ orgId, onSkip }: { orgId: string; onSkip: () => void }) {
+  const connectTelegram = useConnectTelegram();
+  const { data: settings } = useTelegramSettings(orgId);
+  const [polling, setPolling] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queryClient = useQueryClient();
+
+  const isConnected = !!settings?.telegramChatId;
+
+  // Stop polling when connected
+  useEffect(() => {
+    if (isConnected && polling) {
+      setPolling(false);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }
+  }, [isConnected, polling]);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const startPolling = useCallback(() => {
+    setPolling(true);
+    let elapsed = 0;
+    pollRef.current = setInterval(() => {
+      elapsed += 3000;
+      queryClient.invalidateQueries({ queryKey: ['telegram-settings', orgId] });
+      if (elapsed >= 300000) {
+        setPolling(false);
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }
+    }, 3000);
+  }, [orgId, queryClient]);
+
+  const handleConnect = async () => {
+    try {
+      const win = window.open('about:blank', '_blank');
+      const result = await connectTelegram.mutateAsync(orgId);
+      if (win) {
+        win.location.href = result.botLink;
+      } else {
+        window.open(result.botLink, '_blank');
+      }
+      startPolling();
+    } catch {
+      // Silently fail — user can retry or skip
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2 mb-2">
+          <Bell className="h-5 w-5 text-blue-600" />
+          <CardTitle>Connect Telegram notifications</CardTitle>
+        </div>
+        <CardDescription>
+          Get notified when bookings start or assignments end. You can always connect later in Settings.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isConnected ? (
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+              <Check className="h-5 w-5 text-green-600 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Telegram connected!</p>
+                {settings?.telegramUsername && (
+                  <p className="text-xs text-green-600">@{settings.telegramUsername}</p>
+                )}
+              </div>
+            </div>
+            <Button className="w-full" onClick={onSkip}>
+              Go to Calendar <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Button
+              className="w-full"
+              onClick={handleConnect}
+              disabled={connectTelegram.isPending || polling}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {polling ? 'Waiting for connection...' : connectTelegram.isPending ? 'Generating link...' : 'Connect Telegram'}
+            </Button>
+            {polling && (
+              <p className="text-sm text-center text-gray-500 animate-pulse">
+                Open the bot in Telegram and press Start
+              </p>
+            )}
+            <Button variant="ghost" className="w-full text-gray-500" onClick={onSkip}>
+              Skip for now
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+

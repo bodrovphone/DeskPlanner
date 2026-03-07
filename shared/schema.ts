@@ -149,3 +149,16 @@ export const recurringExpenseSchema = z.object({
 export type ExpenseCategory = z.infer<typeof expenseCategorySchema>;
 export type Expense = z.infer<typeof expenseSchema>;
 export type RecurringExpense = z.infer<typeof recurringExpenseSchema>;
+
+// Notification schemas
+export const notificationSettingsSchema = z.object({
+  id: z.number(),
+  organizationId: z.string(),
+  telegramChatId: z.number().nullable(),
+  telegramUsername: z.string().nullable(),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;

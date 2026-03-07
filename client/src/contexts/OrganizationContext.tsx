@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, Room, OrgDesk, Desk } from '@shared/schema';
+import { Organization, Room, OrgDesk, Desk, OrgMemberRole } from '@shared/schema';
 import { useUserOrganizations, useOrganizationRooms, useOrganizationDesks } from '@/hooks/use-organization';
 
 const ORG_STORAGE_KEY = 'deskplanner-current-org';
 
 interface OrganizationContextType {
   currentOrg: Organization | null;
+  currentRole: OrgMemberRole | null;
   organizations: Organization[];
   setCurrentOrg: (org: Organization) => void;
   rooms: Room[];
@@ -35,9 +36,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   });
 
   const { data: memberships = [], isLoading: orgsLoading } = useUserOrganizations();
-  const currentOrg = memberships.find(m => m.organization.id === currentOrgId)?.organization
-    || memberships[0]?.organization
+  const currentMembership = memberships.find(m => m.organization.id === currentOrgId)
+    || memberships[0]
     || null;
+  const currentOrg = currentMembership?.organization || null;
+  const currentRole = (currentMembership?.role as OrgMemberRole) || null;
 
   const effectiveOrgId = currentOrg?.id;
 
@@ -90,6 +93,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     <OrganizationContext.Provider
       value={{
         currentOrg,
+        currentRole,
         organizations,
         setCurrentOrg,
         rooms,
