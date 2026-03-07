@@ -13,6 +13,7 @@ import {
   Mail,
   Smartphone,
   MessageCircle,
+  Linkedin,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg';
@@ -614,9 +615,17 @@ export default function LandingPage() {
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: '40px 0' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <img src={logoLanding} alt="OhMyDesk" style={{ height: 24, opacity: 0.7 }} />
-          <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted }}>
-            &copy; {new Date().getFullYear()} OhMyDesk. All rights reserved.
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <a href="https://www.linkedin.com/company/ohmydesk-app" target="_blank" rel="noopener noreferrer" style={{ color: T.textMuted, transition: 'color 0.2s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.color = T.green; }}
+              onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; }}
+            >
+              <Linkedin size={18} />
+            </a>
+            <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted }}>
+              &copy; {new Date().getFullYear()} OhMyDesk. All rights reserved.
+            </span>
+          </div>
         </div>
       </footer>
     </div>
