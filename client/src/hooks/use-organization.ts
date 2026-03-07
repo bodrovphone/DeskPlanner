@@ -339,7 +339,7 @@ export function useSetRoomDeskCount() {
           .from('desk_bookings')
           .select('id')
           .eq('organization_id', orgId)
-          .in('desk', deskIds)
+          .in('desk_id', deskIds)
           .gte('date', today)
           .limit(1);
 
