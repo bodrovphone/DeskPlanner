@@ -12,6 +12,7 @@ import RevenuePage from '@/pages/revenue';
 import WaitingListPage from '@/pages/waiting-list';
 import SettingsPage from '@/pages/settings';
 import InsightsPage from '@/pages/insights';
+import AdminPage from '@/pages/admin';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -231,6 +232,10 @@ export const router = createBrowserRouter(
                     {
                       path: 'settings',
                       element: <SettingsPage />,
+                    },
+                    {
+                      path: 'admin',
+                      element: <AdminPage />,
                     },
                   ],
                 },

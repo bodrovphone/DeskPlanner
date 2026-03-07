@@ -34,8 +34,45 @@ export default function DeskCalendar() {
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
   const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
 
+  // Derive unique rooms from desks
+  const rooms = useMemo(() => {
+    const seen = new Map<number, string>();
+    for (const desk of desks) {
+      if (!seen.has(desk.room)) {
+        seen.set(desk.room, desk.roomName || `Room ${desk.room}`);
+      }
+    }
+    return Array.from(seen, ([room, roomName]) => ({ room, roomName }));
+  }, [desks]);
+
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+  const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
+    rooms.length >= 4 ? 'single' : 'all'
+  );
+  const [selectedRoom, setSelectedRoom] = useState<number | null>(() =>
+    rooms.length >= 4 ? rooms[0]?.room ?? null : rooms[0]?.room ?? null
+  );
+  // Reset room view defaults when rooms change (e.g. org switch)
+  useEffect(() => {
+    setRoomViewMode(rooms.length >= 4 ? 'single' : 'all');
+    setSelectedRoom(rooms[0]?.room ?? null);
+  }, [rooms]);
+
+  const filteredDesks = useMemo(
+    () => roomViewMode === 'single' && selectedRoom !== null
+      ? desks.filter((d) => d.room === selectedRoom)
+      : desks,
+    [desks, roomViewMode, selectedRoom]
+  );
+
+  const handleRoomViewChange = useCallback((mode: 'all' | 'single') => {
+    setRoomViewMode(mode);
+    if (mode === 'single' && selectedRoom === null && rooms.length > 0) {
+      setSelectedRoom(rooms[0].room);
+    }
+  }, [selectedRoom, rooms]);
+
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<{
@@ -145,7 +182,7 @@ export default function DeskCalendar() {
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
       {isMobile ? (
         <MobileCalendar
-          desks={desks}
+          desks={filteredDesks}
           bookings={bookings}
           onDeskClick={handleDeskClick}
           onQuickBook={handleQuickBook}
@@ -180,11 +217,16 @@ export default function DeskCalendar() {
             onQuickBook={handleQuickBook}
             quickBookDisabled={nextAvailableDates.length === 0}
             quickBookLoading={nextDatesLoading}
+            roomViewMode={roomViewMode}
+            setRoomViewMode={handleRoomViewChange}
+            rooms={rooms}
+            selectedRoom={selectedRoom}
+            setSelectedRoom={setSelectedRoom}
           />
 
           <DeskGrid
             ref={tableRef}
-            desks={desks}
+            desks={filteredDesks}
             currentDates={currentDates}
             bookings={bookings}
             onDeskClick={handleDeskClick}

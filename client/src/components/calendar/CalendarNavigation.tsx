@@ -1,6 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
+
+interface RoomInfo {
+  room: number;
+  roomName: string;
+}
 
 interface CalendarNavigationProps {
   viewMode: 'week' | 'month';
@@ -11,6 +23,11 @@ interface CalendarNavigationProps {
   onQuickBook: () => void;
   quickBookDisabled: boolean;
   quickBookLoading: boolean;
+  roomViewMode: 'all' | 'single';
+  setRoomViewMode: (mode: 'all' | 'single') => void;
+  rooms: RoomInfo[];
+  selectedRoom: number | null;
+  setSelectedRoom: (room: number) => void;
 }
 
 export default function CalendarNavigation({
@@ -22,6 +39,11 @@ export default function CalendarNavigation({
   onQuickBook,
   quickBookDisabled,
   quickBookLoading,
+  roomViewMode,
+  setRoomViewMode,
+  rooms,
+  selectedRoom,
+  setSelectedRoom,
 }: CalendarNavigationProps) {
   return (
     <Card className="mb-4">
@@ -37,6 +59,47 @@ export default function CalendarNavigation({
             <span className="text-base font-medium text-gray-900 ml-2">
               {rangeString}
             </span>
+
+            {rooms.length > 1 && (
+              <>
+                <div className="flex rounded-md border border-gray-200 ml-4">
+                  <Button
+                    variant={roomViewMode === 'all' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setRoomViewMode('all')}
+                    className={`rounded-r-none ${roomViewMode === 'all' ? 'bg-blue-100 text-blue-700' : ''}`}
+                  >
+                    All Rooms
+                  </Button>
+                  <Button
+                    variant={roomViewMode === 'single' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setRoomViewMode('single')}
+                    className={`rounded-l-none ${roomViewMode === 'single' ? 'bg-blue-100 text-blue-700' : ''}`}
+                  >
+                    By Room
+                  </Button>
+                </div>
+
+                {roomViewMode === 'single' && selectedRoom !== null && (
+                  <Select
+                    value={String(selectedRoom)}
+                    onValueChange={(val) => setSelectedRoom(Number(val))}
+                  >
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rooms.map((r) => (
+                        <SelectItem key={r.room} value={String(r.room)}>
+                          {r.roomName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

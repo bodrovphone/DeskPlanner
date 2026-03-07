@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
@@ -51,6 +50,7 @@ export default function BookingModal({
   const [status, setStatus] = useState<DeskStatus>('assigned');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [endDateTouched, setEndDateTouched] = useState(false);
   const [conflictError, setConflictError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
@@ -83,6 +83,7 @@ export default function BookingModal({
       }
 
       setConflictError('');
+      setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
     }
   }, [isOpen, booking, date]);
 
@@ -199,7 +200,13 @@ export default function BookingModal({
                 id="startDate"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  setStartDate(newStart);
+                  if (!endDateTouched || newStart > endDate) {
+                    setEndDate(newStart);
+                  }
+                }}
                 className="mt-1"
                 required
               />
@@ -212,7 +219,10 @@ export default function BookingModal({
                 id="endDate"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setEndDateTouched(true);
+                }}
                 min={startDate}
                 className="mt-1"
                 required
@@ -256,40 +266,41 @@ export default function BookingModal({
           </div>
 
           <div>
-            <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+            <Label className="text-sm font-medium text-gray-700">
               Booking Status *
             </Label>
-            <Select value={status} onValueChange={(value: DeskStatus) => {
-              setStatus(value);
-              if (value === 'booked') setPrice('0');
-            }}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="booked">
-                  <div className="flex items-center gap-2">
-                    <CalendarX className="h-4 w-4 text-orange-600" />
-                    <div>
-                      <div className="font-medium">Booked</div>
-                      <div className="text-xs text-gray-500">Reserved but not paid</div>
-                    </div>
-                  </div>
-                </SelectItem>
-                <SelectItem value="assigned">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <div className="font-medium">Assigned (Paid)</div>
-                      <div className="text-xs text-gray-500">Paid and confirmed</div>
-                    </div>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-500 mt-1 truncate">
-              "Booked" = reserved, "Assigned" = paid
-            </p>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => { setStatus('booked'); setPrice('0'); }}
+                className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                  status === 'booked'
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <CalendarX className={`h-4 w-4 shrink-0 ${status === 'booked' ? 'text-orange-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <div className="text-sm font-medium">Booked</div>
+                  <div className="text-xs text-gray-500">Reserved</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatus('assigned')}
+                className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                  status === 'assigned'
+                    ? 'border-blue-400 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <User className={`h-4 w-4 shrink-0 ${status === 'assigned' ? 'text-blue-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <div className="text-sm font-medium">Assigned</div>
+                  <div className="text-xs text-gray-500">Paid</div>
+                </div>
+              </button>
+            </div>
           </div>
 
           <div>

@@ -1,25 +1,31 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
 import { useState } from 'react';
+import { isAdmin } from '@/lib/admin';
+import type { User } from '@supabase/supabase-js';
 
-function getNavItems(slug: string) {
+function getNavItems(slug: string, user?: User | null) {
   const base = `/${slug}`;
-  return [
+  const items = [
     { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
     { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
     { to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
     { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
     { to: `${base}/settings`, label: 'Settings', shortLabel: 'Settings', icon: Settings },
   ];
+  if (isAdmin(user)) {
+    items.push({ to: `${base}/admin`, label: 'Admin', shortLabel: 'Admin', icon: Shield });
+  }
+  return items;
 }
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { currentOrg } = useOrganization();
-  const navItems = getNavItems(currentOrg?.slug || 'app');
+  const navItems = getNavItems(currentOrg?.slug || 'app', user);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -89,7 +95,7 @@ export default function DashboardLayout() {
           {sidebarOpen && (
             <div className="px-3 py-2 mb-2">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.user_metadata?.full_name || user?.email}
+                {user?.user_metadata?.full_name || (currentOrg ? `${currentOrg.name} Admin` : user?.email)}
               </p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>

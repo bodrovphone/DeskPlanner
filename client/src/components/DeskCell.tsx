@@ -34,7 +34,7 @@ const statusConfig = {
   }
 };
 
-export default function DeskCell({ booking, onClick, isNonWorkingDay, isWeekend }: DeskCellProps) {
+export default function DeskCell({ booking, date, onClick, isNonWorkingDay, isWeekend }: DeskCellProps) {
   const nonWorking = isNonWorkingDay ?? isWeekend ?? false;
   const rawStatus = booking?.status || 'available';
   // Handle legacy 'unavailable' status by converting to 'available'
@@ -44,6 +44,17 @@ export default function DeskCell({ booking, onClick, isNonWorkingDay, isWeekend 
   const isAssigned = status === 'assigned' && booking?.personName;
   const hasBooking = isBooked || isAssigned;
   const StatusIcon = config.Icon;
+
+  // Calculate days until booking ends (for expiring-soon corner indicator)
+  let daysUntilEnd: number | null = null;
+  if (hasBooking && booking?.endDate && date) {
+    const cellDate = new Date(date + 'T00:00:00');
+    const endDate = new Date(booking.endDate + 'T00:00:00');
+    const diff = Math.round((endDate.getTime() - cellDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff >= 0 && diff <= 2) {
+      daysUntilEnd = diff;
+    }
+  }
 
   // For non-working days with no booking, show day off indicator
   if (nonWorking && !hasBooking) {
@@ -63,7 +74,7 @@ export default function DeskCell({ booking, onClick, isNonWorkingDay, isWeekend 
   return (
     <div
       className={cn(
-        'desk-cell rounded-lg p-1 sm:p-2 min-h-[52px] sm:min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer select-none touch-manipulation',
+        'desk-cell rounded-lg p-1 sm:p-2 min-h-[52px] sm:min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer select-none touch-manipulation relative overflow-hidden',
         config.className,
         nonWorking && 'opacity-50 cursor-not-allowed',
         'hover:shadow-md active:scale-95 transition-all duration-150'
@@ -72,6 +83,17 @@ export default function DeskCell({ booking, onClick, isNonWorkingDay, isWeekend 
       onContextMenu={(e) => !nonWorking && onClick(e)}
       style={{ pointerEvents: nonWorking ? 'none' : 'auto' }}
     >
+      {daysUntilEnd !== null && (
+        <div
+          className="absolute top-0 right-0 w-0 h-0 pointer-events-none"
+          style={{
+            borderLeft: '16px solid transparent',
+            borderTop: `16px solid ${
+              daysUntilEnd === 0 ? '#ef4444' : daysUntilEnd === 1 ? '#f87171' : '#fca5a5'
+            }`,
+          }}
+        />
+      )}
       <StatusIcon className={cn('h-4 w-4', config.iconColor)} />
 
       {hasBooking ? (
