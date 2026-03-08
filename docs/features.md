@@ -1,6 +1,6 @@
 # OhMyDesk — Feature List
 
-**24 features** across desk booking, revenue tracking, analytics, and workspace management.
+**32 features** across desk booking, revenue tracking, analytics, notifications, and workspace management.
 
 ## Desk Booking & Calendar
 1. **Weekly & Monthly calendar views** — see all desks and dates at a glance
@@ -33,8 +33,42 @@
 22. **Floor plan upload** — upload your space layout (JPEG, PNG, WebP, GIF)
 23. **Waiting list** — track people waiting for a desk with contact info and preferences
 
+## Notifications
+25. **Telegram notifications** — daily alerts for bookings starting and assignments ending tomorrow
+26. **Email notifications** — _(coming soon)_
+27. **WhatsApp notifications** — _(coming soon)_
+28. **SMS notifications** — _(coming soon)_
+
+## Analytics (Umami)
+29. **Visitor analytics** — pageviews, geography, referral sources, bounce rate via Umami Cloud
+    - **Dashboard**: https://cloud.umami.is
+    - **Website ID**: `1f5154a8-b100-4034-8bf9-ed3bf8399f9a`
+    - **Ad-blocker bypass**: Cloudflare Worker proxy at `ohmydesk-analytics.bodrovphone.workers.dev`
+      - `/s.js` — serves the tracking script (rewrites API endpoint to self)
+      - `/api/send` — proxies event data to `api-gateway.umami.dev`
+      - Worker source: `workers/analytics-proxy/worker.js`
+      - Deploy: `cd workers/analytics-proxy && wrangler deploy`
+    - **No cookies**, no GDPR banner needed
+    - **Free tier**: 100K events/month
+30. **Custom event tracking** — button click tracking on landing page:
+    - `nav-login-click` — Nav "Log In"
+    - `nav-signup-click` — Nav "Sign Up Free"
+    - `hero-start-free-click` — Hero "Start Free" CTA
+    - `hero-login-click` — Hero "Log In"
+    - `pricing-cta-click` — Pricing card buttons (includes tier name)
+    - `cta-get-started-click` — Bottom "Get Started Free"
+    - `footer-linkedin-click` — Footer LinkedIn icon
+    - Helper: `client/src/lib/analytics.ts` (event names in `EVENTS` constant)
+
+## E2E Tests (Playwright)
+31. **Landing page e2e tests** — 21 tests against production (`https://ohmydesk.app`)
+    - Config: `playwright.config.ts`
+    - Tests: `e2e/landing.spec.ts`
+    - Run: `npm run test:e2e` (headless) or `npm run test:e2e:headed` (with browser)
+    - Covers: meta tags, nav, hero, social proof, product showcase, features, notifications, pricing, CTAs, footer, analytics script
+
 ## Platform
-24. **Multi-organization support** — manage multiple coworking spaces from one account
+32. **Multi-organization support** — manage multiple coworking spaces from one account
 - Real-time sync across devices
 - Data export (JSON)
 - 2-minute onboarding wizard
