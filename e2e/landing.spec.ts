@@ -209,6 +209,25 @@ test.describe('Landing page — pricing', () => {
     await expect(contactBtn).toBeVisible();
     await expect(contactBtn).toBeDisabled();
   });
+
+  test('Enterprise card shows custom integrations footnote', async ({ page }) => {
+    await expect(page.getByText(/We build custom integrations on request/)).toBeVisible();
+  });
+});
+
+test.describe('Landing page — integrations', () => {
+  test('integration badges render', async ({ page }) => {
+    await page.goto('/');
+
+    for (const name of ['Telegram', 'Slack', 'Stripe', 'Shopify', 'Google Calendar', 'Zapier', 'QuickBooks', 'HubSpot']) {
+      await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+    }
+  });
+
+  test('custom integration tagline is visible', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByText("Don't see yours?")).toBeVisible();
+  });
 });
 
 test.describe('Landing page — bottom CTA', () => {

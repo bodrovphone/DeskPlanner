@@ -130,7 +130,18 @@ const steps = [
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
-  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true },
+  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
+];
+
+const integrations = [
+  { name: 'Telegram', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z' },
+  { name: 'Slack', icon: 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.315A2.528 2.528 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z' },
+  { name: 'Stripe', icon: 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z' },
+  { name: 'Shopify', icon: 'M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.74a.376.376 0 00-.331-.312c-.137-.013-2.798-.064-2.798-.064s-1.872-1.814-2.075-2.016a.637.637 0 00-.382-.186l-1.1 23.879zm-2.532-17.394c0-.18.012-.371.037-.554.193-1.008.848-1.508 1.404-1.508.064 0 .126.006.185.018-.277-.573-.775-.977-1.405-.977-.046 0-.091.002-.137.006C11.464 3.672 10.326 5.4 9.835 7.7l2.97-.915v-.2zm2.157-2.641c.057 0 .113.006.168.017-.502-.622-1.178-1.086-1.889-1.338.375.941.582 2.15.63 3.418l2.46-.758c-.126-.668-.587-1.339-1.369-1.339zm-.37 9.465s-1.04-.557-2.311-.557c-1.872 0-1.963 1.176-1.963 1.472 0 1.619 4.213 2.24 4.213 6.031 0 2.983-1.895 4.903-4.449 4.903-3.064 0-4.63-1.907-4.63-1.907l.82-2.711s1.61 1.381 2.971 1.381c.889 0 1.248-.699 1.248-1.21 0-2.117-3.456-2.211-3.456-5.68 0-2.921 2.094-5.749 6.329-5.749 1.631 0 2.436.467 2.436.467l-1.208 3.56z' },
+  { name: 'Google Calendar', icon: 'M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM0 5.684v12.632h5.684V5.684H0zM5.684 0v5.684h12.632V0H5.684zM18.316 0v5.684H24V0h-5.684zM0 0v5.684h5.684V0H0zM0 18.316V24h5.684v-5.684H0zM18.316 18.316V24H24v-5.684h-5.684z' },
+  { name: 'Zapier', icon: 'M15.535 8.465l3.292-3.293a.75.75 0 000-1.06l-.94-.94a.75.75 0 00-1.06 0L13.535 6.465 10.242 3.172a.75.75 0 00-1.06 0l-.94.94a.75.75 0 000 1.06l3.293 3.293-3.293 3.293a.75.75 0 000 1.06l.94.94a.75.75 0 001.06 0l3.293-3.293 3.292 3.293a.75.75 0 001.06 0l.94-.94a.75.75 0 000-1.06l-3.292-3.293zM12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 1.5a6 6 0 110-12 6 6 0 010 12z' },
+  { name: 'QuickBooks', icon: 'M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.2 16.8h-1.6c-.22 0-.4-.18-.4-.4v-4.8c0-1.32-1.08-2.4-2.4-2.4s-2.4 1.08-2.4 2.4v4.8c0 .22-.18.4-.4.4H7.8c-.22 0-.4-.18-.4-.4V7.6c0-.22.18-.4.4-.4h1.2c.22 0 .4.18.4.4v.52a4.39 4.39 0 012.6-.92c2.43 0 4.4 1.97 4.4 4.4v4.8c.04.22-.14.4-.2.4z' },
+  { name: 'HubSpot', icon: 'M18.16 7.58V4.97a2.35 2.35 0 001.36-2.13A2.38 2.38 0 0017.14.46a2.38 2.38 0 00-2.38 2.38c0 .93.55 1.73 1.33 2.12v2.6a5.53 5.53 0 00-2.6 1.32L6.12 3.43a2.72 2.72 0 00.08-.62A2.71 2.71 0 003.49.1 2.71 2.71 0 00.78 2.81 2.71 2.71 0 003.49 5.52c.55 0 1.06-.17 1.49-.45l7.2 5.37a5.54 5.54 0 000 3.3l-7.24 5.4a2.68 2.68 0 00-1.45-.43A2.71 2.71 0 00.78 21.42a2.71 2.71 0 002.71 2.71 2.71 2.71 0 002.71-2.71c0-.24-.04-.47-.1-.7l7.14-5.32a5.55 5.55 0 108.5-4.44 5.54 5.54 0 00-3.58-3.38zm-1.02 8.97a2.6 2.6 0 01-2.59-2.59 2.6 2.6 0 012.59-2.59 2.6 2.6 0 012.59 2.59 2.6 2.6 0 01-2.59 2.59z' },
 ];
 
 /* ─── faux calendar data ─── */
@@ -610,6 +621,49 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── INTEGRATIONS ── */}
+      <section style={{ ...sectionStyle(80), borderTop: `1px solid ${T.border}` }}>
+        <SectionHeading
+          tag="Integrations"
+          title="Connects to your stack."
+          sub="Works with the tools you already use. Need something custom? We'll build it."
+        />
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+          {integrations.map((item, i) => {
+            const { ref, visible } = useReveal();
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div
+                key={item.name}
+                ref={ref}
+                {...touchHoverProps(() => setHovered(true), () => setHovered(false))}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px 20px',
+                  borderRadius: 10,
+                  border: `1px solid ${hovered ? T.green + '44' : T.borderBright}`,
+                  background: hovered ? T.bgCardHover : T.bgCard,
+                  opacity: visible ? 1 : 0,
+                  transform: visible ? 'translateY(0)' : 'translateY(12px)',
+                  transition: `all 0.4s cubic-bezier(.22,1,.36,1) ${i * 60}ms`,
+                  cursor: 'default',
+                }}
+              >
+                <svg viewBox="0 0 24 24" width={18} height={18} fill={hovered ? T.green : T.textMuted} style={{ flexShrink: 0, transition: 'fill 0.2s ease' }}>
+                  <path d={item.icon} />
+                </svg>
+                <span style={{ fontFamily: 'monospace', fontSize: 13, color: hovered ? T.textPrimary : T.textSecondary, transition: 'color 0.2s ease', whiteSpace: 'nowrap' }}>{item.name}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p style={{ textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: T.textMuted, marginTop: 24 }}>
+          Don't see yours? <span style={{ color: T.green }}>We build custom integrations on request.</span>
+        </p>
+      </section>
+
       {/* ── CTA ── */}
       <section style={{ borderTop: `1px solid ${T.border}`, position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at bottom center, ${T.greenFaint} 0%, transparent 60%)`, pointerEvents: 'none' }} />
@@ -721,6 +775,8 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
       ref={ref}
       {...touchHoverProps(() => setHovered(true), () => setHovered(false))}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         background: isHighlighted ? T.greenFaint : T.bgCard,
         border: `1px solid ${isHighlighted ? T.green + '44' : hovered ? T.borderBright : T.border}`,
         borderRadius: 12,
@@ -763,52 +819,57 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
         )}
       </div>
       <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.5, marginBottom: 24 }}>{tier.desc}</p>
-      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
         {tier.features.map(f => (
           <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: T.textSecondary }}>
-            <Check size={14} color={isHighlighted ? T.green : T.textMuted} />
+            <Check size={14} color={isHighlighted ? T.green : T.textMuted} style={{ flexShrink: 0 }} />
             {f}
           </li>
         ))}
       </ul>
-      {tier.disabled ? (
-        <button disabled style={{
-          width: '100%',
-          fontFamily: 'monospace',
-          fontSize: 13,
-          fontWeight: 600,
-          padding: '12px 0',
-          borderRadius: 8,
-          border: `1px solid ${T.border}`,
-          background: 'transparent',
-          color: T.textMuted,
-          cursor: 'not-allowed',
-          minHeight: 44,
-        }}>{tier.cta}</button>
-      ) : (
-        <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>
-          <button style={{
+      <div style={{ marginTop: 28 }}>
+        {tier.disabled ? (
+          <button disabled style={{
             width: '100%',
             fontFamily: 'monospace',
             fontSize: 13,
             fontWeight: 600,
             padding: '12px 0',
             borderRadius: 8,
-            border: `1px solid ${T.green}`,
-            background: isHighlighted ? T.green : T.greenFaint,
-            color: isHighlighted ? T.bg : T.green,
-            cursor: 'pointer',
-            transition: 'all 0.25s ease',
+            border: `1px solid ${T.border}`,
+            background: 'transparent',
+            color: T.textMuted,
+            cursor: 'not-allowed',
             minHeight: 44,
-          }}
-            {...touchHoverProps(
-              e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
-              e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
-            )}
-            onClick={() => trackEvent(EVENTS.PRICING_CTA, { tier: tier.name })}
-          >{tier.cta}</button>
-        </Link>
-      )}
+          }}>{tier.cta}</button>
+        ) : (
+          <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>
+            <button style={{
+              width: '100%',
+              fontFamily: 'monospace',
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '12px 0',
+              borderRadius: 8,
+              border: `1px solid ${T.green}`,
+              background: isHighlighted ? T.green : T.greenFaint,
+              color: isHighlighted ? T.bg : T.green,
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              minHeight: 44,
+            }}
+              {...touchHoverProps(
+                e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
+                e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
+              )}
+              onClick={() => trackEvent(EVENTS.PRICING_CTA, { tier: tier.name })}
+            >{tier.cta}</button>
+          </Link>
+        )}
+        {'footnote' in tier && tier.footnote && (
+          <p style={{ fontFamily: 'monospace', fontSize: 11, color: T.textMuted, marginTop: 12, lineHeight: 1.5, textAlign: 'center' }}>{tier.footnote}</p>
+        )}
+      </div>
     </div>
   );
 }
