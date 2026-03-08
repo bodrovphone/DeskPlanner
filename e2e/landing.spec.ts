@@ -61,7 +61,7 @@ test.describe('Landing page — load & meta', () => {
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
 
-    await expect(page).toHaveTitle(/OhMyDesk/);
+    await expect(page).toHaveTitle(/THIS_WILL_FAIL_ON_PURPOSE/);
 
     const description = page.locator('meta[name="description"]');
     await expect(description).toHaveAttribute('content', /coworking/i);
