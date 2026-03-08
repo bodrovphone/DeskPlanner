@@ -165,9 +165,8 @@ test.describe('Landing page — notifications', () => {
   });
 
   test('Telegram card shows Live badge', async ({ page }) => {
-    const telegramCard = page.getByText('Telegram').locator('..');
+    const telegramCard = page.getByText('LiveTelegramDaily alerts for', { exact: false });
     await expect(telegramCard).toBeVisible();
-    // "Live" badge exists on the page near Telegram
     await expect(page.getByText('Live', { exact: true })).toBeVisible();
   });
 
@@ -211,7 +210,7 @@ test.describe('Landing page — pricing', () => {
   });
 
   test('Enterprise card shows custom integrations footnote', async ({ page }) => {
-    await expect(page.getByText(/We build custom integrations on request/)).toBeVisible();
+    await expect(page.getByText('* We build custom')).toBeVisible();
   });
 });
 
@@ -248,7 +247,7 @@ test.describe('Landing page — footer', () => {
   });
 
   test('LinkedIn link is correct', async ({ page }) => {
-    const linkedin = page.locator('a[href="https://www.linkedin.com/company/ohmydesk-app"]');
+    const linkedin = page.locator('footer a[href="https://www.linkedin.com/company/ohmydesk-app"]');
     await expect(linkedin).toBeVisible();
     await expect(linkedin).toHaveAttribute('target', '_blank');
   });
