@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for the OhMyDesk landing page (https://ohmydesk.app).
@@ -61,7 +61,7 @@ test.describe('Landing page — load & meta', () => {
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
 
-    await expect(page).toHaveTitle(/THIS_WILL_FAIL_ON_PURPOSE/);
+    await expect(page).toHaveTitle(/OhMyDesk/);
 
     const description = page.locator('meta[name="description"]');
     await expect(description).toHaveAttribute('content', /coworking/i);
