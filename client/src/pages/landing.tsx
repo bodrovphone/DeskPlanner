@@ -130,7 +130,7 @@ const steps = [
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
-  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: '#', highlighted: false, disabled: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
+  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'https://www.linkedin.com/company/ohmydesk-app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
 ];
 
 const integrations = [
@@ -828,44 +828,37 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
         ))}
       </ul>
       <div style={{ marginTop: 28 }}>
-        {tier.disabled ? (
-          <button disabled style={{
+        {(() => {
+          const isExternal = 'external' in tier && tier.external;
+          const btnStyle: CSSProperties = {
             width: '100%',
             fontFamily: 'monospace',
             fontSize: 13,
             fontWeight: 600,
             padding: '12px 0',
             borderRadius: 8,
-            border: `1px solid ${T.border}`,
-            background: 'transparent',
-            color: T.textMuted,
-            cursor: 'not-allowed',
+            border: `1px solid ${isHighlighted ? T.green : isExternal ? T.borderBright : T.green}`,
+            background: isHighlighted ? T.green : isExternal ? 'transparent' : T.greenFaint,
+            color: isHighlighted ? T.bg : isExternal ? T.textSecondary : T.green,
+            cursor: 'pointer',
+            transition: 'all 0.25s ease',
             minHeight: 44,
-          }}>{tier.cta}</button>
-        ) : (
-          <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>
-            <button style={{
-              width: '100%',
-              fontFamily: 'monospace',
-              fontSize: 13,
-              fontWeight: 600,
-              padding: '12px 0',
-              borderRadius: 8,
-              border: `1px solid ${T.green}`,
-              background: isHighlighted ? T.green : T.greenFaint,
-              color: isHighlighted ? T.bg : T.green,
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              minHeight: 44,
-            }}
+          };
+          const btn = (
+            <button style={btnStyle}
               {...touchHoverProps(
-                e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
-                e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
+                e => { if (isExternal) { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; } else if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
+                e => { if (isExternal) { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; } else if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
               )}
               onClick={() => trackEvent(EVENTS.PRICING_CTA, { tier: tier.name })}
             >{tier.cta}</button>
-          </Link>
-        )}
+          );
+          return isExternal ? (
+            <a href={tier.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>{btn}</a>
+          ) : (
+            <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>{btn}</Link>
+          );
+        })()}
         {'footnote' in tier && tier.footnote && (
           <p style={{ fontFamily: 'monospace', fontSize: 11, color: T.textMuted, marginTop: 12, lineHeight: 1.5, textAlign: 'center' }}>{tier.footnote}</p>
         )}

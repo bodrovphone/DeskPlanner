@@ -204,10 +204,10 @@ test.describe('Landing page — pricing', () => {
     await expect(page.getByText('$18')).toBeVisible();
   });
 
-  test('Enterprise CTA is disabled', async ({ page }) => {
-    const contactBtn = page.getByText('Contact Us');
-    await expect(contactBtn).toBeVisible();
-    await expect(contactBtn).toBeDisabled();
+  test('Enterprise CTA links to LinkedIn', async ({ page }) => {
+    const contactLink = page.locator('a[href="https://www.linkedin.com/company/ohmydesk-app"]', { has: page.getByText('Contact Us') });
+    await expect(contactLink).toBeVisible();
+    await expect(contactLink).toHaveAttribute('target', '_blank');
   });
 
   test('Enterprise card shows custom integrations footnote', async ({ page }) => {
