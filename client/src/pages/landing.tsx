@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 
 /* ─── palette tokens (scoped via inline styles) ─── */
 const T = {
@@ -353,6 +354,7 @@ export default function LandingPage() {
                   e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
                   e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
                 )}
+              onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
               >Log In</button>
             </Link>
             <Link to="/signup" style={{ textDecoration: 'none' }}>
@@ -361,6 +363,7 @@ export default function LandingPage() {
                   e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
                   e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; },
                 )}
+                onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
               >Sign Up Free</button>
             </Link>
           </div>
@@ -451,6 +454,7 @@ export default function LandingPage() {
                   e => { e.currentTarget.style.boxShadow = `0 0 40px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-1px)'; },
                   e => { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; },
                 )}
+                onClick={() => trackEvent(EVENTS.HERO_START_FREE)}
               >
                 Start Free <ArrowRight size={16} />
               </button>
@@ -473,6 +477,7 @@ export default function LandingPage() {
                   e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.textPrimary; },
                   e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; },
                 )}
+                onClick={() => trackEvent(EVENTS.HERO_LOGIN)}
               >
                 Log In
               </button>
@@ -619,6 +624,7 @@ export default function LandingPage() {
             <a href="https://www.linkedin.com/company/ohmydesk-app" target="_blank" rel="noopener noreferrer" style={{ color: T.textMuted, transition: 'color 0.2s ease' }}
               onMouseEnter={e => { e.currentTarget.style.color = T.green; }}
               onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; }}
+              onClick={() => trackEvent(EVENTS.FOOTER_LINKEDIN)}
             >
               <Linkedin size={18} />
             </a>
@@ -799,6 +805,7 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
               e => { if (!isHighlighted) { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; } else { e.currentTarget.style.boxShadow = `0 0 24px ${T.greenGlow}`; } },
               e => { if (!isHighlighted) { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; } else { e.currentTarget.style.boxShadow = 'none'; } },
             )}
+            onClick={() => trackEvent(EVENTS.PRICING_CTA, { tier: tier.name })}
           >{tier.cta}</button>
         </Link>
       )}
@@ -915,6 +922,7 @@ function CtaSection() {
             e => { e.currentTarget.style.boxShadow = `0 0 48px ${T.greenGlowStrong}`; e.currentTarget.style.transform = 'translateY(-2px)'; },
             e => { e.currentTarget.style.boxShadow = `0 0 32px ${T.greenGlow}`; e.currentTarget.style.transform = 'translateY(0)'; },
           )}
+          onClick={() => trackEvent(EVENTS.CTA_GET_STARTED)}
         >
           Get Started Free <ArrowRight size={16} />
         </button>
