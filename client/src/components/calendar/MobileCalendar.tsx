@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import DeskCell from '@/components/DeskCell';
 import { useSwipe } from '@/hooks/use-mobile';
 import { getThreeDayRange, getThreeDayRangeString } from '@/lib/dateUtils';
+import { useBookings } from '@/hooks/use-bookings';
 import { DeskBooking, Desk } from '@shared/schema';
 import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 import {
@@ -16,7 +17,7 @@ import {
 
 interface MobileCalendarProps {
   desks: Desk[];
-  bookings: Record<string, DeskBooking>;
+  bookings?: Record<string, DeskBooking>;
   onDeskClick: (deskId: string, date: string, event?: React.MouseEvent, booking?: DeskBooking | null) => void;
   onQuickBook: () => void;
   quickBookDisabled: boolean;
@@ -51,12 +52,17 @@ export default function MobileCalendar({
   const days = useMemo(() => getThreeDayRange(offset), [offset]);
   const rangeString = useMemo(() => getThreeDayRangeString(offset), [offset]);
 
+  // Fetch bookings for the mobile 3-day range independently
+  const mobileStart = days[0]?.dateString;
+  const mobileEnd = days[days.length - 1]?.dateString;
+  const { data: mobileBookings = {} } = useBookings(mobileStart, mobileEnd);
+
   const handleSwipeLeft = useCallback(() => setOffset((o) => o + 1), []);
   const handleSwipeRight = useCallback(() => setOffset((o) => o - 1), []);
   const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight);
 
   const getBooking = (deskId: string, date: string): DeskBooking | null => {
-    return bookings[`${deskId}-${date}`] || null;
+    return mobileBookings[`${deskId}-${date}`] || null;
   };
 
   // Group desks by room
