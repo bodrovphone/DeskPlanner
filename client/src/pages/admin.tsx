@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/admin';
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -18,9 +19,15 @@ type SortDir = 'asc' | 'desc';
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: users = [], isLoading: loading, error } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc('admin_list_users');
+      if (error) throw new Error(error.message);
+      return data as AdminUser[];
+    },
+    enabled: isAdmin(user),
+  });
   const [sortCol, setSortCol] = useState<SortColumn>('last_sign_in_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -41,22 +48,6 @@ export default function AdminPage() {
       setSortDir('desc');
     }
   };
-
-  useEffect(() => {
-    if (!isAdmin(user)) return;
-
-    async function fetchUsers() {
-      const { data, error } = await supabaseClient.rpc('admin_list_users');
-      if (error) {
-        setError(error.message);
-      } else {
-        setUsers(data || []);
-      }
-      setLoading(false);
-    }
-
-    fetchUsers();
-  }, [user]);
 
   if (!isAdmin(user)) {
     return (
@@ -81,7 +72,7 @@ export default function AdminPage() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">Error: {error}</div>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg">Error: {error.message}</div>
       </div>
     );
   }
@@ -99,7 +90,7 @@ export default function AdminPage() {
           <thead>
             <tr className="bg-gray-50 border-b">
               <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+              <th className="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Space</th>
               <th
                 className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
@@ -111,7 +102,7 @@ export default function AdminPage() {
                 </span>
               </th>
               <th
-                className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
+                className="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
                 onClick={() => toggleSort('last_sign_in_at')}
               >
                 <span className="inline-flex items-center gap-1">
@@ -125,12 +116,12 @@ export default function AdminPage() {
             {sortedUsers.map((u) => (
               <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-900">{u.email}</td>
-                <td className="px-4 py-3 text-gray-700">{u.full_name || '-'}</td>
+                <td className="hidden md:table-cell px-4 py-3 text-gray-700">{u.full_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-700">{u.org_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-500">
                   {new Date(u.created_at).toLocaleDateString('en-GB')}
                 </td>
-                <td className="px-4 py-3 text-gray-500">
+                <td className="hidden md:table-cell px-4 py-3 text-gray-500">
                   {u.last_sign_in_at
                     ? new Date(u.last_sign_in_at).toLocaleDateString('en-GB')
                     : '-'}
