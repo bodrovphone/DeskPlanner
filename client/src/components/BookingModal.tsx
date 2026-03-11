@@ -8,6 +8,7 @@ import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -383,36 +384,52 @@ export default function BookingModal({
             </Button>
           )}
           {isMultiDayBooking && onPause && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onPause()}
-              disabled={isDiscarding || isLoading}
-              className="shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-              title="Pause & Extend"
-            >
-              <PauseCircle className="h-4 w-4" />
-            </Button>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => onPause()}
+                    disabled={isDiscarding || isLoading}
+                    className="shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                  >
+                    <PauseCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  <p>Pause selected days and extend the booking for free</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           {isExistingBooking && onShare && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onShare({
-                personName,
-                startDate,
-                endDate,
-                status,
-                title,
-                price: parseFloat(price) || 0,
-                currency,
-              })}
-              disabled={isDiscarding || isLoading}
-              className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
-              title="Share"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => onShare({
+                      personName,
+                      startDate,
+                      endDate,
+                      status,
+                      title,
+                      price: parseFloat(price) || 0,
+                      currency,
+                    })}
+                    disabled={isDiscarding || isLoading}
+                    className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  <p>Share booking confirmation via Telegram, WhatsApp, or Viber</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <Button
             variant="outline"
