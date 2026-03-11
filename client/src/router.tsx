@@ -13,6 +13,7 @@ import WaitingListPage from '@/pages/waiting-list';
 import SettingsPage from '@/pages/settings';
 import InsightsPage from '@/pages/insights';
 import AdminPage from '@/pages/admin';
+import SharePage from '@/pages/share';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -201,6 +202,11 @@ export const router = createBrowserRouter(
               element: <AppResolver />,
             },
           ],
+        },
+        // Public share page (no auth required) — must be before /:orgSlug catch-all
+        {
+          path: '/share/:token',
+          element: <SharePage />,
         },
         // Slug-based routes
         {

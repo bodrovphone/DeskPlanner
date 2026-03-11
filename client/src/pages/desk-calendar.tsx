@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import PersonModal from '@/components/PersonModal';
 import BookingModal from '@/components/BookingModal';
+import ShareBookingModal from '@/components/ShareBookingModal';
 import PauseBookingModal from '@/components/PauseBookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import FloorPlanModal from '@/components/FloorPlanModal';
@@ -87,6 +88,7 @@ export default function DeskCalendar() {
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -272,7 +274,44 @@ export default function DeskCalendar() {
           setIsPauseModalOpen(true);
           // Don't clear selectedBooking — PauseBookingModal needs it
         }}
+        onShare={(savedData) => {
+          // Ensure selectedBooking has a booking object (needed for new bookings)
+          if (selectedBooking && !selectedBooking.booking) {
+            setSelectedBooking({
+              ...selectedBooking,
+              booking: {
+                id: `${selectedBooking.deskId}-${savedData.startDate}`,
+                deskId: selectedBooking.deskId,
+                date: selectedBooking.date,
+                startDate: savedData.startDate,
+                endDate: savedData.endDate,
+                status: savedData.status,
+                personName: savedData.personName,
+                title: savedData.title,
+                price: savedData.price,
+                currency: savedData.currency,
+                createdAt: new Date().toISOString(),
+              },
+            });
+          }
+          setIsBookingModalOpen(false);
+          setIsShareModalOpen(true);
+        }}
       />
+
+      {selectedBooking?.booking && (
+        <ShareBookingModal
+          isOpen={isShareModalOpen}
+          onClose={() => {
+            setIsShareModalOpen(false);
+            setSelectedBooking(null);
+          }}
+          booking={selectedBooking.booking}
+          deskLabel={desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId}
+          spaceName={currentOrg?.name || 'Coworking Space'}
+          roomName={desks.find(d => d.id === selectedBooking.deskId)?.roomName || ''}
+        />
+      )}
 
       {selectedBooking?.booking && selectedBooking.booking.startDate !== selectedBooking.booking.endDate && (
         <PauseBookingModal

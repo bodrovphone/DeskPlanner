@@ -50,6 +50,9 @@ export interface IDataStore {
   saveRecurringExpense?(expense: RecurringExpense): Promise<void>;
   deleteRecurringExpense?(id: string): Promise<void>;
   generateRecurringExpenses?(year: number, month: number): Promise<Expense[]>;
+
+  // Share token operations
+  getOrCreateShareToken?(bookingId: string): Promise<string>;
 }
 
 /**

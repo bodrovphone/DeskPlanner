@@ -18,8 +18,23 @@ export const deskBookingSchema = z.object({
   price: z.number().optional(),
   currency: currencySchema.optional(),
   organizationId: z.string().optional(),
+  shareToken: z.string().uuid().optional(),
   createdAt: z.string(),
 });
+
+export const sharedBookingSchema = z.object({
+  deskId: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  status: deskStatusSchema,
+  title: z.string().nullable().optional(),
+  spaceName: z.string(),
+  roomName: z.string(),
+  deskLabel: z.string(),
+  expired: z.boolean(),
+});
+
+export type SharedBooking = z.infer<typeof sharedBookingSchema>;
 
 export const waitingListEntrySchema = z.object({
   id: z.string(),

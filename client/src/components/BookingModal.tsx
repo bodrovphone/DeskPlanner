@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2 } from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -28,6 +28,7 @@ interface BookingModalProps {
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
   onPause?: () => void;
+  onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency }) => void;
 }
 
 export default function BookingModal({
@@ -41,6 +42,7 @@ export default function BookingModal({
   onSave,
   onDiscard,
   onPause,
+  onShare,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
   const defaultPrice = currentOrg?.defaultPricePerDay ?? 8;
@@ -54,6 +56,7 @@ export default function BookingModal({
   const [conflictError, setConflictError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +86,7 @@ export default function BookingModal({
       }
 
       setConflictError('');
+      setConfirmDiscard(false);
       setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
     }
   }, [isOpen, booking, date]);
@@ -105,7 +109,19 @@ export default function BookingModal({
           endDate: endDate,
           currency: currency
         });
-        onClose();
+        if (onShare) {
+          onShare({
+            personName: trimmedName,
+            startDate,
+            endDate,
+            status,
+            title: trimmedTitle,
+            price: parsedPrice,
+            currency,
+          });
+        } else {
+          onClose();
+        }
       } catch (error: any) {
         if (error.message && error.message.includes('conflict')) {
           setConflictError(error.message);
@@ -128,6 +144,10 @@ export default function BookingModal({
 
   const handleDiscard = async () => {
     if (!onDiscard) return;
+    if (!confirmDiscard) {
+      setConfirmDiscard(true);
+      return;
+    }
     try {
       setIsDiscarding(true);
       await onDiscard();
@@ -136,6 +156,7 @@ export default function BookingModal({
       setConflictError('Failed to discard booking.');
     } finally {
       setIsDiscarding(false);
+      setConfirmDiscard(false);
     }
   };
 
@@ -273,32 +294,26 @@ export default function BookingModal({
               <button
                 type="button"
                 onClick={() => { setStatus('booked'); setPrice('0'); }}
-                className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-colors ${
                   status === 'booked'
                     ? 'border-orange-400 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <CalendarX className={`h-4 w-4 shrink-0 ${status === 'booked' ? 'text-orange-600' : 'text-gray-400'}`} />
-                <div className="text-left">
-                  <div className="text-sm font-medium">Booked</div>
-                  <div className="text-xs text-gray-500">Reserved</div>
-                </div>
+                <span className="text-sm font-medium">Booked</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStatus('assigned')}
-                className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-colors ${
                   status === 'assigned'
                     ? 'border-blue-400 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <User className={`h-4 w-4 shrink-0 ${status === 'assigned' ? 'text-blue-600' : 'text-gray-400'}`} />
-                <div className="text-left">
-                  <div className="text-sm font-medium">Assigned</div>
-                  <div className="text-xs text-gray-500">Paid</div>
-                </div>
+                <span className="text-sm font-medium">Assigned</span>
               </button>
             </div>
           </div>
@@ -354,6 +369,11 @@ export default function BookingModal({
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Discarding...
                 </>
+              ) : confirmDiscard ? (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Confirm?
+                </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -365,12 +385,33 @@ export default function BookingModal({
           {isMultiDayBooking && onPause && (
             <Button
               variant="outline"
+              size="icon"
               onClick={() => onPause()}
               disabled={isDiscarding || isLoading}
-              className="flex-1 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+              className="shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+              title="Pause & Extend"
             >
-              <PauseCircle className="h-4 w-4 mr-2" />
-              Pause & Extend
+              <PauseCircle className="h-4 w-4" />
+            </Button>
+          )}
+          {isExistingBooking && onShare && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onShare({
+                personName,
+                startDate,
+                endDate,
+                status,
+                title,
+                price: parseFloat(price) || 0,
+                currency,
+              })}
+              disabled={isDiscarding || isLoading}
+              className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
+              title="Share"
+            >
+              <Share2 className="h-4 w-4" />
             </Button>
           )}
           <Button

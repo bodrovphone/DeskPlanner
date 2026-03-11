@@ -1,6 +1,6 @@
 # OhMyDesk — Feature List
 
-**32 features** across desk booking, revenue tracking, analytics, notifications, and workspace management.
+**33 features** across desk booking, revenue tracking, analytics, notifications, and workspace management.
 
 ## Desk Booking & Calendar
 1. **Weekly & Monthly calendar views** — see all desks and dates at a glance
@@ -13,25 +13,28 @@
 8. **Booking conflict detection** — prevents double-booking
 9. **Pause & Extend** — pause a booking for selected days (freeing them for resale), automatically adds free extension days at the end; prices prorate correctly so revenue is never overcounted
 
+## Sharing & Communication
+10. **Shareable booking confirmation** — share a public booking link via Copy, Telegram, WhatsApp, or Viber; shows space name, room, desk, and dates (no personal info or pricing); links auto-expire after booking end date; "Powered by OhMyDesk" promo footer on share page
+
 ## Revenue & Expenses
-10. **Revenue dashboard** — monthly revenue, occupancy rate, net profit at a glance
-11. **Revenue trend chart** — 3-month visual trend (revenue, expenses, net profit)
-12. **Expense tracking** — log expenses by category (rent, supplies, internet, bills, accountant)
-13. **Recurring expenses** — auto-generated monthly expenses (e.g. rent on the 1st)
-14. **Per-desk pricing** — configurable default price per desk per day
-15. **Multi-currency support** — EUR, USD, GBP
+11. **Revenue dashboard** — monthly revenue, occupancy rate, net profit at a glance
+12. **Revenue trend chart** — 3-month visual trend (revenue, expenses, net profit)
+13. **Expense tracking** — log expenses by category (rent, supplies, internet, bills, accountant)
+14. **Recurring expenses** — auto-generated monthly expenses (e.g. rent on the 1st)
+15. **Per-desk pricing** — configurable default price per desk per day
+16. **Multi-currency support** — EUR, USD, GBP
 
 ## Insights & Analytics
-16. **Next available dates** — shows first 5 upcoming free dates
-17. **Upcoming bookings** — see what's booked next
-18. **Expiring assignments alert** — desks approaching end of assignment
-19. **Occupancy statistics** — monthly weekday stats and utilization rates
+17. **Next available dates** — shows first 5 upcoming free dates
+18. **Upcoming bookings** — see what's booked next
+19. **Expiring assignments alert** — desks approaching end of assignment
+20. **Occupancy statistics** — monthly weekday stats and utilization rates
 
 ## Workspace Management
-20. **Multi-room setup** — up to 4 rooms, 12 desks per room
-21. **Custom room & desk names** — rename everything inline
-22. **Floor plan upload** — upload your space layout (JPEG, PNG, WebP, GIF)
-23. **Waiting list** — track people waiting for a desk with contact info and preferences
+21. **Multi-room setup** — up to 4 rooms, 12 desks per room
+22. **Custom room & desk names** — rename everything inline
+23. **Floor plan upload** — upload your space layout (JPEG, PNG, WebP, GIF)
+24. **Waiting list** — track people waiting for a desk with contact info and preferences
 
 ## Notifications
 25. **Telegram notifications** — daily alerts for bookings starting and assignments ending tomorrow
@@ -69,6 +72,7 @@
 
 ## Platform
 32. **Multi-organization support** — manage multiple coworking spaces from one account
+33. **Shareable public pages** — booking confirmation pages accessible without login
 - Real-time sync across devices
 - Data export (JSON)
 - 2-minute onboarding wizard

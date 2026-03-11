@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -665,6 +665,7 @@ export class SupabaseDataStore implements IDataStore {
       title: row.title,
       price: row.price,
       currency: row.currency || 'EUR', // Use database currency or default to EUR
+      shareToken: row.share_token || undefined,
       createdAt: row.created_at,
     };
   }
@@ -896,5 +897,42 @@ export class SupabaseDataStore implements IDataStore {
       isActive: row.is_active,
       createdAt: row.created_at,
     };
+  }
+
+  // Share token operations
+  async getOrCreateShareToken(bookingId: string): Promise<string> {
+    const numericId = /^\d+$/.test(bookingId) ? parseInt(bookingId, 10) : this.stringToNumericId(bookingId);
+
+    // Check if token already exists
+    const { data: existing } = await this.client
+      .from('desk_bookings')
+      .select('share_token')
+      .eq('id', numericId)
+      .limit(1)
+      .single();
+
+    if (existing?.share_token) {
+      return existing.share_token;
+    }
+
+    // Generate new token — only update the single row, not all daily rows
+    const newToken = crypto.randomUUID();
+
+    const { error } = await this.client
+      .from('desk_bookings')
+      .update({ share_token: newToken })
+      .eq('id', numericId);
+    if (error) {
+      console.error('Error setting share token:', error);
+      throw new Error('Failed to generate share link');
+    }
+
+    return newToken;
+  }
+
+  static async getSharedBooking(token: string): Promise<SharedBooking | null> {
+    const { data, error } = await supabaseClient.rpc('get_shared_booking', { p_token: token });
+    if (error || !data) return null;
+    return data as SharedBooking;
   }
 }
