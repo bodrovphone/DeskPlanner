@@ -12,7 +12,6 @@ interface CalendarHeaderProps {
   onFloorPlan: () => void;
   onSetAvailability: () => void;
   onExport: () => void;
-  onMigrate: () => void;
   statusCounts?: StatusCounts;
   totalDeskDays?: number;
 }

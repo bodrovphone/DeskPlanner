@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, ExpenseCategory, Currency } from '@shared/schema';
-import { currencySymbols, getCurrency } from '@/lib/settings';
+import { currencySymbols } from '@/lib/settings';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useSaveExpense } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
 import { Receipt, Loader2, Check, Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal } from 'lucide-react';
@@ -35,6 +36,7 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
+  const { currentOrg } = useOrganization();
   const saveExpense = useSaveExpense();
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
         setAmount('');
         setCategory('supplies');
         setDescription('');
-        setCurrency(getCurrency());
+        setCurrency(currentOrg?.currency || 'EUR');
       }
     }
   }, [isOpen, expense]);

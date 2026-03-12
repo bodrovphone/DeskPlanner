@@ -13,18 +13,6 @@ export function invalidateBookingQueries(queryClient: ReturnType<typeof useQuery
   queryClient.invalidateQueries({ queryKey: ['next-dates'] });
 }
 
-export async function refetchLocalStorageQueries(queryClient: ReturnType<typeof useQueryClient>) {
-  const storageType = import.meta.env.VITE_STORAGE_TYPE;
-  if (storageType === 'localStorage') {
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['desk-bookings'], type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['desk-stats'], type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['next-dates'], type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['monthly-stats'], type: 'active' }),
-      queryClient.refetchQueries({ queryKey: ['date-range-stats'], type: 'active' }),
-    ]);
-  }
-}
 
 interface SelectedBooking {
   booking: DeskBooking | null;
@@ -159,7 +147,7 @@ export function useBookingActions(
     }));
 
     await dataStore.bulkUpdateBookings(bookingsToCreate);
-    await refetchLocalStorageQueries(queryClient);
+    invalidateBookingQueries(queryClient);
 
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';
     const dayCount = newDateRange.length;
@@ -243,7 +231,7 @@ export function useBookingActions(
       bulkBookings.length > 0 ? dataStore.bulkUpdateBookings(bulkBookings) : Promise.resolve(),
     ]);
 
-    await refetchLocalStorageQueries(queryClient);
+    invalidateBookingQueries(queryClient);
     toast({
       title: 'Bulk Update Applied',
       description: `${deskIds.length} desks updated for ${dateRange.length} days`,

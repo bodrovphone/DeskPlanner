@@ -19,7 +19,7 @@ export function DataStoreProvider({ children }: { children: React.ReactNode }) {
   const prevOrgId = useRef(currentOrg?.id);
 
   const store = useMemo(
-    () => createDataStore(undefined, currentOrg?.id),
+    () => createDataStore(currentOrg?.id),
     [currentOrg?.id]
   );
 

@@ -13,6 +13,7 @@ import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
 import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
+import { DAY_LABELS } from '@/lib/workingDays';
 
 function InlineEdit({
   value,
@@ -86,6 +87,7 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState(currentOrg?.name || '');
   const [currency, setCurrency] = useState(currentOrg?.currency || 'EUR');
   const [defaultPrice, setDefaultPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
+  const [workingDays, setWorkingDays] = useState<number[]>(currentOrg?.workingDays || [1, 2, 3, 4, 5]);
   const renameRoom = useRenameRoom();
   const renameDesk = useRenameDesk();
   const addRoom = useAddRoom();
@@ -103,10 +105,17 @@ export default function SettingsPage() {
   const [pendingNewRooms, setPendingNewRooms] = useState<Array<{ name: string; deskCount: number }>>([]);
   const [savingRooms, setSavingRooms] = useState(false);
 
+  const toggleWorkingDay = (day: number) => {
+    setWorkingDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+    );
+  };
+
   const hasOrgChanges =
     orgName !== (currentOrg?.name || '') ||
     currency !== (currentOrg?.currency || 'EUR') ||
-    defaultPrice !== (currentOrg?.defaultPricePerDay?.toString() || '8');
+    defaultPrice !== (currentOrg?.defaultPricePerDay?.toString() || '8') ||
+    JSON.stringify(workingDays) !== JSON.stringify(currentOrg?.workingDays || [1, 2, 3, 4, 5]);
 
   const hasRoomChanges =
     Object.keys(draftRoomNames).length > 0 ||
@@ -126,7 +135,7 @@ export default function SettingsPage() {
     try {
       const { error } = await supabaseClient
         .from('organizations')
-        .update({ name: orgName, currency, default_price_per_day: parseFloat(defaultPrice) || 8 })
+        .update({ name: orgName, currency, default_price_per_day: parseFloat(defaultPrice) || 8, working_days: workingDays })
         .eq('id', currentOrg.id);
 
       if (error) throw error;
@@ -325,6 +334,26 @@ export default function SettingsPage() {
                 value={defaultPrice}
                 onChange={(e) => setDefaultPrice(e.target.value)}
               />
+            </div>
+            <div>
+              <Label>Working Days</Label>
+              <p className="text-xs text-gray-500 mb-2">Select which days your space is open for bookings.</p>
+              <div className="flex gap-1.5">
+                {([1, 2, 3, 4, 5, 6, 7] as const).map(day => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleWorkingDay(day)}
+                    className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
+                      workingDays.includes(day)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    {DAY_LABELS[day]}
+                  </button>
+                ))}
+              </div>
             </div>
             <Button onClick={handleSave} disabled={saving || !hasOrgChanges}>
               <Save className="mr-2 h-4 w-4" />

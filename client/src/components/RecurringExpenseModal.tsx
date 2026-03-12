@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { RecurringExpense, ExpenseCategory, Currency } from '@shared/schema';
-import { currencySymbols, getCurrency } from '@/lib/settings';
+import { currencySymbols } from '@/lib/settings';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   useRecurringExpenses,
   useSaveRecurringExpense,
@@ -53,6 +54,7 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
   const [currency, setCurrency] = useState<Currency>('EUR');
 
   const { toast } = useToast();
+  const { currentOrg } = useOrganization();
   const { data: recurringExpenses = [], isLoading } = useRecurringExpenses();
   const saveRecurringExpense = useSaveRecurringExpense();
   const deleteRecurringExpense = useDeleteRecurringExpense();
@@ -71,7 +73,7 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
     setDescription('');
     setDayOfMonth('1');
     setIsActive(true);
-    setCurrency(getCurrency());
+    setCurrency(currentOrg?.currency || 'EUR');
   };
 
   const handleEdit = (expense: RecurringExpense) => {

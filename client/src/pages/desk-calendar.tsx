@@ -5,7 +5,6 @@ import ShareBookingModal from '@/components/ShareBookingModal';
 import PauseBookingModal from '@/components/PauseBookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
 import FloorPlanModal from '@/components/FloorPlanModal';
-import DataMigrationModal from '@/components/DataMigrationModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import CalendarNavigation from '@/components/calendar/CalendarNavigation';
 import DeskGrid from '@/components/calendar/DeskGrid';
@@ -23,7 +22,6 @@ import { useNextDates } from '@/hooks/use-next-dates';
 import { useRealtimeBookings } from '@/hooks/use-realtime-bookings';
 import { useBookings } from '@/hooks/use-bookings';
 import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
-import { getCurrency } from '@/lib/settings';
 import { useBookingActions } from '@/hooks/use-booking-actions';
 import { usePauseBooking } from '@/hooks/use-pause-booking';
 import { DEFAULT_WORKING_DAYS, isNonWorkingDay } from '@/lib/workingDays';
@@ -86,8 +84,7 @@ export default function DeskCalendar() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
-  const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
-  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -135,11 +132,7 @@ export default function DeskCalendar() {
   const nextAvailableDates = nextDatesData?.available || [];
 
   useEffect(() => {
-    if (currentOrg?.currency) {
-      setCurrentCurrency(currentOrg.currency);
-    } else {
-      setCurrentCurrency(getCurrency());
-    }
+    setCurrentCurrency(currentOrg?.currency || 'EUR');
   }, [currentOrg?.currency]);
 
   // Auto-scroll to today's column (desktop only)
@@ -217,7 +210,6 @@ export default function DeskCalendar() {
             onFloorPlan={() => setIsFloorPlanModalOpen(true)}
             onSetAvailability={() => setIsRangeModalOpen(true)}
             onExport={handleExport}
-            onMigrate={() => setIsMigrationModalOpen(true)}
             statusCounts={statusCounts}
             totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
           />
@@ -358,10 +350,6 @@ export default function DeskCalendar() {
         onClose={() => setIsFloorPlanModalOpen(false)}
       />
 
-      <DataMigrationModal
-        isOpen={isMigrationModalOpen}
-        onClose={() => setIsMigrationModalOpen(false)}
-      />
     </div>
   );
 }

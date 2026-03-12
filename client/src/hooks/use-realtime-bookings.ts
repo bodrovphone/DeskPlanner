@@ -7,21 +7,12 @@ export function useRealtimeBookings() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Only set up subscription if using Supabase
-    const storageType = import.meta.env.VITE_STORAGE_TYPE;
-    if (storageType !== 'supabase') {
-      return;
-    }
-
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      console.warn('Supabase credentials not available for real-time subscriptions');
       return;
     }
-
-    console.log('Setting up real-time subscription for desk_bookings');
 
     // Subscribe to changes in desk_bookings table
     const subscription = supabaseClient

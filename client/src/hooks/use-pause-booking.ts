@@ -5,7 +5,7 @@ import { DeskBooking } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { invalidateBookingQueries, refetchLocalStorageQueries } from '@/hooks/use-booking-actions';
+import { invalidateBookingQueries } from '@/hooks/use-booking-actions';
 
 export type SegmentType = 'pre' | 'post' | 'extension';
 
@@ -175,7 +175,6 @@ export function usePauseBooking() {
 
     await dataStore.bulkUpdateBookings(upserts);
     invalidateBookingQueries(queryClient);
-    await refetchLocalStorageQueries(queryClient);
 
     toast({
       title: 'Booking Paused & Extended',

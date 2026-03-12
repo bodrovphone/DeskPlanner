@@ -271,8 +271,7 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   async getMonthlyStats(year: number, month: number, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
-    const { getCurrency } = await import('./settings');
-    const currency = getCurrency();
+    const currency = 'EUR';
     // Uses DESK_COUNT from deskConfig
 
     // Calculate month boundaries (month is 0-indexed)
@@ -388,8 +387,7 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
-    const { getCurrency } = await import('./settings');
-    const currency = getCurrency();
+    const currency = 'EUR';
     // Uses DESK_COUNT from deskConfig
 
     const rangeStart = new Date(startDate + 'T00:00:00');
