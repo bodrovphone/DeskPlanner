@@ -200,6 +200,7 @@ export interface PublicAvailabilityRoom {
 
 export interface PublicAvailability {
   org: {
+    id: string;
     name: string;
     slug: string;
     currency: string;

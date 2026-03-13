@@ -197,21 +197,8 @@ export default function PublicBookingPage() {
         return;
       }
 
-      const { data: orgData } = await supabaseClient
-        .from('organizations')
-        .select('id')
-        .eq('slug', org.slug)
-        .limit(1)
-        .single();
-
-      if (!orgData) {
-        setError('Could not find the organization. Please try again.');
-        setSubmitting(false);
-        return;
-      }
-
       await SupabaseDataStore.submitPublicBooking({
-        organizationId: orgData.id,
+        organizationId: org.id,
         deskId: desk.deskId,
         date: selectedDate,
         visitorName: visitorName.trim(),
