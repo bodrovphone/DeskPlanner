@@ -13,3 +13,9 @@ research/
 .env
 .env.local
 .env.production
+.env.test
+
+# Playwright
+test-results/
+playwright-report/
+e2e/.auth/

@@ -139,8 +139,8 @@ test.describe('Landing page — product showcase', () => {
 
   test('stats cards render', async ({ page }) => {
     await expect(page.getByText('Available').first()).toBeVisible();
-    await expect(page.getByText('Booked')).toBeVisible();
-    await expect(page.getByText('Assigned')).toBeVisible();
+    await expect(page.getByText('Booked', { exact: true })).toBeVisible();
+    await expect(page.getByText('Assigned', { exact: true })).toBeVisible();
   });
 
   test('revenue card shows amount', async ({ page }) => {
