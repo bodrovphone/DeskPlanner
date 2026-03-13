@@ -13,13 +13,13 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env.test') });
  * Resets the e2e test org's bookings to a known state with relative dates.
  */
 export default async function globalSetup() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
   const email = process.env.E2E_TEST_EMAIL;
   const password = process.env.E2E_TEST_PASSWORD;
 
   if (!supabaseUrl || !supabaseKey || !email || !password) {
-    throw new Error('Missing SUPABASE_URL, SUPABASE_ANON_KEY, E2E_TEST_EMAIL, or E2E_TEST_PASSWORD in .env.test');
+    throw new Error('Missing VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, E2E_TEST_EMAIL, or E2E_TEST_PASSWORD in .env.test');
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
