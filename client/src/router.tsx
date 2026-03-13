@@ -14,6 +14,7 @@ import SettingsPage from '@/pages/settings';
 import InsightsPage from '@/pages/insights';
 import AdminPage from '@/pages/admin';
 import SharePage from '@/pages/share';
+import PublicBookingPage from '@/pages/public-booking';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -207,6 +208,11 @@ export const router = createBrowserRouter(
         {
           path: '/share/:token',
           element: <SharePage />,
+        },
+        // Public booking page (no auth required) — must be before /:orgSlug catch-all
+        {
+          path: '/book/:orgSlug',
+          element: <PublicBookingPage />,
         },
         // Slug-based routes
         {

@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -932,5 +932,63 @@ export class SupabaseDataStore implements IDataStore {
     const { data, error } = await supabaseClient.rpc('get_shared_booking', { p_token: token });
     if (error || !data) return null;
     return data as SharedBooking;
+  }
+
+  static async getPublicAvailability(orgSlug: string): Promise<PublicAvailability | null> {
+    const { data, error } = await supabaseClient.rpc('get_public_availability', { p_org_slug: orgSlug });
+    if (error || !data) return null;
+    return data as PublicAvailability;
+  }
+
+  static async submitPublicBooking(params: {
+    organizationId: string;
+    deskId: string;
+    date: string;
+    visitorName: string;
+    visitorEmail: string;
+    visitorPhone?: string;
+    visitorNotes?: string;
+  }): Promise<void> {
+    // Build a title with contact info for calendar visibility
+    const titleParts: string[] = [];
+    if (params.visitorPhone) titleParts.push(params.visitorPhone);
+    if (params.visitorNotes) titleParts.push(params.visitorNotes);
+    const title = titleParts.length > 0 ? titleParts.join(' | ') : null;
+
+    const { error } = await supabaseClient
+      .from('desk_bookings')
+      .insert({
+        desk_id: params.deskId,
+        date: params.date,
+        start_date: params.date,
+        end_date: params.date,
+        status: 'booked',
+        organization_id: params.organizationId,
+        visitor_name: params.visitorName,
+        visitor_email: params.visitorEmail,
+        visitor_phone: params.visitorPhone || null,
+        visitor_notes: params.visitorNotes || null,
+        person_name: params.visitorName,
+        title,
+        created_at: new Date().toISOString(),
+      });
+
+    if (error) throw error;
+
+    // Fire-and-forget Telegram notification
+    try {
+      await supabaseClient.functions.invoke('notify-public-booking', {
+        body: {
+          organization_id: params.organizationId,
+          visitor_name: params.visitorName,
+          visitor_phone: params.visitorPhone || null,
+          desk_id: params.deskId,
+          date: params.date,
+          notes: params.visitorNotes || null,
+        },
+      });
+    } catch {
+      // Non-critical — don't block the booking
+    }
   }
 }

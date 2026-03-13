@@ -20,6 +20,8 @@ function mapOrg(row: Record<string, unknown>): Organization {
     timezone: row.timezone as string,
     floorPlanUrl: (row.floor_plan_url as string) ?? null,
     workingDays: (row.working_days as number[]) ?? [1, 2, 3, 4, 5],
+    publicBookingEnabled: (row.public_booking_enabled as boolean) ?? false,
+    publicBookingMaxDaysAhead: (row.public_booking_max_days_ahead as number) ?? 14,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

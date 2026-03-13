@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 
@@ -497,6 +497,14 @@ export default function SettingsPage() {
           orgId={currentOrg.id}
           isAdmin={currentRole === 'owner' || currentRole === 'admin'}
         />
+
+        <PublicBookingCard
+          orgId={currentOrg.id}
+          orgSlug={currentOrg.slug}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+          enabled={currentOrg.publicBookingEnabled}
+          maxDaysAhead={currentOrg.publicBookingMaxDaysAhead}
+        />
       </div>
     </div>
   );
@@ -602,13 +610,17 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
 
   const handleSendTest = async () => {
     try {
-      const { error } = await supabaseClient.functions.invoke('telegram-notify', {
+      const { data, error } = await supabaseClient.functions.invoke('telegram-notify', {
         body: {},
       });
       if (error) throw error;
-      toast({ title: 'Test Sent', description: 'Check your Telegram for notifications (if any bookings match).' });
+      if (data?.totalSent > 0) {
+        toast({ title: 'Test Sent', description: 'Check your Telegram for a test notification.' });
+      } else {
+        toast({ title: 'No notification sent', description: data?.message || 'Telegram may not be configured correctly.', variant: 'destructive' });
+      }
     } catch {
-      toast({ title: 'Note', description: 'Test notification triggered. Check Telegram if bookings match tomorrow\'s date.' });
+      toast({ title: 'Error', description: 'Failed to send test notification. Check your Telegram connection.', variant: 'destructive' });
     }
   };
 
@@ -728,6 +740,139 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
               </p>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PublicBookingCard({
+  orgId,
+  orgSlug,
+  isAdmin,
+  enabled,
+  maxDaysAhead,
+}: {
+  orgId: string;
+  orgSlug: string;
+  isAdmin: boolean;
+  enabled: boolean;
+  maxDaysAhead: number;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: telegramSettings } = useTelegramSettings(orgId);
+  const isTelegramConnected = !!telegramSettings?.telegramChatId && telegramSettings?.enabled;
+  const [isEnabled, setIsEnabled] = useState(enabled);
+  const [days, setDays] = useState(String(maxDaysAhead));
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setIsEnabled(enabled);
+    setDays(String(maxDaysAhead));
+  }, [enabled, maxDaysAhead]);
+
+  const bookingUrl = `${window.location.origin}/book/${orgSlug}`;
+
+  const hasChanges = isEnabled !== enabled || days !== String(maxDaysAhead);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({
+          public_booking_enabled: isEnabled,
+          public_booking_max_days_ahead: parseInt(days) || 14,
+        })
+        .eq('id', orgId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Saved', description: 'Public booking settings updated.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save settings.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(bookingUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Globe className="h-5 w-5 text-blue-600" />
+          <CardTitle>Public Booking Page</CardTitle>
+        </div>
+        <CardDescription>
+          Allow visitors to request desk bookings without an account.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isAdmin ? (
+          <>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="public-booking-toggle"
+                checked={isEnabled}
+                onCheckedChange={setIsEnabled}
+                className="data-[state=unchecked]:bg-gray-300"
+              />
+              <Label htmlFor="public-booking-toggle">Enable public booking</Label>
+            </div>
+
+            {isEnabled && (
+              <>
+                {!isTelegramConnected && (
+                  <div className="flex gap-3 items-start bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    <Bell className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-amber-800">
+                      Without Telegram connected, you'll only see new bookings when you open the calendar. Connect Telegram above to get instant alerts.
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-sm text-gray-500">Shareable link</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input value={bookingUrl} readOnly className="text-sm bg-gray-50" />
+                    <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="max-days">Max days ahead</Label>
+                  <Input
+                    id="max-days"
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                    className="w-32"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">How far in advance visitors can book.</p>
+                </div>
+              </>
+            )}
+
+            <Button onClick={handleSave} disabled={saving || !hasChanges}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Ask a space owner or admin to configure public booking.
+          </p>
         )}
       </CardContent>
     </Card>

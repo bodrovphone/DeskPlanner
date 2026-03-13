@@ -19,6 +19,10 @@ export const deskBookingSchema = z.object({
   currency: currencySchema.optional(),
   organizationId: z.string().optional(),
   shareToken: z.string().uuid().optional(),
+  visitorName: z.string().optional(),
+  visitorEmail: z.string().optional(),
+  visitorPhone: z.string().optional(),
+  visitorNotes: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -79,6 +83,8 @@ export const organizationSchema = z.object({
   timezone: z.string().default("Europe/Sofia"),
   floorPlanUrl: z.string().nullable().optional(),
   workingDays: z.array(z.number()).default([1, 2, 3, 4, 5]),
+  publicBookingEnabled: z.boolean().default(false),
+  publicBookingMaxDaysAhead: z.number().default(14),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -177,3 +183,40 @@ export const notificationSettingsSchema = z.object({
 });
 
 export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
+// Public booking types
+export interface PublicAvailabilityDesk {
+  id: string;
+  deskId: string;
+  label: string;
+}
+
+export interface PublicAvailabilityRoom {
+  id: string;
+  name: string;
+  desks: PublicAvailabilityDesk[];
+}
+
+export interface PublicAvailability {
+  org: {
+    name: string;
+    slug: string;
+    currency: string;
+    workingDays: number[];
+    maxDaysAhead: number;
+  };
+  rooms: PublicAvailabilityRoom[];
+  bookedSlots: { deskId: string; date: string }[];
+}
+
+export const publicBookingRequestSchema = z.object({
+  orgSlug: z.string(),
+  deskId: z.string(),
+  date: z.string(),
+  visitorName: z.string().min(1, 'Name is required'),
+  visitorEmail: z.string().email('Valid email is required'),
+  visitorPhone: z.string().optional(),
+  visitorNotes: z.string().optional(),
+});
+
+export type PublicBookingRequest = z.infer<typeof publicBookingRequestSchema>;

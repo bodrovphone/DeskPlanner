@@ -14,6 +14,9 @@ import {
   Smartphone,
   MessageCircle,
   Linkedin,
+  Globe,
+  ChevronRight,
+  MapPin,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg';
@@ -178,6 +181,178 @@ function SectionHeading({ tag, title, sub }: { tag: string; title: string; sub?:
       <span style={{ fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: T.green, display: 'inline-block', marginBottom: 12, border: `1px solid ${T.green}33`, padding: '4px 14px', borderRadius: 4 }}>{tag}</span>
       <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, color: T.textPrimary, lineHeight: 1.2, margin: 0, marginTop: 8 }}>{title}</h2>
       {sub && <p style={{ marginTop: 16, fontSize: 17, color: T.textSecondary, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>{sub}</p>}
+    </div>
+  );
+}
+
+function FauxPublicBooking() {
+  const { ref, visible } = useReveal(0.15);
+  const isMobile = useNarrow(768);
+
+  const fauxDates = [
+    { day: 'Mon', date: 'Mar 17', available: true, scarce: false },
+    { day: 'Tue', date: 'Mar 18', available: true, scarce: true, count: 2 },
+    { day: 'Wed', date: 'Mar 19', available: true, scarce: false },
+    { day: 'Thu', date: 'Mar 20', available: true, scarce: false },
+    { day: 'Fri', date: 'Mar 21', available: true, scarce: true, count: 1 },
+  ];
+
+  const cardStyle: CSSProperties = {
+    background: '#ffffff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    maxWidth: 380,
+    width: '100%',
+  };
+
+  const telegramCardStyle: CSSProperties = {
+    background: T.bgCard,
+    border: `1px solid ${T.borderBright}`,
+    borderRadius: 16,
+    padding: 24,
+    maxWidth: 400,
+    width: '100%',
+  };
+
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(32px)',
+      transition: 'all 0.7s ease',
+    }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '380px 1fr',
+        gap: 32,
+        alignItems: 'start',
+        maxWidth: 820,
+        margin: '0 auto',
+      }}>
+        {/* Faux booking widget */}
+        <div style={cardStyle}>
+          <div style={{ background: '#2563eb', padding: '20px 24px', color: '#ffffff' }}>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>Your Space</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>Book a desk</div>
+          </div>
+          {/* Step bar */}
+          <div style={{ display: 'flex', gap: 8, padding: '16px 24px 0' }}>
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: '#2563eb' }} />
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: '#e5e7eb' }} />
+          </div>
+          <div style={{ padding: '16px 24px 24px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+              When do you want to come?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {fauxDates.map((d, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 14px', borderRadius: 12,
+                  border: '1px solid #e5e7eb',
+                  background: i === 0 ? '#eff6ff' : '#ffffff',
+                  borderColor: i === 0 ? '#bfdbfe' : '#e5e7eb',
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: '#111827', fontSize: 14 }}>{d.day}</span>
+                    <span style={{ color: '#9ca3af', marginLeft: 6, fontSize: 14 }}>{d.date}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {d.scarce ? (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: '#d97706',
+                        background: '#fffbeb', padding: '2px 8px', borderRadius: 10,
+                      }}>
+                        Only {d.count} left
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 13, color: '#9ca3af' }}>Available</span>
+                    )}
+                    <ChevronRight size={14} color="#d1d5db" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Telegram notification + confirmation */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Telegram alert mockup */}
+          <div style={telegramCardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: '#0088cc', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Send size={16} color="#fff" style={{ marginLeft: 2 }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>OhMyDesk Bot</div>
+                <div style={{ fontSize: 11, color: T.textMuted }}>just now</div>
+              </div>
+            </div>
+            <div style={{
+              background: '#1a2332', borderRadius: 12, padding: 16,
+              fontFamily: 'system-ui, sans-serif', fontSize: 13, lineHeight: 1.6, color: '#e0e0e0',
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>New booking request</div>
+              <div><strong>Sarah Chen</strong> wants a desk</div>
+              <div style={{ color: '#9ca3af' }}>Desk: Room A, Desk 3</div>
+              <div style={{ color: '#9ca3af' }}>Date: Mon, 17 Mar</div>
+              <div style={{ color: '#9ca3af' }}>Phone: +44 7700 900 123</div>
+            </div>
+          </div>
+
+          {/* Confirmation mockup */}
+          <div style={{
+            background: T.bgCard, border: `1px solid ${T.borderBright}`,
+            borderRadius: 16, padding: 24, textAlign: 'center',
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%',
+              background: 'rgba(34,197,94,0.15)', display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+            }}>
+              <Check size={24} color="#22c55e" />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: T.textPrimary }}>You're booked!</div>
+            <div style={{ fontSize: 13, color: T.textSecondary, marginTop: 6 }}>
+              Your desk is reserved. See you at the space!
+            </div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: T.blueFaint, color: T.blue,
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 13, fontWeight: 500, marginTop: 14,
+            }}>
+              <MapPin size={14} /> Room A, Desk 3
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* How it works steps */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+        gap: 20, marginTop: 48, maxWidth: 820, margin: '48px auto 0',
+      }}>
+        {[
+          { icon: Globe, label: 'Share a link', desc: 'Put it on Google Maps, your website, or a QR code at the door.' },
+          { icon: Calendar, label: 'Visitor picks a date', desc: 'Simple 2-step flow. Name, phone, done. A desk is auto-assigned.' },
+          { icon: Bell, label: 'You get a Telegram alert', desc: 'Instant notification with contact details. Call them back to confirm.' },
+        ].map((s, i) => (
+          <div key={i} style={{
+            background: T.bgCard, border: `1px solid ${T.borderBright}`,
+            borderRadius: 12, padding: 20, textAlign: 'center',
+          }}>
+            <s.icon size={20} color={T.green} style={{ marginBottom: 10 }} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, marginBottom: 6 }}>{s.label}</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.5 }}>{s.desc}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -537,6 +712,16 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ── PUBLIC BOOKING SPOTLIGHT ── */}
+      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+        <SectionHeading
+          tag="New"
+          title="Accept bookings from anyone."
+          sub="Share a link. Visitors pick a date, leave their phone number, and you get an instant Telegram alert. No accounts needed."
+        />
+        <FauxPublicBooking />
       </section>
 
       {/* ── FEATURES ── */}
