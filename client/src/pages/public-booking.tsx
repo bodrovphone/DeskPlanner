@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { PublicAvailability } from '@shared/schema';
 import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
-import { Loader2, CalendarCheck, ChevronRight, ChevronLeft, Check, MapPin } from 'lucide-react';
+import { Loader2, CalendarCheck, ChevronLeft, Check, MapPin, CalendarDays } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 
 const SCARCITY_THRESHOLD = 3;
 
@@ -24,6 +25,7 @@ export default function PublicBookingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [assignedDeskLabel, setAssignedDeskLabel] = useState('');
   const [error, setError] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     if (!orgSlug) return;
@@ -36,6 +38,31 @@ export default function PublicBookingPage() {
       setLoading(false);
     });
   }, [orgSlug]);
+
+  // All hooks must be above early returns
+  const { availabilityMap, maxDate } = useMemo(() => {
+    if (!availability) return { availabilityMap: {} as Record<string, number>, maxDate: new Date() };
+    const { org, rooms, bookedSlots } = availability;
+    const bookedSet = new Set(bookedSlots.map(s => `${s.deskId}:${s.date}`));
+    const allDesks = rooms.flatMap(r => r.desks);
+    const totalDesks = allDesks.length;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const map: Record<string, number> = {};
+    const max = new Date(now);
+    max.setDate(now.getDate() + org.maxDaysAhead);
+    for (let i = 0; i <= org.maxDaysAhead; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
+      map[dateStr] = totalDesks - bookedCount;
+    }
+    return { availabilityMap: map, maxDate: max };
+  }, [availability]);
 
   if (loading) {
     return (
@@ -88,29 +115,52 @@ export default function PublicBookingPage() {
   const allDesks = rooms.flatMap(r => r.desks);
   const totalDesks = allDesks.length;
 
-  // Generate available dates
-  const dates: { date: string; dayLabel: string; dateLabel: string; available: number }[] = [];
   const today = new Date();
-  for (let i = 0; i <= org.maxDaysAhead; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
+  today.setHours(0, 0, 0, 0);
+
+  const formatDateStr = (d: Date) => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
+  const todayStr = formatDateStr(today);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowStr = formatDateStr(tomorrow);
+
+  const todayAvailable = (availabilityMap[todayStr] ?? 0) > 0 && !isNonWorkingDay(todayStr, org.workingDays);
+  const tomorrowAvailable = (availabilityMap[tomorrowStr] ?? 0) > 0 && !isNonWorkingDay(tomorrowStr, org.workingDays);
+  const todayIsWorkingDay = !isNonWorkingDay(todayStr, org.workingDays);
+  const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
+
+  // For the calendar: disable dates that are full, non-working, or out of range
+  const isDateDisabled = (date: Date) => {
+    const dateStr = formatDateStr(date);
+    if (date < today || date > maxDate) return true;
+    if (isNonWorkingDay(dateStr, org.workingDays)) return true;
+    if ((availabilityMap[dateStr] ?? 0) <= 0) return true;
+    return false;
+  };
+
+  // Generate dates list (still needed for selectedDateInfo)
+  const dates: { date: string; dayLabel: string; dateLabel: string; available: number }[] = [];
+  for (let i = 0; i <= org.maxDaysAhead; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = formatDateStr(d);
     if (isNonWorkingDay(dateStr, org.workingDays)) continue;
-
-    const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
-    const available = totalDesks - bookedCount;
+    const available = availabilityMap[dateStr] ?? 0;
     if (available <= 0) continue;
-
     const jsDay = d.getDay();
     const isoDay = jsDay === 0 ? 7 : jsDay;
-    const dayLabel = DAY_LABELS[isoDay] || '';
-    const dateLabel = d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-
-    dates.push({ date: dateStr, dayLabel, dateLabel, available });
+    dates.push({
+      date: dateStr,
+      dayLabel: DAY_LABELS[isoDay] || '',
+      dateLabel: d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
+      available,
+    });
   }
 
   // Pick a random available desk for the selected date
@@ -186,8 +236,15 @@ export default function PublicBookingPage() {
         <div className="bg-white rounded-2xl shadow-lg border overflow-hidden">
           {/* Header */}
           <div className="bg-blue-600 px-6 py-5 text-white">
-            <h1 className="text-xl font-bold">{org.name}</h1>
-            <p className="text-blue-100 text-sm mt-1">Book a desk</p>
+            <div className="flex items-center gap-3">
+              {org.logoUrl && (
+                <img src={org.logoUrl} alt="" className="h-10 w-10 rounded-lg object-contain bg-white/10 p-1 shrink-0" />
+              )}
+              <div>
+                <h1 className="text-xl font-bold">{org.name}</h1>
+                <p className="text-blue-100 text-sm mt-0.5">Book a desk</p>
+              </div>
+            </div>
           </div>
 
           {/* Step indicator */}
@@ -201,38 +258,110 @@ export default function PublicBookingPage() {
             {!selectedDate && (
               <div>
                 <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">When do you want to come?</h2>
+
                 {dates.length === 0 ? (
                   <div className="text-center py-8">
                     <CalendarCheck className="h-10 w-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">No available dates in the next {org.maxDaysAhead} days.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {dates.map(({ date, dayLabel, dateLabel, available }) => {
-                      const isScarce = available <= SCARCITY_THRESHOLD;
-                      return (
-                        <button
-                          key={date}
-                          onClick={() => setSelectedDate(date)}
-                          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 active:scale-[0.98] transition-all text-left group"
-                        >
-                          <div>
-                            <span className="font-semibold text-gray-900">{dayLabel}</span>
-                            <span className="text-gray-400 ml-1.5">{dateLabel}</span>
-                          </div>
-                          <span className="flex items-center gap-2">
-                            {isScarce ? (
-                              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                                Only {available} left
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">Available</span>
-                            )}
-                            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                  <div className="space-y-3">
+                    {/* Today & Tomorrow quick buttons */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        disabled={!todayAvailable}
+                        onClick={() => setSelectedDate(todayStr)}
+                        className={`relative flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
+                          todayAvailable
+                            ? 'border-blue-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer'
+                            : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className={`text-lg font-bold ${todayAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Today</span>
+                        {todayAvailable ? (
+                          <span className="text-xs text-gray-500 mt-0.5">
+                            {(availabilityMap[todayStr] ?? 0) <= SCARCITY_THRESHOLD
+                              ? `Only ${availabilityMap[todayStr]} left`
+                              : `${availabilityMap[todayStr]} desks free`}
                           </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 mt-0.5">
+                            {todayIsWorkingDay ? 'Fully booked' : 'Closed'}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        disabled={!tomorrowAvailable}
+                        onClick={() => setSelectedDate(tomorrowStr)}
+                        className={`relative flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
+                          tomorrowAvailable
+                            ? 'border-blue-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer'
+                            : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className={`text-lg font-bold ${tomorrowAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Tomorrow</span>
+                        {tomorrowAvailable ? (
+                          <span className="text-xs text-gray-500 mt-0.5">
+                            {(availabilityMap[tomorrowStr] ?? 0) <= SCARCITY_THRESHOLD
+                              ? `Only ${availabilityMap[tomorrowStr]} left`
+                              : `${availabilityMap[tomorrowStr]} desks free`}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 mt-0.5">
+                            {tomorrowIsWorkingDay ? 'Oops, we\'re full' : 'Closed'}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Pick another date */}
+                    {!showCalendar ? (
+                      <button
+                        onClick={() => setShowCalendar(true)}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-sm font-medium text-gray-600 active:scale-[0.98]"
+                      >
+                        <CalendarDays className="h-4 w-4" />
+                        Pick another date
+                      </button>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Calendar
+                          mode="single"
+                          weekStartsOn={1}
+                          selected={undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              setSelectedDate(formatDateStr(date));
+                              setShowCalendar(false);
+                            }
+                          }}
+                          disabled={isDateDisabled}
+                          fromDate={today}
+                          toDate={maxDate}
+                          className="rounded-xl border p-3"
+                          modifiers={{
+                            available: (date: Date) => {
+                              const dateStr = formatDateStr(date);
+                              const avail = availabilityMap[dateStr] ?? 0;
+                              return avail > 0 && !isNonWorkingDay(dateStr, org.workingDays) && date >= today && date <= maxDate;
+                            },
+                          }}
+                          modifiersClassNames={{
+                            available: '!text-lime-600 font-semibold',
+                          }}
+                          classNames={{
+                            day_disabled: 'text-gray-500 opacity-100',
+                          }}
+                        />
+                        <button
+                          onClick={() => setShowCalendar(false)}
+                          className="mt-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Cancel
                         </button>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

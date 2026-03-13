@@ -66,7 +66,10 @@ export default function DashboardLayout() {
         </div>
 
         {sidebarOpen && currentOrg && (
-          <div className="px-4 py-2 border-b">
+          <div className="px-4 py-2 border-b flex items-center gap-2 min-w-0">
+            {currentOrg.logoUrl ? (
+              <img src={currentOrg.logoUrl} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
+            ) : null}
             <p className="text-sm text-gray-500 truncate">{currentOrg.name}</p>
           </div>
         )}

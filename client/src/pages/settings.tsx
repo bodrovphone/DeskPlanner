@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 
@@ -355,6 +355,7 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+            <LogoUploadInline orgId={currentOrg.id} logoUrl={currentOrg.logoUrl ?? null} />
             <Button onClick={handleSave} disabled={saving || !hasOrgChanges}>
               <Save className="mr-2 h-4 w-4" />
               {saving ? 'Saving...' : 'Save Changes'}
@@ -628,7 +629,7 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
 
   if (isLoading) {
     return (
-      <Card className="lg:col-span-2">
+      <Card className="flex flex-col">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-blue-600" />
@@ -643,7 +644,7 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
   }
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className="flex flex-col">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-blue-600" />
@@ -746,6 +747,156 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
   );
 }
 
+const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+
+function LogoUploadInline({ orgId, logoUrl }: { orgId: string; logoUrl: string | null }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleUpload(file: File) {
+    if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
+      toast({ title: 'Invalid file type', description: 'Please upload a JPEG, PNG, WebP, or SVG image.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > LOGO_MAX_SIZE) {
+      toast({ title: 'File too large', description: 'Logo must be under 2MB.', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${orgId}/logo.${ext}`;
+
+      // Remove old file if exists (different extension)
+      if (logoUrl) {
+        const oldPath = logoUrl.split('/org-logos/')[1]?.split('?')[0];
+        if (oldPath && oldPath !== path) {
+          await supabaseClient.storage.from('org-logos').remove([oldPath]);
+        }
+      }
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('org-logos')
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabaseClient.storage
+        .from('org-logos')
+        .getPublicUrl(path);
+
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabaseClient
+        .from('organizations')
+        .update({ logo_url: urlWithCacheBust })
+        .eq('id', orgId);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Logo uploaded', description: 'Your space logo has been updated.' });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err instanceof Error ? err.message : 'Something went wrong.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleDelete() {
+    if (!logoUrl) return;
+    setDeleting(true);
+    try {
+      const pathPart = logoUrl.split('/org-logos/')[1]?.split('?')[0];
+      if (pathPart) {
+        await supabaseClient.storage.from('org-logos').remove([pathPart]);
+      }
+
+      const { error: updateError } = await supabaseClient
+        .from('organizations')
+        .update({ logo_url: null })
+        .eq('id', orgId);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Logo removed' });
+    } catch (err) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to remove logo.', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div>
+      <Label>Logo</Label>
+      <p className="text-xs text-gray-500 mb-2">Shown on the public booking page.</p>
+      <div className="flex items-center gap-3">
+        {logoUrl ? (
+          <div
+            className="h-10 w-10 rounded bg-gray-50 border flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <img src={logoUrl} alt="Logo" className="max-h-8 max-w-8 object-contain" />
+          </div>
+        ) : (
+          <div
+            className="h-10 w-10 rounded border-2 border-dashed border-muted-foreground/25 flex items-center justify-center shrink-0 cursor-pointer hover:border-muted-foreground/50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files[0];
+              if (file) handleUpload(file);
+            }}
+          >
+            <Upload className="h-4 w-4 text-muted-foreground/40" />
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? 'Uploading...' : logoUrl ? 'Replace' : 'Upload'}
+          </Button>
+          {logoUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-red-600 hover:text-red-700"
+              disabled={deleting}
+              onClick={handleDelete}
+            >
+              {deleting ? 'Removing...' : 'Remove'}
+            </Button>
+          )}
+        </div>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleUpload(file);
+        }}
+      />
+    </div>
+  );
+}
+
 function PublicBookingCard({
   orgId,
   orgSlug,
@@ -806,7 +957,7 @@ function PublicBookingCard({
   };
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className="flex flex-col">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Globe className="h-5 w-5 text-blue-600" />

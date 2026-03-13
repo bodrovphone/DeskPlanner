@@ -19,6 +19,7 @@ function mapOrg(row: Record<string, unknown>): Organization {
     defaultPricePerDay: (row.default_price_per_day as number) ?? 8,
     timezone: row.timezone as string,
     floorPlanUrl: (row.floor_plan_url as string) ?? null,
+    logoUrl: (row.logo_url as string) ?? null,
     workingDays: (row.working_days as number[]) ?? [1, 2, 3, 4, 5],
     publicBookingEnabled: (row.public_booking_enabled as boolean) ?? false,
     publicBookingMaxDaysAhead: (row.public_booking_max_days_ahead as number) ?? 14,
