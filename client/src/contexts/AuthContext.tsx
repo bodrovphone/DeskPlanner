@@ -32,6 +32,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         setUser(session?.user ?? null);
+        // TEMP: set umami.disabled for internal accounts — remove after 2026-03-23
+        try {
+          const email = session?.user?.email;
+          if (email === 'bodrovphone@gmail.com' || email === 'bodrovphone+e2e@gmail.com') {
+            localStorage.setItem('umami.disabled', '1');
+          }
+        } catch { /* ignore */ }
       } catch (error) {
         console.error('Error checking session:', error);
         setUser(null);

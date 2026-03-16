@@ -34,6 +34,9 @@ setup('authenticate as test user', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
 
+  // Disable Umami analytics for e2e tests
+  await page.evaluate(() => localStorage.setItem('umami.disabled', '1'));
+
   // Fill credentials and submit
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);

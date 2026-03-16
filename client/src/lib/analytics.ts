@@ -20,6 +20,28 @@ export function trackEvent(event: string, data?: Record<string, string | number 
   }
 }
 
+// Emails excluded from analytics tracking
+const EXCLUDED_EMAILS = [
+  'bodrovphone@gmail.com',
+  'bodrovphone+e2e@gmail.com',
+];
+
+/**
+ * Set umami.disabled in localStorage for excluded accounts.
+ * Umami's tracker checks this flag and skips all tracking when set to '1'.
+ */
+export function configureAnalyticsForUser(email: string | undefined | null) {
+  try {
+    if (email && EXCLUDED_EMAILS.includes(email)) {
+      localStorage.setItem('umami.disabled', '1');
+    } else {
+      localStorage.removeItem('umami.disabled');
+    }
+  } catch {
+    // ignore — localStorage may be unavailable
+  }
+}
+
 // Pre-defined event names for consistency
 export const EVENTS = {
   // Navigation
