@@ -6,13 +6,13 @@ export function useShareBooking() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const generateShareLink = useCallback(async (bookingId: string) => {
+  const generateShareLink = useCallback(async (bookingId: string, deskId?: string, date?: string) => {
     if (!dataStore.getOrCreateShareToken) {
       throw new Error('Share feature requires Supabase storage');
     }
     setIsLoading(true);
     try {
-      const token = await dataStore.getOrCreateShareToken(bookingId);
+      const token = await dataStore.getOrCreateShareToken(bookingId, deskId, date);
       setShareToken(token);
       return token;
     } finally {

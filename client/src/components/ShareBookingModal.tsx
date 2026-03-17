@@ -32,7 +32,7 @@ export default function ShareBookingModal({
 
   useEffect(() => {
     if (isOpen && !shareToken) {
-      generateShareLink(booking.id);
+      generateShareLink(booking.id, booking.deskId, booking.date);
     }
   }, [isOpen, booking.id]);
 

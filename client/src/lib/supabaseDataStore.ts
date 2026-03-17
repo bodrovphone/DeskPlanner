@@ -898,28 +898,37 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   // Share token operations
-  async getOrCreateShareToken(bookingId: string): Promise<string> {
-    const numericId = /^\d+$/.test(bookingId) ? parseInt(bookingId, 10) : this.stringToNumericId(bookingId);
+  async getOrCreateShareToken(bookingId: string, deskId?: string, date?: string): Promise<string> {
+    // Build query - prefer desk_id + date + org lookup (reliable), fall back to numeric ID
+    let query = this.client.from('desk_bookings').select('share_token, id');
 
-    // Check if token already exists
-    const { data: existing } = await this.client
-      .from('desk_bookings')
-      .select('share_token')
-      .eq('id', numericId)
-      .limit(1)
-      .single();
+    if (deskId && date && this.organizationId) {
+      query = query
+        .eq('desk_id', deskId)
+        .eq('date', date)
+        .eq('organization_id', this.organizationId);
+    } else {
+      const numericId = /^\d+$/.test(bookingId) ? parseInt(bookingId, 10) : this.stringToNumericId(bookingId);
+      query = query.eq('id', numericId);
+    }
+
+    const { data: existing } = await query.limit(1).single();
 
     if (existing?.share_token) {
       return existing.share_token;
     }
 
-    // Generate new token — only update the single row, not all daily rows
+    if (!existing) {
+      throw new Error('Booking not found');
+    }
+
+    // Generate new token
     const newToken = crypto.randomUUID();
 
     const { error } = await this.client
       .from('desk_bookings')
       .update({ share_token: newToken })
-      .eq('id', numericId);
+      .eq('id', existing.id);
     if (error) {
       console.error('Error setting share token:', error);
       throw new Error('Failed to generate share link');

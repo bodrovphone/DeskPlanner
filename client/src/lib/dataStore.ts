@@ -49,7 +49,7 @@ export interface IDataStore {
   generateRecurringExpenses?(year: number, month: number): Promise<Expense[]>;
 
   // Share token operations
-  getOrCreateShareToken?(bookingId: string): Promise<string>;
+  getOrCreateShareToken?(bookingId: string, deskId?: string, date?: string): Promise<string>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';
