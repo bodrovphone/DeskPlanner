@@ -275,7 +275,7 @@ export default function OnboardingPage() {
                 <Select value={String(roomsCount)} onValueChange={v => setRoomsCount(Number(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4].map(n => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                       <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                     ))}
                   </SelectContent>
@@ -299,23 +299,18 @@ export default function OnboardingPage() {
                       />
                       <Pencil className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                     </div>
-                    <Select
-                      value={String(desksPerRoom[i] ?? 4)}
-                      onValueChange={v => {
+                    <Input
+                      type="number"
+                      min="1"
+                      value={desksPerRoom[i] ?? 4}
+                      onChange={e => {
+                        const val = Math.max(1, parseInt(e.target.value) || 1);
                         const updated = [...desksPerRoom];
-                        updated[i] = Number(v);
+                        updated[i] = val;
                         setDesksPerRoom(updated);
                       }}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                          <SelectItem key={n} value={String(n)}>{n} {n === 1 ? 'desk' : 'desks'}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      className="w-24"
+                    />
                   </div>
                 ))}
               </div>

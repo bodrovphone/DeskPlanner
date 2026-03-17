@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
@@ -369,7 +368,7 @@ export default function SettingsPage() {
               <LayoutGrid className="h-5 w-5 text-blue-600" />
               <CardTitle>Rooms & Desks</CardTitle>
             </div>
-            <CardDescription>Click any name to rename it. Change desk counts with the dropdown.</CardDescription>
+            <CardDescription>Click any name to rename it. Change desk counts by editing the number.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col flex-1">
             <div className="space-y-3 flex-1">
@@ -384,21 +383,13 @@ export default function SettingsPage() {
                         onSave={(newName) => handleDraftRoomRename(room.id, newName)}
                         className="font-medium text-gray-900"
                       />
-                      <Select
-                        value={String(displayDeskCount)}
-                        onValueChange={(v) => handleDraftDeskCountChange(room.id, Number(v))}
-                      >
-                        <SelectTrigger className="w-28 h-8 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
-                            <SelectItem key={n} value={String(n)}>
-                              {n} {n === 1 ? 'desk' : 'desks'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={displayDeskCount}
+                        onChange={(e) => handleDraftDeskCountChange(room.id, Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-28 h-8 text-sm"
+                      />
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {roomDesks.map((desk) => (
@@ -448,18 +439,13 @@ export default function SettingsPage() {
                         if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
                       }}
                     />
-                    <Select value={String(newRoomDesks)} onValueChange={(v) => setNewRoomDesks(Number(v))}>
-                      <SelectTrigger className="w-28 h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
-                          <SelectItem key={n} value={String(n)}>
-                            {n} {n === 1 ? 'desk' : 'desks'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newRoomDesks}
+                      onChange={(e) => setNewRoomDesks(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-28 h-9 text-sm"
+                    />
                   </div>
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim()}>

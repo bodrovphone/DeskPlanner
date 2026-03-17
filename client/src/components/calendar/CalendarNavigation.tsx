@@ -74,31 +74,33 @@ export default function CalendarNavigation({
 
             {rooms.length > 1 && (
               <>
-                <div className="flex rounded-md border border-gray-200 ml-4">
-                  <Button
-                    variant={roomViewMode === 'all' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setRoomViewMode('all')}
-                    className={`rounded-r-none ${roomViewMode === 'all' ? 'bg-blue-100 text-blue-700' : ''}`}
-                  >
-                    All Rooms
-                  </Button>
-                  <Button
-                    variant={roomViewMode === 'single' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setRoomViewMode('single')}
-                    className={`rounded-l-none ${roomViewMode === 'single' ? 'bg-blue-100 text-blue-700' : ''}`}
-                  >
-                    By Room
-                  </Button>
-                </div>
+                {rooms.length < 4 && (
+                  <div className="flex rounded-md border border-gray-200 ml-4">
+                    <Button
+                      variant={roomViewMode === 'all' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setRoomViewMode('all')}
+                      className={`rounded-r-none ${roomViewMode === 'all' ? 'bg-blue-100 text-blue-700' : ''}`}
+                    >
+                      All Rooms
+                    </Button>
+                    <Button
+                      variant={roomViewMode === 'single' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setRoomViewMode('single')}
+                      className={`rounded-l-none ${roomViewMode === 'single' ? 'bg-blue-100 text-blue-700' : ''}`}
+                    >
+                      By Room
+                    </Button>
+                  </div>
+                )}
 
-                {roomViewMode === 'single' && selectedRoom !== null && (
+                {(roomViewMode === 'single' || rooms.length >= 4) && selectedRoom !== null && (
                   <Select
                     value={String(selectedRoom)}
                     onValueChange={(val) => setSelectedRoom(Number(val))}
                   >
-                    <SelectTrigger className="w-[160px] h-9">
+                    <SelectTrigger className="w-[160px] h-9 ml-4">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

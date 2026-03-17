@@ -24,8 +24,8 @@ function isToday(dateString: string): boolean {
   return dateString === todayString;
 }
 
-const ROOM_COLORS = ['text-blue-600', 'text-pink-600', 'text-emerald-600', 'text-amber-600', 'text-purple-600', 'text-cyan-600'];
-const ROOM_BG_COLORS = ['bg-blue-50', 'bg-pink-50', 'bg-emerald-50', 'bg-amber-50', 'bg-purple-50', 'bg-cyan-50'];
+const ROOM_COLORS = ['text-blue-600', 'text-pink-600', 'text-emerald-600', 'text-amber-600', 'text-purple-600', 'text-cyan-600', 'text-rose-600', 'text-teal-600', 'text-orange-600', 'text-indigo-600', 'text-lime-600', 'text-fuchsia-600'];
+const ROOM_BG_COLORS = ['bg-blue-50', 'bg-pink-50', 'bg-emerald-50', 'bg-amber-50', 'bg-purple-50', 'bg-cyan-50', 'bg-rose-50', 'bg-teal-50', 'bg-orange-50', 'bg-indigo-50', 'bg-lime-50', 'bg-fuchsia-50'];
 
 const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
   ({ desks, currentDates, bookings, onDeskClick, workingDays = DEFAULT_WORKING_DAYS }, ref) => {
