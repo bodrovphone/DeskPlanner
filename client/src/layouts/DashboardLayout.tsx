@@ -1,16 +1,25 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
 import { useState } from 'react';
 import { isAdmin } from '@/lib/admin';
 import type { User } from '@supabase/supabase-js';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-function getNavItems(slug: string, user?: User | null) {
+interface NavItem {
+  to: string;
+  label: string;
+  shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+function getNavItems(slug: string, user?: User | null, hasMeetingRooms?: boolean): NavItem[] {
   const base = `/${slug}`;
-  const items = [
+  const items: NavItem[] = [
     { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
+    ...(hasMeetingRooms ? [{ to: `${base}/meeting-rooms`, label: 'Meeting Rooms', shortLabel: 'Rooms', icon: DoorOpen }] : []),
     { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
     { to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
     { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
@@ -22,17 +31,42 @@ function getNavItems(slug: string, user?: User | null) {
   return items;
 }
 
+const MOBILE_MAX = 5;
+
+function NavLinkItem({ item, onClick }: { item: NavItem; onClick?: () => void }) {
+  return (
+    <NavLink
+      to={item.to}
+      onClick={onClick}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        }`
+      }
+    >
+      <item.icon className="h-5 w-5 shrink-0" />
+      {item.label}
+    </NavLink>
+  );
+}
+
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
-  const { currentOrg } = useOrganization();
-  const navItems = getNavItems(currentOrg?.slug || 'app', user);
+  const { currentOrg, hasMeetingRooms } = useOrganization();
+  const navItems = getNavItems(currentOrg?.slug || 'app', user, hasMeetingRooms);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
   };
+
+  // Mobile: show first MOBILE_MAX items; overflow goes into "More" drawer
+  const primaryMobileItems = navItems.slice(0, MOBILE_MAX);
+  const moreItems = navItems.slice(MOBILE_MAX);
+  const hasMore = navItems.length > MOBILE_MAX;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -122,15 +156,13 @@ export default function DashboardLayout() {
       {/* Mobile Bottom Tab Bar */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t safe-area-bottom">
         <div className="flex items-stretch">
-          {navItems.map((item) => (
+          {primaryMobileItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-medium transition-colors ${
-                  isActive
-                    ? 'text-blue-600'
-                    : 'text-gray-500'
+                  isActive ? 'text-blue-600' : 'text-gray-500'
                 }`
               }
             >
@@ -138,6 +170,31 @@ export default function DashboardLayout() {
               {item.shortLabel}
             </NavLink>
           ))}
+
+          {hasMore && (
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <SheetTrigger asChild>
+                <button className="flex-1 flex flex-col items-center justify-center py-2 text-[10px] font-medium text-gray-500">
+                  <MoreHorizontal className="h-5 w-5 mb-0.5" />
+                  More
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+                <div className="mt-4 space-y-1">
+                  {moreItems.map((item) => (
+                    <NavLinkItem key={item.to} item={item} onClick={() => setDrawerOpen(false)} />
+                  ))}
+                  <button
+                    onClick={() => { setDrawerOpen(false); handleSignOut(); }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    Sign Out
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </nav>
     </div>

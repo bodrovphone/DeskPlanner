@@ -4,6 +4,7 @@ import {
   Calendar,
   BarChart3,
   Users,
+  DoorOpen,
   ArrowRight,
   Check,
   Zap,
@@ -121,6 +122,7 @@ const features = [
   { icon: Calendar, title: 'Visual Calendar', desc: 'Weekly and monthly views for every desk. See availability at a glance across all your rooms.' },
   { icon: BarChart3, title: 'Revenue Tracking', desc: 'Track confirmed and projected revenue per desk, per room, and across your entire portfolio.' },
   { icon: Users, title: 'Waiting List', desc: 'Built-in demand queue. When desks fill up, prospects join the list automatically.' },
+  { icon: DoorOpen, title: 'Meeting Rooms', desc: 'Hourly booking grid for conference rooms. Set rates, avoid conflicts, track room revenue separately.' },
   { icon: Shield, title: 'Multi-Room Control', desc: 'Configure unlimited rooms and desks to mirror your physical layout. One dashboard.' },
 ];
 
@@ -132,7 +134,7 @@ const steps = [
 
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
-  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
+  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
   { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'https://www.linkedin.com/company/ohmydesk-app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
 ];
 
@@ -606,7 +608,7 @@ export default function LandingPage() {
             maxWidth: 520,
             margin: '28px auto 0',
           }}>
-            The coworking command center. Visual calendar, revenue tracking, and waiting lists -- everything your space needs in one fast, focused tool.
+            The coworking command center. Visual calendar, meeting room bookings, revenue tracking, and waiting lists -- everything your space needs in one fast, focused tool.
           </p>
 
           <div style={{
@@ -731,7 +733,7 @@ export default function LandingPage() {
           title="Everything operators need."
           sub="Simple, focused tools that replace your spreadsheets and sticky notes."
         />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
           {features.map((f, i) => {
             const Icon = f.icon;
             return <FeatureCard key={f.title} icon={Icon} title={f.title} desc={f.desc} index={i} />;

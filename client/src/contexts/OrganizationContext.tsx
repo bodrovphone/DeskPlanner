@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, Room, OrgDesk, Desk, OrgMemberRole } from '@shared/schema';
+import { Organization, Room, OrgDesk, Desk, OrgMemberRole, MeetingRoom } from '@shared/schema';
 import { useUserOrganizations, useOrganizationRooms, useOrganizationDesks } from '@/hooks/use-organization';
+import { useMeetingRooms } from '@/hooks/use-meeting-rooms';
 
 const ORG_STORAGE_KEY = 'deskplanner-current-org';
 
@@ -12,6 +13,8 @@ interface OrganizationContextType {
   rooms: Room[];
   desks: OrgDesk[];
   legacyDesks: Desk[];
+  meetingRooms: MeetingRoom[];
+  hasMeetingRooms: boolean;
   loading: boolean;
   hasOrganization: boolean;
 }
@@ -46,6 +49,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
   const { data: rooms = [], isLoading: roomsLoading } = useOrganizationRooms(effectiveOrgId);
   const { data: desks = [], isLoading: desksLoading } = useOrganizationDesks(effectiveOrgId);
+  const { data: meetingRooms = [] } = useMeetingRooms(effectiveOrgId);
 
   // Convert org desks to legacy Desk format, sorted by room then desk order
   const legacyDesks: Desk[] = [...desks]
@@ -88,6 +92,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const loading = orgsLoading || roomsLoading || desksLoading;
   const hasOrganization = memberships.length > 0;
   const organizations = memberships.map(m => m.organization);
+  const hasMeetingRooms = meetingRooms.length > 0;
 
   return (
     <OrganizationContext.Provider
@@ -99,6 +104,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         rooms,
         desks,
         legacyDesks,
+        meetingRooms,
+        hasMeetingRooms,
         loading,
         hasOrganization,
       }}

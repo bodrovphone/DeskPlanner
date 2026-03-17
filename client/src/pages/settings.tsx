@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon } from 'lucide-react';
+import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 
@@ -427,25 +428,30 @@ export default function SettingsPage() {
 
               {addingRoom ? (
                 <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-blue-300">
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      ref={newRoomInputRef}
-                      value={newRoomName}
-                      onChange={(e) => setNewRoomName(e.target.value)}
-                      placeholder="Room name"
-                      className="flex-1"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newRoomName.trim()) handleAddRoom();
-                        if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
-                      }}
-                    />
-                    <Input
-                      type="number"
-                      min="1"
-                      value={newRoomDesks}
-                      onChange={(e) => setNewRoomDesks(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-28 h-9 text-sm"
-                    />
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-500 mb-1">Room name</Label>
+                      <Input
+                        ref={newRoomInputRef}
+                        value={newRoomName}
+                        onChange={(e) => setNewRoomName(e.target.value)}
+                        placeholder="e.g. Open Space"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newRoomName.trim()) handleAddRoom();
+                          if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1">Desks</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={newRoomDesks}
+                        onChange={(e) => setNewRoomDesks(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-24 h-9 text-sm"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim()}>
@@ -480,6 +486,12 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <MeetingRoomsCard
+          orgId={currentOrg.id}
+          currency={currentOrg.currency}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+        />
+
         <TelegramNotificationsCard
           orgId={currentOrg.id}
           isAdmin={currentRole === 'owner' || currentRole === 'admin'}
@@ -494,6 +506,146 @@ export default function SettingsPage() {
         />
       </div>
     </div>
+  );
+}
+
+function MeetingRoomsCard({ orgId, currency, isAdmin }: { orgId: string; currency: string; isAdmin: boolean }) {
+  const { toast } = useToast();
+  const { meetingRooms } = useOrganization();
+  const createMR = useCreateMeetingRoom();
+  const updateMR = useUpdateMeetingRoom();
+  const deleteMR = useDeleteMeetingRoom();
+
+  const [addingRoom, setAddingRoom] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newRate, setNewRate] = useState('15');
+  const newNameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addingRoom) newNameRef.current?.focus();
+  }, [addingRoom]);
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+    try {
+      await createMR.mutateAsync({
+        orgId,
+        name: newName.trim(),
+        capacity: 4,
+        hourlyRate: parseFloat(newRate) || 0,
+        currency,
+        amenities: [],
+        sortOrder: meetingRooms.length,
+      });
+      setNewName('');
+      setNewRate('15');
+      setAddingRoom(false);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to add meeting room.', variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMR.mutateAsync({ id, orgId });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to remove meeting room.', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <DoorOpen className="h-5 w-5 text-blue-600" />
+          <CardTitle>Meeting Rooms</CardTitle>
+        </div>
+        <CardDescription>Rooms available for hourly booking.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1">
+        <div className="space-y-2 flex-1">
+          {meetingRooms.length === 0 && !addingRoom && (
+            <p className="text-sm text-gray-500">No meeting rooms configured.</p>
+          )}
+          {meetingRooms.map((mr) => (
+            <div key={mr.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+              <InlineEdit
+                value={mr.name}
+                onSave={(name) => updateMR.mutate({ id: mr.id, orgId, name })}
+                className="flex-1 text-sm font-medium text-gray-900"
+              />
+              <div className="flex items-center gap-1 shrink-0">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  defaultValue={mr.hourlyRate}
+                  onBlur={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val !== mr.hourlyRate) {
+                      updateMR.mutate({ id: mr.id, orgId, hourlyRate: val });
+                    }
+                  }}
+                  className="w-20 h-7 text-xs"
+                />
+                <span className="text-xs text-gray-500 whitespace-nowrap">{currency}/hr</span>
+              </div>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-gray-400 hover:text-red-600"
+                  onClick={() => handleDelete(mr.id)}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+
+          {addingRoom && (
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  ref={newNameRef}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Room name"
+                  className="flex-1 h-8 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newName.trim()) handleAdd();
+                    if (e.key === 'Escape') { setAddingRoom(false); setNewName(''); }
+                  }}
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={newRate}
+                  onChange={(e) => setNewRate(e.target.value)}
+                  className="w-20 h-8 text-sm"
+                />
+                <span className="text-xs text-gray-500 self-center whitespace-nowrap">{currency}/hr</span>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAdd} disabled={!newName.trim() || createMR.isPending}>
+                  {createMR.isPending ? 'Adding...' : 'Add'}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setAddingRoom(false); setNewName(''); }}>
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!addingRoom && isAdmin && (
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setAddingRoom(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Add Meeting Room
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

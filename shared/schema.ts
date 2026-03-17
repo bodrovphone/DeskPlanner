@@ -223,3 +223,35 @@ export const publicBookingRequestSchema = z.object({
 });
 
 export type PublicBookingRequest = z.infer<typeof publicBookingRequestSchema>;
+
+// Meeting room schemas
+export const meetingRoomSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  name: z.string(),
+  capacity: z.number().default(4),
+  hourlyRate: z.number().default(10),
+  currency: currencySchema,
+  amenities: z.array(z.string()).default([]),
+  sortOrder: z.number().default(0),
+  isActive: z.boolean().default(true),
+  createdAt: z.string(),
+});
+export type MeetingRoom = z.infer<typeof meetingRoomSchema>;
+
+export const meetingRoomBookingSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  meetingRoomId: z.string(),
+  date: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
+  personName: z.string().optional(),
+  title: z.string().optional(),
+  price: z.number().optional(),
+  currency: currencySchema.optional(),
+  status: z.enum(['booked', 'confirmed', 'cancelled']).default('booked'),
+  notes: z.string().optional(),
+  createdAt: z.string(),
+});
+export type MeetingRoomBooking = z.infer<typeof meetingRoomBookingSchema>;

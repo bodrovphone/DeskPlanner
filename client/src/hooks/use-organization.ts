@@ -122,6 +122,7 @@ interface CreateOrgInput {
   defaultPricePerDay: number;
   roomNames: string[];
   workingDays?: number[];
+  meetingRooms?: Array<{ name: string; hourlyRate: number }>;
 }
 
 export function useCreateOrganization() {
@@ -196,6 +197,21 @@ export function useCreateOrganization() {
         .insert(deskInserts);
 
       if (deskError) throw deskError;
+
+      // 5. Create meeting rooms if provided
+      if (input.meetingRooms && input.meetingRooms.length > 0) {
+        const mrInserts = input.meetingRooms.map((mr, i) => ({
+          organization_id: org.id,
+          name: mr.name,
+          hourly_rate: mr.hourlyRate,
+          currency: input.currency,
+          sort_order: i,
+        }));
+        const { error: mrError } = await supabaseClient
+          .from('meeting_rooms')
+          .insert(mrInserts);
+        if (mrError) throw mrError;
+      }
 
       return mapOrg(org);
     },

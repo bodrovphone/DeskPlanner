@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useMonthlyStats, useDateRangeStats } from '@/hooks/use-monthly-stats';
 import { useExpenses, useDeleteExpense } from '@/hooks/use-expenses';
+import { useMeetingRoomBookingsRange } from '@/hooks/use-meeting-room-bookings';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +15,7 @@ import RecurringExpenseModal from './RecurringExpenseModal';
 import {
   ChevronDown, ChevronUp, Plus, Settings, Trash2, Edit2,
   TrendingUp, TrendingDown, Banknote, Receipt, Armchair, BarChart3,
-  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal
+  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal, DoorOpen
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,7 +52,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
 
   const { toast } = useToast();
   const deleteExpense = useDeleteExpense();
-  const { currentOrg } = useOrganization();
+  const { currentOrg, hasMeetingRooms } = useOrganization();
   const defaultPricePerDay = currentOrg?.defaultPricePerDay ?? 8;
 
   // Calculate year and month from offset for monthly view
@@ -73,14 +74,18 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
   const expensesEndDate = viewMode === 'week' ? (endDate || monthEnd) : monthEnd;
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses(expensesStartDate, expensesEndDate);
 
+  // Fetch meeting room bookings for the period
+  const { data: mrBookings = [] } = useMeetingRoomBookingsRange(currentOrg?.id, expensesStartDate, expensesEndDate);
+  const meetingRoomRevenue = mrBookings.reduce((sum, b) => sum + (b.price ?? 0), 0);
+
   const isWeekView = viewMode === 'week';
   const { data: stats, isLoading } = isWeekView ? dateRangeStats : monthlyStats;
 
   // Calculate total expenses
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  // Calculate net profit
-  const netProfit = (stats?.totalRevenue || 0) - totalExpenses;
+  // Calculate net profit (desk revenue + meeting room revenue - expenses)
+  const netProfit = (stats?.totalRevenue || 0) + meetingRoomRevenue - totalExpenses;
 
   // Format period label based on view mode
   const periodLabel = isWeekView && startDate && endDate
@@ -198,12 +203,26 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 <div className="p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-100">
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                    <span className="text-xs sm:text-sm text-gray-600">Revenue</span>
+                    <span className="text-xs sm:text-sm text-gray-600">Desk Revenue</span>
                   </div>
                   <div className="text-lg sm:text-2xl font-bold text-yellow-600 mt-1">
                     {formatCurrency(stats.totalRevenue)}
                   </div>
                 </div>
+
+                {/* Meeting Room Revenue (only when enabled) */}
+                {hasMeetingRooms && (
+                  <div className="p-3 sm:p-4 bg-orange-50 rounded-lg border border-orange-100">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <DoorOpen className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+                      <span className="text-xs sm:text-sm text-gray-600">Room Revenue</span>
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-orange-600 mt-1">
+                      {formatCurrency(meetingRoomRevenue)}
+                    </div>
+                    <div className="text-xs text-gray-400">{mrBookings.length} bookings</div>
+                  </div>
+                )}
 
                 {/* Total Expenses */}
                 <div className="p-3 sm:p-4 bg-red-50 rounded-lg border border-red-100">

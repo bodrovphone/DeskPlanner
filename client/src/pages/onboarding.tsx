@@ -24,7 +24,7 @@ function generateSlug(name: string): string {
     .slice(0, 48);
 }
 
-const STEPS = ['Space Info', 'Rooms & Desks', 'Pricing', 'Notifications'] as const;
+const STEPS = ['Space Info', 'Rooms & Desks', 'Meeting Rooms', 'Pricing', 'Notifications'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -60,6 +60,10 @@ export default function OnboardingPage() {
   const [roomsCount, setRoomsCount] = useState(2);
   const [desksPerRoom, setDesksPerRoom] = useState<number[]>([4, 4]);
   const [roomNames, setRoomNames] = useState<string[]>(['Room 1', 'Room 2']);
+  const [hasMeetingRooms, setHasMeetingRooms] = useState(false);
+  const [meetingRoomsCount, setMeetingRoomsCount] = useState(1);
+  const [meetingRoomNames, setMeetingRoomNames] = useState<string[]>(['Conference Room']);
+  const [meetingRoomRates, setMeetingRoomRates] = useState<number[]>([15]);
   const [workingDays, setWorkingDays] = useState<number[]>([...DEFAULT_WORKING_DAYS]);
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [customCurrency, setCustomCurrency] = useState('');
@@ -86,6 +90,20 @@ export default function OnboardingPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [slug]);
+
+  // Update meeting room arrays when count changes
+  useEffect(() => {
+    setMeetingRoomNames(prev => {
+      const next = [...prev];
+      while (next.length < meetingRoomsCount) next.push(`Meeting Room ${next.length + 1}`);
+      return next.slice(0, meetingRoomsCount);
+    });
+    setMeetingRoomRates(prev => {
+      const next = [...prev];
+      while (next.length < meetingRoomsCount) next.push(15);
+      return next.slice(0, meetingRoomsCount);
+    });
+  }, [meetingRoomsCount]);
 
   // Update room names and desksPerRoom when count changes
   useEffect(() => {
@@ -127,9 +145,12 @@ export default function OnboardingPage() {
         defaultPricePerDay: parseFloat(defaultPricePerDay) || 8,
         roomNames,
         workingDays,
+        meetingRooms: hasMeetingRooms
+          ? meetingRoomNames.map((n, i) => ({ name: n, hourlyRate: meetingRoomRates[i] ?? 15 }))
+          : undefined,
       });
       setCreatedOrgId(org.id);
-      setStep(3);
+      setStep(4);
     } catch (error) {
       console.error('Failed to create organization:', error);
     }
@@ -348,7 +369,7 @@ export default function OnboardingPage() {
                 <Button variant="outline" onClick={() => setStep(0)}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button className="flex-1" onClick={() => setStep(2)} disabled={!canProceedStep1}>
+                <Button className="flex-1" onClick={() => setStep(2)} disabled={!canProceedStep1} >
                   Next <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -356,8 +377,101 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 2: Currency */}
+        {/* Step 2: Meeting Rooms */}
         {step === 2 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <LayoutGrid className="h-5 w-5 text-blue-600" />
+                <CardTitle>Meeting rooms</CardTitle>
+              </div>
+              <CardDescription>Do you have rooms available for hourly booking?</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setHasMeetingRooms(false)}
+                  className={`flex-1 p-4 rounded-lg border-2 text-left transition-colors ${
+                    !hasMeetingRooms ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm">No, desks only</div>
+                  <div className="text-xs text-gray-500 mt-1">Skip this step</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasMeetingRooms(true)}
+                  className={`flex-1 p-4 rounded-lg border-2 text-left transition-colors ${
+                    hasMeetingRooms ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm">Yes, I have meeting rooms</div>
+                  <div className="text-xs text-gray-500 mt-1">Configure hourly rates</div>
+                </button>
+              </div>
+
+              {hasMeetingRooms && (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Number of meeting rooms</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={meetingRoomsCount}
+                      onChange={e => setMeetingRoomsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-24 mt-1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    {meetingRoomNames.map((rn, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Input
+                          className="flex-1"
+                          value={rn}
+                          onChange={e => {
+                            const updated = [...meetingRoomNames];
+                            updated[i] = e.target.value;
+                            setMeetingRoomNames(updated);
+                          }}
+                          placeholder={`Meeting Room ${i + 1}`}
+                        />
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={meetingRoomRates[i] ?? 15}
+                            onChange={e => {
+                              const updated = [...meetingRoomRates];
+                              updated[i] = parseFloat(e.target.value) || 0;
+                              setMeetingRoomRates(updated);
+                            }}
+                            className="w-20"
+                          />
+                          <span className="text-sm text-gray-500 whitespace-nowrap">/hr</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400">Currency is set in the next step.</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+                <Button className="flex-1" onClick={() => setStep(3)}>
+                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Currency */}
+        {step === 3 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
@@ -424,7 +538,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>
+                <Button variant="outline" onClick={() => setStep(2)}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
                 <Button
@@ -454,8 +568,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 3: Telegram Notifications (optional) */}
-        {step === 3 && createdOrgId && (
+        {/* Step 4: Telegram Notifications (optional) */}
+        {step === 4 && createdOrgId && (
           <TelegramOnboardingStep
             orgId={createdOrgId}
             onSkip={finishOnboarding}
