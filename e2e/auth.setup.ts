@@ -14,6 +14,10 @@ const AUTH_STATE = path.join(__dirname, '.auth/user.json');
  *
  * Runs once before any authenticated suite via Playwright `dependencies`.
  */
+// CI cold-start: first request to the deployed app can take >30s from a fresh runner.
+// Give auth setup extra headroom — it only runs once per suite.
+setup.setTimeout(90_000);
+
 setup('authenticate as test user', async ({ page }) => {
   const email = process.env.E2E_TEST_EMAIL;
   const password = process.env.E2E_TEST_PASSWORD;
@@ -30,9 +34,10 @@ setup('authenticate as test user', async ({ page }) => {
     fs.mkdirSync(authDir, { recursive: true });
   }
 
-  // Navigate to login page
+  // Navigate to login page — wait for the Email field, not just networkidle,
+  // so we're sure the React form has rendered (handles CI cold-start delays).
   await page.goto('/login');
-  await page.waitForLoadState('networkidle');
+  await page.getByLabel('Email').waitFor({ state: 'visible', timeout: 60_000 });
 
   // Disable Umami analytics for e2e tests
   await page.evaluate(() => localStorage.setItem('umami.disabled', '1'));
