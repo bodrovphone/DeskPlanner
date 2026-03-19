@@ -2,6 +2,8 @@
 
 **38 features** across desk booking, meeting rooms, revenue tracking, analytics, notifications, and workspace management.
 
+> **Roadmap & upcoming features** are managed in [Linear (Deskplanner team)](https://linear.app/deskplanner). The `docs/roadmap/` folder contains detailed specs for each feature but Linear is the source of truth for priorities, status, and dependencies.
+
 ## Desk Booking & Calendar
 1. **Weekly & Monthly calendar views** — see all desks and dates at a glance
 2. **One-click booking** — click any cell to create/edit a booking

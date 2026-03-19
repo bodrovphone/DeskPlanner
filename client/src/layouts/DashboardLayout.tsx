@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
+import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
 import { isAdmin } from '@/lib/admin';
 import type { User } from '@supabase/supabase-js';
@@ -150,6 +151,7 @@ export default function DashboardLayout() {
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 overflow-x-hidden pb-16 lg:pb-0">
+        <TrialBanner />
         <Outlet />
       </main>
 
