@@ -49,7 +49,7 @@
 
 ## Notifications
 30. **Telegram notifications** — daily alerts for bookings starting and assignments ending tomorrow; instant alerts on new public bookings
-31. **Email notifications** — _(coming soon)_
+31. **Email notifications** — welcome email on signup; daily digest (bookings starting / assignments ending tomorrow); instant alert on new public bookings; lifecycle nudges (7-day inactivity, 30-day goodbye); configurable per-org in Settings; powered by Resend via Supabase Edge Functions
 32. **WhatsApp notifications** — _(coming soon)_
 33. **SMS notifications** — _(coming soon)_
 

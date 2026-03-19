@@ -167,7 +167,7 @@ test.describe('Landing page — notifications', () => {
   test('Telegram card shows Live badge', async ({ page }) => {
     const telegramCard = page.getByText('LiveTelegramDaily alerts for', { exact: false });
     await expect(telegramCard).toBeVisible();
-    await expect(page.getByText('Live', { exact: true })).toBeVisible();
+    await expect(page.getByText('Live', { exact: true }).first()).toBeVisible();
   });
 
   test('coming soon channels are listed', async ({ page }) => {
@@ -203,10 +203,9 @@ test.describe('Landing page — pricing', () => {
     await expect(page.getByText('$18')).toBeVisible();
   });
 
-  test('Enterprise CTA links to LinkedIn', async ({ page }) => {
-    const contactLink = page.locator('a[href="https://www.linkedin.com/company/ohmydesk-app"]', { has: page.getByText('Contact Us') });
+  test('Enterprise CTA links to email', async ({ page }) => {
+    const contactLink = page.locator('a[href="mailto:hello@ohmydesk.app"]', { has: page.getByText('Contact Us') });
     await expect(contactLink).toBeVisible();
-    await expect(contactLink).toHaveAttribute('target', '_blank');
   });
 
   test('Enterprise card shows custom integrations footnote', async ({ page }) => {
