@@ -135,7 +135,7 @@ const steps = [
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
-  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'https://www.linkedin.com/company/ohmydesk-app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
+  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
 ];
 
 const integrations = [
@@ -343,7 +343,7 @@ function FauxPublicBooking() {
         {[
           { icon: Globe, label: 'Share a link', desc: 'Put it on Google Maps, your website, or a QR code at the door.' },
           { icon: Calendar, label: 'Visitor picks a date', desc: 'Simple 2-step flow. Name, phone, done. A desk is auto-assigned.' },
-          { icon: Bell, label: 'You get a Telegram alert', desc: 'Instant notification with contact details. Call them back to confirm.' },
+          { icon: Bell, label: 'You get notified', desc: 'Instant Telegram and email notification with contact details. Call them back to confirm.' },
         ].map((s, i) => (
           <div key={i} style={{
             background: T.bgCard, border: `1px solid ${T.borderBright}`,
@@ -757,11 +757,11 @@ export default function LandingPage() {
             live
             index={0}
           />
-          {/* Email - coming soon */}
           <NotificationChannelCard
             icon={Mail}
             name="Email"
             desc="Same notifications delivered to your inbox. Daily digest or instant alerts -- your choice."
+            live
             index={1}
           />
           {/* WhatsApp - coming soon */}
@@ -862,6 +862,12 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <img src={logoLanding} alt="OhMyDesk" style={{ height: 24, opacity: 0.7 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <a href="mailto:hello@ohmydesk.app" style={{ color: T.textMuted, transition: 'color 0.2s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.color = T.green; }}
+              onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; }}
+            >
+              <Mail size={18} />
+            </a>
             <a href="https://www.linkedin.com/company/ohmydesk-app" target="_blank" rel="noopener noreferrer" style={{ color: T.textMuted, transition: 'color 0.2s ease' }}
               onMouseEnter={e => { e.currentTarget.style.color = T.green; }}
               onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; }}

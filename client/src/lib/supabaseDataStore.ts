@@ -999,5 +999,17 @@ export class SupabaseDataStore implements IDataStore {
     } catch {
       // Non-critical — don't block the booking
     }
+
+    // Fire-and-forget email notification to owner
+    supabaseClient.functions.invoke('notify-public-booking-email', {
+      body: {
+        organizationId: params.organizationId,
+        visitorName: params.visitorName,
+        visitorPhone: params.visitorPhone || null,
+        deskId: params.deskId,
+        date: params.date,
+        notes: params.visitorNotes || null,
+      },
+    }).catch(() => {});
   }
 }

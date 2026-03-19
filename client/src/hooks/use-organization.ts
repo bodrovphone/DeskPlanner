@@ -3,6 +3,8 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization, Room, OrgDesk, OrgMemberRole } from '@shared/schema';
 
+const E2E_EMAILS = ['bodrovphone+e2e@gmail.com'];
+
 interface OrganizationMembership {
   organization: Organization;
   role: OrgMemberRole;
@@ -211,6 +213,13 @@ export function useCreateOrganization() {
           .from('meeting_rooms')
           .insert(mrInserts);
         if (mrError) throw mrError;
+      }
+
+      // Fire-and-forget welcome email (skip e2e accounts)
+      if (user.email && !E2E_EMAILS.includes(user.email)) {
+        supabaseClient.functions.invoke('email-welcome', {
+          body: { userId: user.id, organizationName: input.name },
+        }).catch(() => {});
       }
 
       return mapOrg(org);

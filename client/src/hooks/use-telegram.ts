@@ -9,6 +9,10 @@ function mapSettings(row: Record<string, unknown>): NotificationSettings {
     telegramChatId: row.telegram_chat_id as number | null,
     telegramUsername: row.telegram_username as string | null,
     enabled: row.enabled as boolean,
+    emailEnabled: row.email_enabled as boolean,
+    emailDailyDigest: row.email_daily_digest as boolean,
+    emailBookingAlerts: row.email_booking_alerts as boolean,
+    emailLifecycle: row.email_lifecycle as boolean,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -80,6 +84,27 @@ export function useToggleNotifications() {
         .from('notification_settings')
         .update({ enabled })
         .eq('organization_id', orgId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { orgId }) => {
+      queryClient.invalidateQueries({ queryKey: ['telegram-settings', orgId] });
+    },
+  });
+}
+
+export function useToggleEmailNotifications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orgId, field, value }: { orgId: string; field: 'email_enabled' | 'email_daily_digest' | 'email_booking_alerts' | 'email_lifecycle'; value: boolean }) => {
+      // Upsert so it works even if no notification_settings row exists yet
+      const { error } = await supabaseClient
+        .from('notification_settings')
+        .upsert(
+          { organization_id: orgId, [field]: value },
+          { onConflict: 'organization_id' }
+        );
 
       if (error) throw error;
     },

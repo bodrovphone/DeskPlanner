@@ -55,9 +55,7 @@ export default function TrialBanner() {
           <>
             Your free trial has ended.{' '}
             <a
-              href="https://www.linkedin.com/company/ohmydesk-app"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:hello@ohmydesk.app"
               className="underline font-semibold hover:opacity-80"
             >
               Contact us

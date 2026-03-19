@@ -9,9 +9,9 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
-import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect } from '@/hooks/use-telegram';
+import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail } from 'lucide-react';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 
@@ -497,6 +497,11 @@ export default function SettingsPage() {
           isAdmin={currentRole === 'owner' || currentRole === 'admin'}
         />
 
+        <EmailNotificationsCard
+          orgId={currentOrg.id}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+        />
+
         <PublicBookingCard
           orgId={currentOrg.id}
           orgSlug={currentOrg.slug}
@@ -879,6 +884,95 @@ function TelegramNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin:
               </p>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmailNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
+  const { toast } = useToast();
+  const { data: settings, isLoading } = useTelegramSettings(orgId);
+  const toggleEmail = useToggleEmailNotifications();
+
+  const handleToggle = async (field: 'email_enabled' | 'email_daily_digest' | 'email_booking_alerts' | 'email_lifecycle', value: boolean) => {
+    try {
+      await toggleEmail.mutateAsync({ orgId, field, value });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update email settings.', variant: 'destructive' });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Email Notifications</CardTitle>
+        </CardHeader>
+        <CardContent><p className="text-sm text-gray-500">Loading...</p></CardContent>
+      </Card>
+    );
+  }
+
+  const emailEnabled = settings?.emailEnabled ?? false;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Email Notifications
+          </CardTitle>
+          {isAdmin && (
+            <Switch
+              checked={emailEnabled}
+              onCheckedChange={(checked) => handleToggle('email_enabled', checked)}
+            />
+          )}
+        </div>
+        <CardDescription>
+          Get email notifications for bookings and activity.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!isAdmin ? (
+          <p className="text-sm text-gray-500">Ask a space owner or admin to configure email notifications.</p>
+        ) : emailEnabled ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Daily digest</p>
+                <p className="text-xs text-gray-500">Summary of bookings starting and assignments ending tomorrow</p>
+              </div>
+              <Switch
+                checked={settings?.emailDailyDigest ?? true}
+                onCheckedChange={(checked) => handleToggle('email_daily_digest', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Booking alerts</p>
+                <p className="text-xs text-gray-500">Instant email when someone submits a public booking</p>
+              </div>
+              <Switch
+                checked={settings?.emailBookingAlerts ?? true}
+                onCheckedChange={(checked) => handleToggle('email_booking_alerts', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Lifecycle emails</p>
+                <p className="text-xs text-gray-500">Occasional check-ins if you haven't used OhMyDesk in a while</p>
+              </div>
+              <Switch
+                checked={settings?.emailLifecycle ?? true}
+                onCheckedChange={(checked) => handleToggle('email_lifecycle', checked)}
+              />
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">Enable to receive email notifications for your space.</p>
         )}
       </CardContent>
     </Card>

@@ -179,6 +179,10 @@ export const notificationSettingsSchema = z.object({
   telegramChatId: z.number().nullable(),
   telegramUsername: z.string().nullable(),
   enabled: z.boolean(),
+  emailEnabled: z.boolean(),
+  emailDailyDigest: z.boolean(),
+  emailBookingAlerts: z.boolean(),
+  emailLifecycle: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
