@@ -11,10 +11,11 @@ interface AdminUser {
   full_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
+  last_active_at: string | null;
   org_name: string | null;
 }
 
-type SortColumn = 'last_sign_in_at' | 'created_at';
+type SortColumn = 'last_sign_in_at' | 'created_at' | 'last_active_at';
 type SortDir = 'asc' | 'desc';
 
 export default function AdminPage() {
@@ -28,7 +29,7 @@ export default function AdminPage() {
     },
     enabled: isAdmin(user),
   });
-  const [sortCol, setSortCol] = useState<SortColumn>('last_sign_in_at');
+  const [sortCol, setSortCol] = useState<SortColumn>('last_active_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const sortedUsers = useMemo(() => {
@@ -85,12 +86,12 @@ export default function AdminPage() {
         <span className="text-sm text-gray-500 ml-auto">{users.length} users</span>
       </div>
 
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-lg border overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="bg-gray-50 border-b">
               <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-              <th className="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600">Name</th>
+              <th className=" text-left px-4 py-3 font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Space</th>
               <th
                 className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
@@ -102,28 +103,28 @@ export default function AdminPage() {
                 </span>
               </th>
               <th
-                className="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
-                onClick={() => toggleSort('last_sign_in_at')}
+                className=" text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900"
+                onClick={() => toggleSort('last_active_at')}
               >
                 <span className="inline-flex items-center gap-1">
-                  Last Sign In
-                  {sortCol === 'last_sign_in_at' && (sortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />)}
+                  Last Active
+                  {sortCol === 'last_active_at' && (sortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />)}
                 </span>
               </th>
             </tr>
           </thead>
           <tbody>
             {sortedUsers.map((u) => (
-              <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
+              <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50 whitespace-nowrap">
                 <td className="px-4 py-3 text-gray-900">{u.email}</td>
-                <td className="hidden md:table-cell px-4 py-3 text-gray-700">{u.full_name || '-'}</td>
+                <td className="px-4 py-3 text-gray-700">{u.full_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-700">{u.org_name || '-'}</td>
                 <td className="px-4 py-3 text-gray-500">
                   {new Date(u.created_at).toLocaleDateString('en-GB')}
                 </td>
-                <td className="hidden md:table-cell px-4 py-3 text-gray-500">
-                  {u.last_sign_in_at
-                    ? new Date(u.last_sign_in_at).toLocaleDateString('en-GB')
+                <td className="px-4 py-3 text-gray-500">
+                  {u.last_active_at
+                    ? new Date(u.last_active_at).toLocaleDateString('en-GB')
                     : '-'}
                 </td>
               </tr>

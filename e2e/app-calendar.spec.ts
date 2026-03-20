@@ -203,10 +203,17 @@ test.describe('Calendar — delete booking', () => {
   test('discarding a booked entry removes it from the grid', async ({ page }) => {
     await switchToWeekView(page);
 
-    const bookedCell = page.locator('.desk-booked').first();
+    // Seeded bookings on CURRENT_DATE+1/+2 may fall on weekends (day-off cells
+    // ignore clicks). Navigate forward until we find a clickable booked cell.
+    const bookedCell = page.locator('.desk-booked:not(.opacity-50)').first();
+    for (let i = 0; i < 3 && !(await bookedCell.isVisible().catch(() => false)); i++) {
+      await page.locator('button:has(.lucide-chevron-right)').click();
+      await page.waitForTimeout(500);
+    }
     await expect(bookedCell).toBeVisible({ timeout: 10_000 });
 
-    await bookedCell.click();
+    // force: true — the cell can land under the sticky <thead> after auto-scroll
+    await bookedCell.click({ force: true });
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
     // First click → button text changes to "Confirm?"
