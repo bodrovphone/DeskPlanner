@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Organization, Room, OrgDesk, Desk, OrgMemberRole, MeetingRoom } from '@shared/schema';
 import { useUserOrganizations, useOrganizationRooms, useOrganizationDesks } from '@/hooks/use-organization';
 import { useMeetingRooms } from '@/hooks/use-meeting-rooms';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 const ORG_STORAGE_KEY = 'deskplanner-current-org';
 
@@ -88,6 +89,18 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       setCurrentOrg(memberships[0].organization);
     }
   }, [memberships, currentOrgId]);
+
+  // Heartbeat: update last_active_at once per session
+  const heartbeatSent = useRef(false);
+  useEffect(() => {
+    if (!effectiveOrgId || heartbeatSent.current) return;
+    heartbeatSent.current = true;
+    supabaseClient
+      .from('organization_members')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('organization_id', effectiveOrgId)
+      .then(() => {});
+  }, [effectiveOrgId]);
 
   const loading = orgsLoading || roomsLoading || desksLoading;
   const hasOrganization = memberships.length > 0;
