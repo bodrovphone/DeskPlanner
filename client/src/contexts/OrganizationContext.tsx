@@ -3,6 +3,7 @@ import { Organization, Room, OrgDesk, Desk, OrgMemberRole, MeetingRoom } from '@
 import { useUserOrganizations, useOrganizationRooms, useOrganizationDesks } from '@/hooks/use-organization';
 import { useMeetingRooms } from '@/hooks/use-meeting-rooms';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ORG_STORAGE_KEY = 'deskplanner-current-org';
 
@@ -31,6 +32,7 @@ export function useOrganization() {
 }
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(() => {
     try {
       return localStorage.getItem(ORG_STORAGE_KEY);
@@ -93,14 +95,15 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   // Heartbeat: update last_active_at once per session
   const heartbeatSent = useRef(false);
   useEffect(() => {
-    if (!effectiveOrgId || heartbeatSent.current) return;
+    if (!effectiveOrgId || !user?.id || heartbeatSent.current) return;
     heartbeatSent.current = true;
     supabaseClient
       .from('organization_members')
       .update({ last_active_at: new Date().toISOString() })
       .eq('organization_id', effectiveOrgId)
+      .eq('user_id', user.id)
       .then(() => {});
-  }, [effectiveOrgId]);
+  }, [effectiveOrgId, user?.id]);
 
   const loading = orgsLoading || roomsLoading || desksLoading;
   const hasOrganization = memberships.length > 0;
