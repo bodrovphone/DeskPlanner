@@ -18,6 +18,9 @@ research/
 # Supabase
 supabase/
 
+# Remotion video
+video/
+
 # Playwright
 test-results/
 playwright-report/
