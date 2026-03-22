@@ -5,6 +5,7 @@ import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { Loader2, CalendarCheck, ChevronLeft, Check, MapPin, CalendarDays } from 'lucide-react';
+import { SpaceContactBar } from '@/components/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
 
 const SCARCITY_THRESHOLD = 3;
@@ -103,6 +104,14 @@ export default function PublicBookingPage() {
                 {assignedDeskLabel}
               </div>
             )}
+            <SpaceContactBar
+              phone={availability.org.contactPhone}
+              email={availability.org.contactEmail}
+              telegram={availability.org.contactTelegram}
+              viberEnabled={availability.org.contactViberEnabled}
+              whatsappEnabled={availability.org.contactWhatsappEnabled}
+              className="mt-6 pt-6 border-t"
+            />
           </div>
           <Footer />
         </div>

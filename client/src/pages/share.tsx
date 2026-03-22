@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { SharedBooking } from '@shared/schema';
 import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { Loader2, CalendarCheck, Clock } from 'lucide-react';
+import { SpaceContactBar } from '@/components/SpaceContactBar';
 
 export default function SharePage() {
   const { token } = useParams<{ token: string }>();
@@ -63,6 +64,14 @@ export default function SharePage() {
             <div className="text-sm text-gray-400">
               {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
             </div>
+            <SpaceContactBar
+              phone={booking.contactPhone}
+              email={booking.contactEmail}
+              telegram={booking.contactTelegram}
+              viberEnabled={booking.contactViberEnabled ?? false}
+              whatsappEnabled={booking.contactWhatsappEnabled ?? false}
+              className="mt-4 pt-4 border-t border-gray-700"
+            />
           </div>
           <Footer />
         </div>
@@ -112,6 +121,14 @@ export default function SharePage() {
               {booking.status}
             </div>
           </div>
+          <SpaceContactBar
+            phone={booking.contactPhone}
+            email={booking.contactEmail}
+            telegram={booking.contactTelegram}
+            viberEnabled={booking.contactViberEnabled ?? false}
+            whatsappEnabled={booking.contactWhatsappEnabled ?? false}
+            className="mt-6 pt-6 border-t"
+          />
         </div>
 
         <Footer />

@@ -25,6 +25,11 @@ function mapOrg(row: Record<string, unknown>): Organization {
     workingDays: (row.working_days as number[]) ?? [1, 2, 3, 4, 5],
     publicBookingEnabled: (row.public_booking_enabled as boolean) ?? false,
     publicBookingMaxDaysAhead: (row.public_booking_max_days_ahead as number) ?? 14,
+    contactPhone: (row.contact_phone as string) ?? null,
+    contactEmail: (row.contact_email as string) ?? null,
+    contactTelegram: (row.contact_telegram as string) ?? null,
+    contactViberEnabled: (row.contact_viber_enabled as boolean) ?? false,
+    contactWhatsappEnabled: (row.contact_whatsapp_enabled as boolean) ?? false,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

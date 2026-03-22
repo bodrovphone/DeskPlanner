@@ -5,13 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone } from 'lucide-react';
+import { Organization } from '@shared/schema';
+import telegramIcon from '@/assets/telegram.svg';
+import viberIcon from '@/assets/viber.svg';
+import whatsappIcon from '@/assets/whatsapp.svg';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 
@@ -489,6 +494,12 @@ export default function SettingsPage() {
         <MeetingRoomsCard
           orgId={currentOrg.id}
           currency={currentOrg.currency}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+        />
+
+        <SpaceContactCard
+          orgId={currentOrg.id}
+          org={currentOrg}
           isAdmin={currentRole === 'owner' || currentRole === 'admin'}
         />
 
@@ -973,6 +984,103 @@ function EmailNotificationsCard({ orgId, isAdmin }: { orgId: string; isAdmin: bo
           </div>
         ) : (
           <p className="text-sm text-gray-500">Enable to receive email notifications for your space.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SpaceContactCard({ orgId, org, isAdmin }: { orgId: string; org: Organization; isAdmin: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [phone, setPhone] = useState(org.contactPhone || '');
+  const [email, setEmail] = useState(org.contactEmail || '');
+  const [telegram, setTelegram] = useState(org.contactTelegram || '');
+  const [viberEnabled, setViberEnabled] = useState(org.contactViberEnabled ?? false);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(org.contactWhatsappEnabled ?? false);
+  const [saving, setSaving] = useState(false);
+
+  const hasChanges =
+    phone !== (org.contactPhone || '') ||
+    email !== (org.contactEmail || '') ||
+    telegram !== (org.contactTelegram || '') ||
+    viberEnabled !== (org.contactViberEnabled ?? false) ||
+    whatsappEnabled !== (org.contactWhatsappEnabled ?? false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({
+          contact_phone: phone.trim() || null,
+          contact_email: email.trim() || null,
+          contact_telegram: telegram.trim().replace(/^@/, '') || null,
+          contact_viber_enabled: viberEnabled,
+          contact_whatsapp_enabled: whatsappEnabled,
+        })
+        .eq('id', orgId);
+
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Saved', description: 'Contact info updated.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save contact info.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Phone className="h-5 w-5" />
+          Contact Info
+        </CardTitle>
+        <CardDescription>
+          Shown on your public booking page and shared booking links.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!isAdmin ? (
+          <p className="text-sm text-gray-500">Ask a space owner or admin to manage contact info.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Phone number</Label>
+              <Input type="tel" placeholder="+359 888 123 456" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" placeholder="hello@yourspace.com" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telegram</Label>
+              <Input placeholder="username (without @)" value={telegram} onChange={e => setTelegram(e.target.value)} />
+            </div>
+            {phone.trim() && (
+              <div className="space-y-3 pt-1">
+                <p className="text-xs text-gray-500">Also reachable via:</p>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <Checkbox checked={whatsappEnabled} onCheckedChange={(v) => setWhatsappEnabled(v === true)} />
+                  <img src={whatsappIcon} alt="" className="h-5 w-5" />
+                  <span className="text-sm">WhatsApp</span>
+                </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <Checkbox checked={viberEnabled} onCheckedChange={(v) => setViberEnabled(v === true)} />
+                  <img src={viberIcon} alt="" className="h-5 w-5" />
+                  <span className="text-sm">Viber</span>
+                </label>
+              </div>
+            )}
+            {hasChanges && (
+              <Button onClick={handleSave} disabled={saving} className="w-full">
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Contact Info'}
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

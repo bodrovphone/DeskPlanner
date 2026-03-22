@@ -36,6 +36,11 @@ export const sharedBookingSchema = z.object({
   roomName: z.string(),
   deskLabel: z.string(),
   expired: z.boolean(),
+  contactPhone: z.string().nullable().optional(),
+  contactEmail: z.string().nullable().optional(),
+  contactTelegram: z.string().nullable().optional(),
+  contactViberEnabled: z.boolean().default(false),
+  contactWhatsappEnabled: z.boolean().default(false),
 });
 
 export type SharedBooking = z.infer<typeof sharedBookingSchema>;
@@ -86,6 +91,11 @@ export const organizationSchema = z.object({
   workingDays: z.array(z.number()).default([1, 2, 3, 4, 5]),
   publicBookingEnabled: z.boolean().default(false),
   publicBookingMaxDaysAhead: z.number().default(14),
+  contactPhone: z.string().nullable().optional(),
+  contactEmail: z.string().nullable().optional(),
+  contactTelegram: z.string().nullable().optional(),
+  contactViberEnabled: z.boolean().default(false),
+  contactWhatsappEnabled: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -211,6 +221,11 @@ export interface PublicAvailability {
     workingDays: number[];
     maxDaysAhead: number;
     logoUrl: string | null;
+    contactPhone: string | null;
+    contactEmail: string | null;
+    contactTelegram: string | null;
+    contactViberEnabled: boolean;
+    contactWhatsappEnabled: boolean;
   };
   rooms: PublicAvailabilityRoom[];
   bookedSlots: { deskId: string; date: string }[];
