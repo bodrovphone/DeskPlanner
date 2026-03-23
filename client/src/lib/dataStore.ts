@@ -1,4 +1,4 @@
-import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense } from '@/../../shared/schema';
+import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense, Client } from '@/../../shared/schema';
 
 /**
  * Abstract data store interface for desk bookings
@@ -50,6 +50,12 @@ export interface IDataStore {
 
   // Share token operations
   getOrCreateShareToken?(bookingId: string, deskId?: string, date?: string): Promise<string>;
+
+  // Client operations
+  getClients?(): Promise<Client[]>;
+  searchClients?(query: string): Promise<Client[]>;
+  saveClient?(client: Client): Promise<Client>;
+  deleteClient?(id: string): Promise<void>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';

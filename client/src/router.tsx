@@ -16,6 +16,7 @@ import AdminPage from '@/pages/admin';
 import SharePage from '@/pages/share';
 import PublicBookingPage from '@/pages/public-booking';
 import MeetingRoomsPage from '@/pages/meeting-rooms';
+import MembersPage from '@/pages/members';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -229,6 +230,10 @@ export const router = createBrowserRouter(
                     {
                       path: 'calendar',
                       element: <DeskCalendar />,
+                    },
+                    {
+                      path: 'members',
+                      element: <MembersPage />,
                     },
                     {
                       path: 'meeting-rooms',

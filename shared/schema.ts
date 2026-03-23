@@ -23,6 +23,7 @@ export const deskBookingSchema = z.object({
   visitorEmail: z.string().optional(),
   visitorPhone: z.string().optional(),
   visitorNotes: z.string().optional(),
+  clientId: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -138,6 +139,27 @@ export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
 export type Room = z.infer<typeof roomSchema>;
 export type OrgDesk = z.infer<typeof orgDeskSchema>;
 export type OrgMemberRole = z.infer<typeof orgMemberRoleSchema>;
+
+// Client (space visitor/member) schema
+// TODO: Consider adding more fields as needs become clear. Candidates:
+//   - company (text) — for corporate bookings / invoicing
+//   - tags (text[]) — e.g. "regular", "corporate", "trial"
+//   - notes (text) — free-form notes about the client
+//   - balance (numeric) — for flex package day tracking
+//   - preferred_desk (text) — desk they usually sit at
+//   - membership_type (text) — e.g. "fix", "flexy", "day-pass"
+export const clientSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  name: z.string(),
+  contact: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type Client = z.infer<typeof clientSchema>;
 
 export interface MonthlyStats {
   totalRevenue: number;

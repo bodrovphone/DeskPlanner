@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal } from 'lucide-react';
+import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
 import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ function getNavItems(slug: string, user?: User | null, hasMeetingRooms?: boolean
   const items: NavItem[] = [
     { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
     ...(hasMeetingRooms ? [{ to: `${base}/meeting-rooms`, label: 'Meeting Rooms', shortLabel: 'Rooms', icon: DoorOpen }] : []),
+    { to: `${base}/members`, label: 'Members', shortLabel: 'Members', icon: UserRoundSearch },
     { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
     { to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
     { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },

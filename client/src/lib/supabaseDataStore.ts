@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -642,6 +642,7 @@ export class SupabaseDataStore implements IDataStore {
       price: booking.price,
       currency: booking.currency,
       created_at: booking.createdAt,
+      client_id: booking.clientId ? parseInt(booking.clientId, 10) || null : null,
     };
 
     if (this.organizationId) {
@@ -664,6 +665,7 @@ export class SupabaseDataStore implements IDataStore {
       price: row.price,
       currency: row.currency || 'EUR', // Use database currency or default to EUR
       shareToken: row.share_token || undefined,
+      clientId: row.client_id ? String(row.client_id) : undefined,
       createdAt: row.created_at,
     };
   }
@@ -894,6 +896,118 @@ export class SupabaseDataStore implements IDataStore {
       dayOfMonth: row.day_of_month,
       isActive: row.is_active,
       createdAt: row.created_at,
+    };
+  }
+
+  // Client operations
+  async getClients(): Promise<Client[]> {
+    // Fetch clients with their most recent booking date for sorting
+    const { data, error } = await this.scopeQuery(
+      this.client.from('clients').select('*, desk_bookings(date)')
+    ).order('name');
+
+    if (error) throw error;
+
+    const clients = (data || []).map(row => {
+      const bookings = row.desk_bookings as { date: string }[] | null;
+      const lastBookingDate = bookings && bookings.length > 0
+        ? bookings.reduce((max: string, b: { date: string }) => b.date > max ? b.date : max, bookings[0].date)
+        : null;
+      return {
+        ...this.mapClientFromDatabase(row),
+        lastBookingDate,
+      };
+    });
+
+    // Sort by last booking date (most recent first), then by name for those without bookings
+    clients.sort((a, b) => {
+      if (a.lastBookingDate && b.lastBookingDate) return b.lastBookingDate.localeCompare(a.lastBookingDate);
+      if (a.lastBookingDate) return -1;
+      if (b.lastBookingDate) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return clients;
+  }
+
+  async searchClients(query: string): Promise<Client[]> {
+    const { data, error } = await this.scopeQuery(
+      this.client.from('clients').select('*').ilike('name', `%${query}%`)
+    ).order('name').limit(10);
+
+    if (error) throw error;
+    return (data || []).map(row => this.mapClientFromDatabase(row));
+  }
+
+  async saveClient(client: Client): Promise<Client> {
+    const isNew = !client.id || client.id.startsWith('new-');
+    const now = new Date().toISOString();
+
+    if (isNew) {
+      const record: any = {
+        organization_id: this.organizationId,
+        name: client.name,
+        contact: client.contact || null,
+        email: client.email || null,
+        phone: client.phone || null,
+        created_at: now,
+        updated_at: now,
+      };
+
+      const { data, error } = await this.client
+        .from('clients')
+        .insert(record)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return this.mapClientFromDatabase(data);
+    } else {
+      const numericId = parseInt(client.id, 10);
+      const { data, error } = await this.client
+        .from('clients')
+        .update({
+          name: client.name,
+          contact: client.contact || null,
+          email: client.email || null,
+          phone: client.phone || null,
+          updated_at: now,
+        })
+        .eq('id', numericId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Sync person_name on all linked bookings
+      await this.client
+        .from('desk_bookings')
+        .update({ person_name: client.name })
+        .eq('client_id', numericId);
+
+      return this.mapClientFromDatabase(data);
+    }
+  }
+
+  async deleteClient(id: string): Promise<void> {
+    const { error } = await this.client
+      .from('clients')
+      .delete()
+      .eq('id', parseInt(id, 10));
+
+    if (error) throw error;
+  }
+
+  private mapClientFromDatabase(row: any): Client {
+    return {
+      id: String(row.id),
+      organizationId: row.organization_id,
+      name: row.name,
+      contact: row.contact || null,
+      email: row.email || null,
+      phone: row.phone || null,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 

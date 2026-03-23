@@ -91,6 +91,7 @@ export function useBookingActions(
     startDate: string;
     endDate: string;
     currency: Currency;
+    clientId?: string;
   }) => {
     if (!selectedBooking) return;
 
@@ -141,6 +142,7 @@ export function useBookingActions(
       title: bookingData.title,
       price: bookingData.price,
       currency: bookingData.currency || currentCurrency,
+      clientId: bookingData.clientId,
       createdAt: (existingBooking && oldDateRange.includes(date))
         ? existingBooking.createdAt
         : new Date().toISOString(),

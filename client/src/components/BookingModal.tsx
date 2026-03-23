@@ -8,6 +8,7 @@ import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2 } from 'lucide-react';
+import ClientAutocomplete from './ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BookingModalProps {
@@ -26,10 +27,11 @@ interface BookingModalProps {
     startDate: string;
     endDate: string;
     currency: Currency;
+    clientId?: string;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
   onPause?: () => void;
-  onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency }) => void;
+  onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency; clientId?: string }) => void;
 }
 
 export default function BookingModal({
@@ -48,6 +50,7 @@ export default function BookingModal({
   const { currentOrg } = useOrganization();
   const defaultPrice = currentOrg?.defaultPricePerDay ?? 8;
   const [personName, setPersonName] = useState('');
+  const [clientId, setClientId] = useState<string | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [status, setStatus] = useState<DeskStatus>('assigned');
@@ -62,6 +65,7 @@ export default function BookingModal({
   useEffect(() => {
     if (isOpen) {
       setPersonName(booking?.personName || '');
+      setClientId(booking?.clientId);
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || String(defaultPrice));
       setStatus(booking?.status || 'assigned');
@@ -108,7 +112,8 @@ export default function BookingModal({
           status: status,
           startDate: startDate,
           endDate: endDate,
-          currency: currency
+          currency: currency,
+          clientId: clientId,
         });
         if (onShare) {
           onShare({
@@ -119,6 +124,7 @@ export default function BookingModal({
             title: trimmedTitle,
             price: parsedPrice,
             currency,
+            clientId,
           });
         } else {
           onClose();
@@ -256,19 +262,19 @@ export default function BookingModal({
             <Label htmlFor="personName" className="text-sm font-medium text-gray-700">
               Name *
             </Label>
-            <Input
-              id="personName"
-              type="text"
+            <ClientAutocomplete
               value={personName}
-              onChange={(e) => setPersonName(e.target.value.slice(0, 20))}
-              onKeyDown={handleKeyDown}
-              placeholder="Enter name"
-              maxLength={20}
-              className="mt-1"
+              clientId={clientId}
+              onChange={(name, cId) => {
+                setPersonName(name);
+                setClientId(cId);
+              }}
+              maxLength={40}
               autoFocus
+              onKeyDown={handleKeyDown}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {personName.length}/20 characters
+              {personName.length}/40 characters
             </p>
           </div>
 
@@ -418,6 +424,7 @@ export default function BookingModal({
                       title,
                       price: parseFloat(price) || 0,
                       currency,
+                      clientId,
                     })}
                     disabled={isDiscarding || isLoading}
                     className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
