@@ -284,11 +284,10 @@ export default function MemberBookingPage() {
 
       // Deduct flex day
       if (member.flexActive) {
+        await supabaseClient.rpc('increment_flex_used_days', {
+          p_client_id: parseInt(member.id, 10),
+        });
         const newUsed = member.flexUsedDays + 1;
-        await supabaseClient
-          .from('clients')
-          .update({ flex_used_days: newUsed })
-          .eq('id', parseInt(member.id, 10));
 
         setUpdatedBalance({
           remaining: member.flexTotalDays - newUsed,
