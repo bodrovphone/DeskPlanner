@@ -300,6 +300,18 @@ export default function MemberBookingPage() {
       setAssignedDeskLabel(desk.label);
       setSubmitted(true);
 
+      // Fire-and-forget Telegram notification to space manager
+      supabaseClient.functions.invoke('notify-public-booking', {
+        body: {
+          organization_id: org.id,
+          visitor_name: member.name,
+          visitor_phone: null,
+          desk_id: desk.deskId,
+          date: selectedDate,
+          notes: 'Flex plan self-booking',
+        },
+      }).catch(() => {});
+
       // Fire-and-forget booking confirmation email (or last-day email if balance is now 0)
       if (member.email) {
         const newRemaining = member.flexTotalDays - (member.flexUsedDays + 1);
