@@ -127,9 +127,14 @@ export function useBookingActions(
     }
 
     if (existingBooking && oldDateRange.length > 0) {
-      const datesToDelete = oldDateRange.filter(date => !newDateRange.includes(date));
-      for (const date of datesToDelete) {
-        await dataStore.deleteBooking(deskId, date);
+      // Delete ALL old dates — not just removed ones. This avoids duplicate rows
+      // when the existing booking has a different numeric ID than the new upsert.
+      if (dataStore.bulkDeleteBookings) {
+        await dataStore.bulkDeleteBookings(oldDateRange.map(date => ({ deskId, date })));
+      } else {
+        for (const date of oldDateRange) {
+          await dataStore.deleteBooking(deskId, date);
+        }
       }
     }
 
