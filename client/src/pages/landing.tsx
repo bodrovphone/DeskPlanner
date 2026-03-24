@@ -499,7 +499,7 @@ function FauxRevenue() {
 /* ─── main page ─── */
 
 export default function LandingPage() {
-  const heroTyping = useTyping('Desk management for operators who ship.', 45, 800);
+  const heroTyping = useTyping('Coworking desk management for operators who ship.', 45, 800);
   const [navScrolled, setNavScrolled] = useState(false);
   const isMobile = useNarrow(768);
 
@@ -612,7 +612,7 @@ export default function LandingPage() {
             maxWidth: 520,
             margin: '28px auto 0',
           }}>
-            The coworking command center. Visual calendar, meeting room bookings, revenue tracking, and waiting lists -- everything your space needs in one fast, focused tool.
+            Coworking desk booking software with a visual calendar, meeting room scheduling, revenue tracking, and waiting lists -- everything your space needs in one fast, focused tool.
           </p>
 
           <div style={{
@@ -704,8 +704,8 @@ export default function LandingPage() {
       <section style={sectionStyle(100)}>
         <SectionHeading
           tag="Product"
-          title="Your entire space, one screen."
-          sub="A calendar grid that shows every desk, every booking, and every open slot. No spreadsheets. No guesswork."
+          title="Your entire coworking space, one screen."
+          sub="A desk booking calendar that shows every desk, every booking, and every open slot. No spreadsheets. No guesswork."
         />
         <div style={{ position: 'relative' }}>
           {/* glow behind the calendar */}
@@ -734,8 +734,8 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
           tag="Features"
-          title="Everything operators need."
-          sub="Simple, focused tools that replace your spreadsheets and sticky notes."
+          title="Desk booking features for every operator."
+          sub="Simple, focused coworking management tools that replace your spreadsheets and sticky notes."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
           {features.map((f, i) => {
@@ -802,7 +802,7 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
           tag="Process"
-          title="Up and running in minutes."
+          title="Desk booking setup in minutes."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, position: 'relative', maxWidth: 900, margin: '0 auto' }}>
           {steps.map((s, i) => (
@@ -815,7 +815,7 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
           tag="Pricing"
-          title="Start free. Scale when ready."
+          title="Coworking software pricing. Start free."
           sub="No credit card required. No hidden fees."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 920, margin: '0 auto' }}>
@@ -829,7 +829,7 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle(80), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
           tag="Integrations"
-          title="Connects to your stack."
+          title="Integrates with your coworking stack."
           sub="Works with the tools you already use. Need something custom? We'll build it."
         />
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 800, margin: '0 auto' }}>
@@ -1252,7 +1252,7 @@ function CtaSection() {
       zIndex: 1,
     }}>
       <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, color: T.textPrimary, lineHeight: 1.2, marginBottom: 16 }}>
-        Ready to stop juggling spreadsheets?
+        Ready to simplify your coworking desk management?
       </h2>
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
         Join hundreds of coworking operators who manage their desks with OhMyDesk. Start your free trial today.
