@@ -241,7 +241,9 @@ export default function MemberBookingPage() {
     return availableDesks[Math.floor(Math.random() * availableDesks.length)];
   };
 
-  const perVisitPrice = flexConfig ? flexConfig.price / flexConfig.days : 0;
+  const perVisitPrice = flexConfig && flexConfig.days > 0
+    ? flexConfig.price / flexConfig.days
+    : 0;
 
   const handleSubmit = async () => {
     if (!selectedDate) return;
@@ -275,7 +277,7 @@ export default function MemberBookingPage() {
           person_name: member.name,
           client_id: parseInt(member.id, 10),
           is_flex: true,
-          price: perVisitPrice || null,
+          price: Math.round((perVisitPrice || 0) * 100) / 100,
           currency: org.currency || 'EUR',
           created_at: new Date().toISOString(),
         });
