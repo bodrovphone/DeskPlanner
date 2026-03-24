@@ -1022,28 +1022,13 @@ export class SupabaseDataStore implements IDataStore {
   async deductFlexDay(clientId: string): Promise<Client> {
     const numericId = parseInt(clientId, 10);
 
-    // Increment flex_used_days atomically
-    const { data, error } = await this.client.rpc('increment_flex_used_days', {
+    // Atomic increment via RPC — avoids race conditions
+    const { error } = await this.client.rpc('increment_flex_used_days', {
       p_client_id: numericId,
     });
 
-    // Fallback: if RPC doesn't exist, do it manually
-    if (error) {
-      const client = await this.getClientById(clientId);
-      if (!client) throw new Error('Client not found');
+    if (error) throw error;
 
-      const { data: updated, error: updateErr } = await this.client
-        .from('clients')
-        .update({ flex_used_days: client.flexUsedDays + 1 })
-        .eq('id', numericId)
-        .select()
-        .single();
-
-      if (updateErr) throw updateErr;
-      return this.mapClientFromDatabase(updated);
-    }
-
-    // Refetch after RPC
     const refreshed = await this.getClientById(clientId);
     if (!refreshed) throw new Error('Client not found after deduction');
     return refreshed;
