@@ -162,6 +162,7 @@ export const clientSchema = z.object({
   flexTotalDays: z.number().default(0),
   flexUsedDays: z.number().default(0),
   flexStartDate: z.string().nullable().optional(),
+  bookingToken: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

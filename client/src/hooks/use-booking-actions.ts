@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols } from '@/lib/settings';
 import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export function invalidateBookingQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['desk-bookings'] });
@@ -158,6 +159,16 @@ export function useBookingActions(
       for (let i = 0; i < newDaysCount; i++) {
         await dataStore.deductFlexDay(bookingData.clientId);
       }
+      // Fire-and-forget booking confirmation email for flex member
+      supabaseClient.functions.invoke('flex-email', {
+        body: {
+          type: 'booking_confirmation',
+          clientId: parseInt(bookingData.clientId, 10),
+          organizationId: bookingsToCreate[0]?.organizationId,
+          bookingDate: bookingData.startDate,
+          deskLabel: desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId,
+        },
+      }).catch(() => {});
     }
 
     invalidateBookingQueries(queryClient);

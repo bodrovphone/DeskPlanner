@@ -291,6 +291,7 @@ export default function BookingModal({
               Name *
             </Label>
             <ClientAutocomplete
+              id="personName"
               value={personName}
               clientId={clientId}
               onChange={(name, cId) => {

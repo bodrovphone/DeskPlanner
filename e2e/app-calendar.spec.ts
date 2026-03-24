@@ -125,7 +125,7 @@ test.describe('Calendar — booking dialog', () => {
     await expect(page.getByText('Desk Information')).toBeVisible();
 
     // Name field is present and focused
-    await expect(page.getByLabel('Name *')).toBeVisible();
+    await expect(page.getByPlaceholder('Enter name')).toBeVisible();
 
     // Close the dialog
     await page.keyboard.press('Escape');
@@ -148,7 +148,7 @@ test.describe('Calendar — create booking', () => {
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
     // Fill person name
-    await page.getByLabel('Name *').fill('E2E Tester');
+    await page.getByPlaceholder('Enter name').fill('E2E Tester');
 
     // Select "Booked" status
     await page.getByRole('button', { name: 'Booked' }).click();
@@ -178,7 +178,7 @@ test.describe('Calendar — edit booking', () => {
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
     // Name field should be pre-filled
-    const nameField = page.getByLabel('Name *');
+    const nameField = page.getByPlaceholder('Enter name');
     await expect(nameField).toBeVisible();
     const existingName = await nameField.inputValue();
     expect(existingName.length).toBeGreaterThan(0);
@@ -289,7 +289,7 @@ test.describe('Calendar — share booking', () => {
     await availableCell.click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
-    await page.getByLabel('Name *').fill('Share Test');
+    await page.getByPlaceholder('Enter name').fill('Share Test');
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
     // ShareBookingModal should open after save

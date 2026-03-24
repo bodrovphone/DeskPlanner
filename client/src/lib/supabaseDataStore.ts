@@ -1061,6 +1061,7 @@ export class SupabaseDataStore implements IDataStore {
       flexTotalDays: row.flex_total_days || 0,
       flexUsedDays: row.flex_used_days || 0,
       flexStartDate: row.flex_start_date || null,
+      bookingToken: row.booking_token || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

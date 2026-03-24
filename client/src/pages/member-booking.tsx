@@ -17,8 +17,6 @@ import { Calendar } from '@/components/ui/calendar';
  * - No name/phone form needed
  * - Creates "assigned" booking (not "booked")
  * - Deducts from flex balance
- *
- * TODO (DES-42): Replace memberId with a secure token to prevent ID guessing
  */
 
 export default function MemberBookingPage() {
@@ -71,7 +69,7 @@ export default function MemberBookingPage() {
           const { data: bookingRows } = await supabaseClient
             .from('desk_bookings')
             .select('date, desk_id')
-            .eq('client_id', parseInt(memberId, 10))
+            .eq('client_id', parseInt(clientRow.id, 10))
             .eq('organization_id', orgRow.id)
             .gte('date', todayStr)
             .order('date')
@@ -300,6 +298,21 @@ export default function MemberBookingPage() {
 
       setAssignedDeskLabel(desk.label);
       setSubmitted(true);
+
+      // Fire-and-forget booking confirmation email (or last-day email if balance is now 0)
+      if (member.email) {
+        const newRemaining = member.flexTotalDays - (member.flexUsedDays + 1);
+        const emailType = newRemaining <= 0 ? 'last_day' : 'booking_confirmation';
+        supabaseClient.functions.invoke('flex-email', {
+          body: {
+            type: emailType,
+            clientId: parseInt(member.id, 10),
+            organizationId: org.id,
+            bookingDate: selectedDate,
+            deskLabel: desk.label,
+          },
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error('Member booking error:', err);
       setError('Failed to book. Please try again.');

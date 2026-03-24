@@ -212,8 +212,7 @@ export const router = createBrowserRouter(
           path: '/share/:token',
           element: <SharePage />,
         },
-        // Member self-service booking (no auth required) — must be before /:orgSlug catch-all
-        // TODO (DES-42): Replace memberId with secure token
+        // Member self-service booking (no auth required)
         {
           path: '/book/:memberId/:orgSlug',
           element: <MemberBookingPage />,

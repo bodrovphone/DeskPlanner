@@ -11,6 +11,7 @@ interface ClientAutocompleteProps {
   maxLength?: number;
   autoFocus?: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  id?: string;
 }
 
 export default function ClientAutocomplete({
@@ -20,6 +21,7 @@ export default function ClientAutocomplete({
   maxLength = 40,
   autoFocus,
   onKeyDown,
+  id,
 }: ClientAutocompleteProps) {
   const dataStore = useDataStore();
   const [suggestions, setSuggestions] = useState<Client[]>([]);
@@ -102,6 +104,7 @@ export default function ClientAutocomplete({
       <div className="relative">
         <Input
           ref={inputRef}
+          id={id}
           type="text"
           value={value}
           onChange={handleInputChange}

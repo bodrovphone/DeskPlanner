@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 const DEFAULT_VISIBLE = 20;
 
@@ -92,7 +93,7 @@ export default function MembersPage() {
     : filteredClients.slice(0, DEFAULT_VISIBLE);
   const hasMore = !isSearching && !showAll && filteredClients.length > DEFAULT_VISIBLE;
 
-  const updateField = (id: string, field: 'name' | 'contact', value: string) => {
+  const updateField = (id: string, field: 'name' | 'contact' | 'email', value: string) => {
     setLocalClients(prev => {
       const updated = prev.map(c => c.id === id ? { ...c, [field]: value } : c);
       const client = updated.find(c => c.id === id);
@@ -221,6 +222,7 @@ export default function MembersPage() {
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
                   {flexConfigured && (
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-48">Flex Balance</th>
                 )}
@@ -249,6 +251,15 @@ export default function MembersPage() {
                         value={client.contact || ''}
                         onChange={(e) => updateField(client.id, 'contact', e.target.value)}
                         placeholder="Email, phone, etc."
+                        className="w-full bg-transparent border-0 outline-none text-sm text-gray-600 placeholder-gray-300 focus:ring-0 py-1"
+                      />
+                    </td>
+                    <td className="px-4 py-1.5">
+                      <input
+                        type="email"
+                        value={client.email || ''}
+                        onChange={(e) => updateField(client.id, 'email', e.target.value)}
+                        placeholder="member@email.com"
                         className="w-full bg-transparent border-0 outline-none text-sm text-gray-600 placeholder-gray-300 focus:ring-0 py-1"
                       />
                     </td>
@@ -394,6 +405,13 @@ export default function MembersPage() {
                       const link = `${window.location.origin}/book/${updated.id}/${currentOrg.slug}`;
                       setFlexActivatedLink(link);
                       setFlexActivateTarget(null);
+
+                      // Fire-and-forget activation email
+                      if (updated.email) {
+                        supabaseClient.functions.invoke('flex-email', {
+                          body: { type: 'activation', clientId: parseInt(updated.id, 10), organizationId: currentOrg.id },
+                        }).catch(() => {});
+                      }
                     } catch {
                       toast({ title: 'Failed', description: 'Could not activate flex plan.', variant: 'destructive' });
                       setFlexActivateTarget(null);
