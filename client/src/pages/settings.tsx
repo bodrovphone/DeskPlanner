@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package } from 'lucide-react';
 import { Organization } from '@shared/schema';
 import telegramIcon from '@/assets/telegram.svg';
 import viberIcon from '@/assets/viber.svg';
@@ -490,6 +490,14 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <FlexPlanCard
+          orgId={currentOrg.id}
+          currency={currentOrg.currency}
+          flexPlanDays={currentOrg.flexPlanDays ?? null}
+          flexPlanPrice={currentOrg.flexPlanPrice ?? null}
+          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
+        />
 
         <MeetingRoomsCard
           orgId={currentOrg.id}
@@ -1234,6 +1242,151 @@ function LogoUploadInline({ orgId, logoUrl }: { orgId: string; logoUrl: string |
         }}
       />
     </div>
+  );
+}
+
+function FlexPlanCard({
+  orgId,
+  currency,
+  flexPlanDays,
+  flexPlanPrice,
+  isAdmin,
+}: {
+  orgId: string;
+  currency: string;
+  flexPlanDays: number | null;
+  flexPlanPrice: number | null;
+  isAdmin: boolean;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [days, setDays] = useState(flexPlanDays?.toString() || '');
+  const [price, setPrice] = useState(flexPlanPrice?.toString() || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDays(flexPlanDays?.toString() || '');
+    setPrice(flexPlanPrice?.toString() || '');
+  }, [flexPlanDays, flexPlanPrice]);
+
+  const parsedDays = parseInt(days) || 0;
+  const parsedPrice = parseFloat(price) || 0;
+  const perVisitPrice = parsedDays > 0 ? (parsedPrice / parsedDays) : 0;
+  const isConfigured = flexPlanDays && flexPlanDays > 0 && flexPlanPrice && flexPlanPrice > 0;
+
+  const hasChanges =
+    days !== (flexPlanDays?.toString() || '') ||
+    price !== (flexPlanPrice?.toString() || '');
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({
+          flex_plan_days: parsedDays || null,
+          flex_plan_price: parsedPrice || null,
+        })
+        .eq('id', orgId);
+
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Saved', description: 'Flex plan updated.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save flex plan.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClear = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({ flex_plan_days: null, flex_plan_price: null })
+        .eq('id', orgId);
+
+      if (error) throw error;
+      setDays('');
+      setPrice('');
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Cleared', description: 'Flex plan disabled.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to clear flex plan.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-amber-500" />
+            Flex Plan
+          </CardTitle>
+          {isConfigured && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+              Active
+            </span>
+          )}
+        </div>
+        <CardDescription>
+          Offer day packages to members (e.g. 10 days for {currency} 80). Each visit deducts one day from their balance.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!isAdmin ? (
+          <p className="text-sm text-gray-500">Ask a space owner or admin to configure the flex plan.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="flexDays">Days per plan</Label>
+                <Input
+                  id="flexDays"
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 10"
+                  value={days}
+                  onChange={(e) => setDays(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="flexPrice">Plan price ({currency})</Label>
+                <Input
+                  id="flexPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 80"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </div>
+            </div>
+            {parsedDays > 0 && parsedPrice > 0 && (
+              <p className="text-sm text-gray-600">
+                Per visit: <span className="font-medium">{currency} {perVisitPrice.toFixed(2)}</span>
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={saving || !hasChanges || parsedDays <= 0 || parsedPrice <= 0}>
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+              {isConfigured && (
+                <Button variant="outline" onClick={handleClear} disabled={saving} className="text-gray-500">
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

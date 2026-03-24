@@ -30,6 +30,8 @@ function mapOrg(row: Record<string, unknown>): Organization {
     contactTelegram: (row.contact_telegram as string) ?? null,
     contactViberEnabled: (row.contact_viber_enabled as boolean) ?? false,
     contactWhatsappEnabled: (row.contact_whatsapp_enabled as boolean) ?? false,
+    flexPlanDays: (row.flex_plan_days as number) ?? null,
+    flexPlanPrice: (row.flex_plan_price as number) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

@@ -92,6 +92,7 @@ export function useBookingActions(
     endDate: string;
     currency: Currency;
     clientId?: string;
+    isFlex?: boolean;
   }) => {
     if (!selectedBooking) return;
 
@@ -143,12 +144,22 @@ export function useBookingActions(
       price: bookingData.price,
       currency: bookingData.currency || currentCurrency,
       clientId: bookingData.clientId,
+      isFlex: bookingData.isFlex,
       createdAt: (existingBooking && oldDateRange.includes(date))
         ? existingBooking.createdAt
         : new Date().toISOString(),
     }));
 
     await dataStore.bulkUpdateBookings(bookingsToCreate);
+
+    // Deduct flex days if this is a new flex booking
+    if (bookingData.isFlex && bookingData.clientId && !existingBooking && dataStore.deductFlexDay) {
+      const newDaysCount = newDateRange.length;
+      for (let i = 0; i < newDaysCount; i++) {
+        await dataStore.deductFlexDay(bookingData.clientId);
+      }
+    }
+
     invalidateBookingQueries(queryClient);
 
     const statusText = bookingData.status === 'assigned' ? 'assigned (paid)' : 'booked';

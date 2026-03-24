@@ -83,7 +83,15 @@ export default function DeskCell({ booking, date, onClick, isNonWorkingDay, isWe
       onContextMenu={(e) => !nonWorking && onClick(e)}
       style={{ pointerEvents: nonWorking ? 'none' : 'auto' }}
     >
-      {daysUntilEnd !== null && (
+      {booking?.isFlex ? (
+        <div
+          className="absolute top-0 right-0 w-0 h-0 pointer-events-none"
+          style={{
+            borderLeft: '16px solid transparent',
+            borderTop: '16px solid #f59e0b',
+          }}
+        />
+      ) : daysUntilEnd !== null ? (
         <div
           className="absolute top-0 right-0 w-0 h-0 pointer-events-none"
           style={{
@@ -93,7 +101,7 @@ export default function DeskCell({ booking, date, onClick, isNonWorkingDay, isWe
             }`,
           }}
         />
-      )}
+      ) : null}
       <StatusIcon className={cn('h-4 w-4', config.iconColor)} />
 
       {hasBooking ? (

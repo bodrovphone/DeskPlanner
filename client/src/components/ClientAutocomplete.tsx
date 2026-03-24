@@ -166,6 +166,9 @@ export default function ClientAutocomplete({
                       id: 'new-' + Date.now(),
                       organizationId: '',
                       name: value.trim(),
+                      flexActive: false,
+                      flexTotalDays: 0,
+                      flexUsedDays: 0,
                       createdAt: new Date().toISOString(),
                       updatedAt: new Date().toISOString(),
                     });

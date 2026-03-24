@@ -643,6 +643,7 @@ export class SupabaseDataStore implements IDataStore {
       currency: booking.currency,
       created_at: booking.createdAt,
       client_id: booking.clientId ? parseInt(booking.clientId, 10) || null : null,
+      is_flex: booking.isFlex || false,
     };
 
     if (this.organizationId) {
@@ -666,6 +667,7 @@ export class SupabaseDataStore implements IDataStore {
       currency: row.currency || 'EUR', // Use database currency or default to EUR
       shareToken: row.share_token || undefined,
       clientId: row.client_id ? String(row.client_id) : undefined,
+      isFlex: row.is_flex || false,
       createdAt: row.created_at,
     };
   }
@@ -950,6 +952,10 @@ export class SupabaseDataStore implements IDataStore {
         contact: client.contact || null,
         email: client.email || null,
         phone: client.phone || null,
+        flex_active: client.flexActive || false,
+        flex_total_days: client.flexTotalDays || 0,
+        flex_used_days: client.flexUsedDays || 0,
+        flex_start_date: client.flexStartDate || null,
         created_at: now,
         updated_at: now,
       };
@@ -971,6 +977,10 @@ export class SupabaseDataStore implements IDataStore {
           contact: client.contact || null,
           email: client.email || null,
           phone: client.phone || null,
+          flex_active: client.flexActive || false,
+          flex_total_days: client.flexTotalDays || 0,
+          flex_used_days: client.flexUsedDays || 0,
+          flex_start_date: client.flexStartDate || null,
           updated_at: now,
         })
         .eq('id', numericId)
@@ -998,6 +1008,47 @@ export class SupabaseDataStore implements IDataStore {
     if (error) throw error;
   }
 
+  async getClientById(id: string): Promise<Client | null> {
+    const { data, error } = await this.client
+      .from('clients')
+      .select('*')
+      .eq('id', parseInt(id, 10))
+      .single();
+
+    if (error || !data) return null;
+    return this.mapClientFromDatabase(data);
+  }
+
+  async deductFlexDay(clientId: string): Promise<Client> {
+    const numericId = parseInt(clientId, 10);
+
+    // Increment flex_used_days atomically
+    const { data, error } = await this.client.rpc('increment_flex_used_days', {
+      p_client_id: numericId,
+    });
+
+    // Fallback: if RPC doesn't exist, do it manually
+    if (error) {
+      const client = await this.getClientById(clientId);
+      if (!client) throw new Error('Client not found');
+
+      const { data: updated, error: updateErr } = await this.client
+        .from('clients')
+        .update({ flex_used_days: client.flexUsedDays + 1 })
+        .eq('id', numericId)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+      return this.mapClientFromDatabase(updated);
+    }
+
+    // Refetch after RPC
+    const refreshed = await this.getClientById(clientId);
+    if (!refreshed) throw new Error('Client not found after deduction');
+    return refreshed;
+  }
+
   private mapClientFromDatabase(row: any): Client {
     return {
       id: String(row.id),
@@ -1006,6 +1057,10 @@ export class SupabaseDataStore implements IDataStore {
       contact: row.contact || null,
       email: row.email || null,
       phone: row.phone || null,
+      flexActive: row.flex_active || false,
+      flexTotalDays: row.flex_total_days || 0,
+      flexUsedDays: row.flex_used_days || 0,
+      flexStartDate: row.flex_start_date || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

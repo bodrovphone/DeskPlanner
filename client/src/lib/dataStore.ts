@@ -56,6 +56,8 @@ export interface IDataStore {
   searchClients?(query: string): Promise<Client[]>;
   saveClient?(client: Client): Promise<Client>;
   deleteClient?(id: string): Promise<void>;
+  getClientById?(id: string): Promise<Client | null>;
+  deductFlexDay?(clientId: string): Promise<Client>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';

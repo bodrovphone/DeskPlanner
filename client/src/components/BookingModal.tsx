@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Desk, DeskBooking, DeskStatus, Currency } from '@shared/schema';
+import { Desk, DeskBooking, DeskStatus, Currency, Client } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2 } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package } from 'lucide-react';
 import ClientAutocomplete from './ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -28,6 +29,7 @@ interface BookingModalProps {
     endDate: string;
     currency: Currency;
     clientId?: string;
+    isFlex?: boolean;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
   onPause?: () => void;
@@ -48,9 +50,13 @@ export default function BookingModal({
   onShare,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
+  const dataStore = useDataStore();
   const defaultPrice = currentOrg?.defaultPricePerDay ?? 8;
+  const flexConfigured = !!(currentOrg?.flexPlanDays && currentOrg.flexPlanDays > 0 && currentOrg?.flexPlanPrice && currentOrg.flexPlanPrice > 0);
+  const flexPerVisit = flexConfigured ? (currentOrg!.flexPlanPrice! / currentOrg!.flexPlanDays!) : 0;
   const [personName, setPersonName] = useState('');
   const [clientId, setClientId] = useState<string | undefined>(undefined);
+  const [flexClient, setFlexClient] = useState<Client | null>(null);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [status, setStatus] = useState<DeskStatus>('assigned');
@@ -66,6 +72,7 @@ export default function BookingModal({
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setClientId(booking?.clientId);
+      setFlexClient(null);
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || String(defaultPrice));
       setStatus(booking?.status || 'assigned');
@@ -96,6 +103,26 @@ export default function BookingModal({
     }
   }, [isOpen, booking, date]);
 
+  // Fetch flex client data when a client is selected
+  useEffect(() => {
+    if (!clientId || !flexConfigured || !dataStore.getClientById) {
+      setFlexClient(null);
+      return;
+    }
+    let cancelled = false;
+    dataStore.getClientById(clientId).then(c => {
+      if (!cancelled) {
+        setFlexClient(c?.flexActive ? c : null);
+        // Auto-fill per-visit price for flex members
+        if (c?.flexActive && flexPerVisit > 0) {
+          setPrice(flexPerVisit.toFixed(2));
+          setStatus('assigned');
+        }
+      }
+    });
+    return () => { cancelled = true; };
+  }, [clientId, flexConfigured]);
+
   const handleSave = async () => {
     const trimmedName = personName.trim();
     const trimmedTitle = title.trim();
@@ -114,6 +141,7 @@ export default function BookingModal({
           endDate: endDate,
           currency: currency,
           clientId: clientId,
+          isFlex: !!flexClient,
         });
         if (onShare) {
           onShare({
@@ -273,9 +301,17 @@ export default function BookingModal({
               autoFocus
               onKeyDown={handleKeyDown}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {personName.length}/40 characters
-            </p>
+            {flexClient ? (
+              <div className="flex items-center gap-1.5 mt-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                <Package className="h-3 w-3 shrink-0" />
+                <span>Flex: <strong>{flexClient.flexTotalDays - flexClient.flexUsedDays}/{flexClient.flexTotalDays}</strong> days remaining</span>
+                <span className="text-amber-600 ml-auto">{currencySymbols[currency]}{flexPerVisit.toFixed(2)}/visit</span>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                {personName.length}/40 characters
+              </p>
+            )}
           </div>
 
           <div>
@@ -300,8 +336,10 @@ export default function BookingModal({
             <div className="grid grid-cols-2 gap-2 mt-1">
               <button
                 type="button"
+                disabled={!!flexClient}
                 onClick={() => { setStatus('booked'); setPrice('0'); }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-colors ${
+                  flexClient ? 'opacity-40 cursor-not-allowed' :
                   status === 'booked'
                     ? 'border-orange-400 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
@@ -312,8 +350,10 @@ export default function BookingModal({
               </button>
               <button
                 type="button"
+                disabled={!!flexClient}
                 onClick={() => setStatus('assigned')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-colors ${
+                  flexClient ? 'cursor-not-allowed' :
                   status === 'assigned'
                     ? 'border-blue-400 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'

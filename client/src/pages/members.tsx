@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDataStore } from '@/contexts/DataStoreContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DEFAULT_VISIBLE = 20;
 
@@ -28,7 +31,7 @@ function useDebouncedSave(dataStore: ReturnType<typeof useDataStore>, toast: Ret
       } catch {
         toast({ title: 'Failed to save', description: 'Changes could not be saved', variant: 'destructive', duration: 2000 });
       }
-    }, 800);
+    }, 1500);
 
     timers.current.set(client.id, timer);
   }, [dataStore, toast]);
@@ -46,6 +49,7 @@ export default function MembersPage() {
   const dataStore = useDataStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { currentOrg } = useOrganization();
   const debouncedSave = useDebouncedSave(dataStore, toast);
   const [localClients, setLocalClients] = useState<Client[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -53,8 +57,13 @@ export default function MembersPage() {
   const [addingNew, setAddingNew] = useState(false);
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [flexActivateTarget, setFlexActivateTarget] = useState<Client | null>(null);
+  const [flexActivatedLink, setFlexActivatedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const newNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const flexConfigured = !!(currentOrg?.flexPlanDays && currentOrg.flexPlanDays > 0 && currentOrg?.flexPlanPrice && currentOrg.flexPlanPrice > 0);
 
   // TODO: Currently loads all clients and filters locally. If member count grows
   // into the hundreds, switch to server-side search with debounced DB queries.
@@ -102,6 +111,9 @@ export default function MembersPage() {
         id: 'new-' + Date.now(),
         organizationId: '',
         name: '',
+        flexActive: false,
+        flexTotalDays: 0,
+        flexUsedDays: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -197,13 +209,21 @@ export default function MembersPage() {
         </div>
       ) : (
         <>
+          {flexConfigured && (
+            <div className="flex items-center gap-2 mb-3 px-1 text-xs text-gray-400">
+              <Package className="h-3.5 w-3.5 text-amber-500" />
+              <span>Flex plan: {currentOrg?.flexPlanDays} days for {currentOrg?.currency} {currentOrg?.flexPlanPrice}. Activate via the checkbox, then share the booking link with the member.</span>
+            </div>
+          )}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-24">Balance</th>
+                  {flexConfigured && (
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-48">Flex Balance</th>
+                )}
                   <th className="w-12" />
                 </tr>
               </thead>
@@ -232,9 +252,45 @@ export default function MembersPage() {
                         className="w-full bg-transparent border-0 outline-none text-sm text-gray-600 placeholder-gray-300 focus:ring-0 py-1"
                       />
                     </td>
-                    <td className="px-4 py-1.5">
-                      <span className="text-sm text-gray-400">0</span>
-                    </td>
+                    {flexConfigured && (
+                      <td className="px-4 py-1.5">
+                        {client.flexActive ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => setFlexActivateTarget(client)}
+                              className="text-sm font-medium text-amber-600 hover:text-amber-700"
+                            >
+                              {client.flexTotalDays - client.flexUsedDays}/{client.flexTotalDays}
+                            </button>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={async () => {
+                                      const link = `${window.location.origin}/book/${client.id}/${currentOrg?.slug}`;
+                                      await navigator.clipboard.writeText(link);
+                                      toast({ title: 'Link copied', description: `Booking link for ${client.name} copied.`, duration: 1500 });
+                                    }}
+                                    className="px-1.5 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
+                                  >
+                                    Copy link
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[220px] text-center">
+                                  <p>Copy this member's personal booking link to share via messenger or email</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        ) : (
+                          <Checkbox
+                            checked={false}
+                            onCheckedChange={() => setFlexActivateTarget(client)}
+                            className="data-[state=unchecked]:border-gray-300"
+                          />
+                        )}
+                      </td>
+                    )}
                     <td className="px-2 py-1.5">
                       <button
                         onClick={() => setDeleteTarget(client)}
@@ -264,6 +320,95 @@ export default function MembersPage() {
           )}
         </>
       )}
+      <AlertDialog
+        open={!!flexActivateTarget || !!flexActivatedLink}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFlexActivateTarget(null);
+            setFlexActivatedLink(null);
+            setLinkCopied(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          {flexActivatedLink ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Flex plan activated</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Share this personal booking link with the member. They can use it to self-book and their balance will be tracked automatically.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="my-2 flex gap-2">
+                <Input value={flexActivatedLink} readOnly className="text-sm bg-gray-50 flex-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(flexActivatedLink);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                >
+                  {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={() => { setFlexActivatedLink(null); setLinkCopied(false); }}>
+                  Done
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {flexActivateTarget?.flexActive ? 'Reset flex plan' : 'Activate flex plan'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {flexActivateTarget?.flexActive
+                    ? `Reset the flex plan for "${flexActivateTarget?.name}"? This will start a new ${currentOrg?.flexPlanDays}-day plan.`
+                    : `Activate flex plan for "${flexActivateTarget?.name}"? They will get ${currentOrg?.flexPlanDays} days starting today.`
+                  }
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    if (!flexActivateTarget || !dataStore.saveClient || !currentOrg?.flexPlanDays) return;
+                    try {
+                      const updated: Client = {
+                        ...flexActivateTarget,
+                        flexActive: true,
+                        flexTotalDays: currentOrg.flexPlanDays,
+                        flexUsedDays: 0,
+                        flexStartDate: new Date().toISOString().split('T')[0],
+                      };
+                      await dataStore.saveClient(updated);
+                      setLocalClients(prev => prev.map(c => c.id === updated.id ? updated : c));
+                      queryClient.invalidateQueries({ queryKey: ['clients'] });
+
+                      // Generate booking link and show it
+                      const link = `${window.location.origin}/book/${updated.id}/${currentOrg.slug}`;
+                      setFlexActivatedLink(link);
+                      setFlexActivateTarget(null);
+                    } catch {
+                      toast({ title: 'Failed', description: 'Could not activate flex plan.', variant: 'destructive' });
+                      setFlexActivateTarget(null);
+                    }
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {flexActivateTarget?.flexActive ? 'Reset' : 'Activate'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

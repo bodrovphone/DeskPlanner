@@ -24,6 +24,7 @@ export const deskBookingSchema = z.object({
   visitorPhone: z.string().optional(),
   visitorNotes: z.string().optional(),
   clientId: z.string().optional(),
+  isFlex: z.boolean().optional(),
   createdAt: z.string(),
 });
 
@@ -97,6 +98,8 @@ export const organizationSchema = z.object({
   contactTelegram: z.string().nullable().optional(),
   contactViberEnabled: z.boolean().default(false),
   contactWhatsappEnabled: z.boolean().default(false),
+  flexPlanDays: z.number().nullable().optional(),
+  flexPlanPrice: z.number().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -155,6 +158,10 @@ export const clientSchema = z.object({
   contact: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
+  flexActive: z.boolean().default(false),
+  flexTotalDays: z.number().default(0),
+  flexUsedDays: z.number().default(0),
+  flexStartDate: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -18,6 +18,8 @@ import {
   Globe,
   ChevronRight,
   MapPin,
+  UserRoundSearch,
+  Package,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg';
@@ -124,6 +126,8 @@ const features = [
   { icon: Users, title: 'Waiting List', desc: 'Built-in demand queue. When desks fill up, prospects join the list automatically.' },
   { icon: DoorOpen, title: 'Meeting Rooms', desc: 'Hourly booking grid for conference rooms. Set rates, avoid conflicts, track room revenue separately.' },
   { icon: Shield, title: 'Multi-Room Control', desc: 'Configure unlimited rooms and desks to mirror your physical layout. One dashboard.' },
+  { icon: UserRoundSearch, title: 'Member Management', desc: 'Persistent member records with autocomplete. Track contacts, visit history, and manage your community.' },
+  { icon: Package, title: 'Flex Day Packages', desc: 'Sell day packages (e.g. 10 days for \u20ac80). Members self-book via personal link. Balance tracked automatically.' },
 ];
 
 const steps = [
@@ -134,7 +138,7 @@ const steps = [
 
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
-  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
+  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Member management', 'Flex day packages', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
   { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
 ];
 
@@ -741,6 +745,19 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── FLEX PLANS SHOWCASE ── */}
+      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+        <SectionHeading
+          tag="Flex Plans"
+          title="Sell day packages. Track every visit."
+          sub="Members get a personal booking link. You get full control over balances and revenue."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 32, maxWidth: 900, margin: '0 auto' }}>
+          <FlexShowcardAdmin />
+          <FlexShowcardMember />
+        </div>
+      </section>
+
       {/* ── NOTIFICATIONS SHOWCASE ── */}
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
@@ -922,6 +939,99 @@ function FeatureCard({ icon: Icon, title, desc, index }: { icon: typeof Calendar
       </div>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: T.textPrimary, marginBottom: 8 }}>{title}</h3>
       <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 }}>{desc}</p>
+    </div>
+  );
+}
+
+function FlexShowcardAdmin() {
+  const { ref, visible } = useReveal();
+  const amber = '#f59e0b';
+  const amberFaint = 'rgba(245,158,11,0.1)';
+  const amberBorder = 'rgba(245,158,11,0.25)';
+  return (
+    <div ref={ref} style={{
+      background: T.bgCard,
+      border: `1px solid ${T.borderBright}`,
+      borderRadius: 12,
+      padding: 28,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(24px)',
+      transition: 'all 0.6s cubic-bezier(.22,1,.36,1)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: amberFaint, border: `1px solid ${amberBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Package size={16} color={amber} />
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 600, color: amber, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin view</span>
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: T.textPrimary, marginBottom: 16 }}>Configure once, activate per member</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {[
+          { label: 'Set plan', detail: '10 days for \u20ac80' },
+          { label: 'Activate', detail: 'One click on Members page' },
+          { label: 'Share link', detail: 'Copy personal booking URL' },
+          { label: 'Track', detail: 'Balance updates automatically' },
+        ].map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', background: amberFaint, border: `1px solid ${amberBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: amber, flexShrink: 0 }}>
+              {i + 1}
+            </div>
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{item.label}</span>
+              <span style={{ fontSize: 13, color: T.textSecondary, marginLeft: 8 }}>{item.detail}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FlexShowcardMember() {
+  const { ref, visible } = useReveal();
+  const amber = '#f59e0b';
+  const amberFaint = 'rgba(245,158,11,0.1)';
+  const amberBorder = 'rgba(245,158,11,0.25)';
+  return (
+    <div ref={ref} style={{
+      background: T.bgCard,
+      border: `1px solid ${T.borderBright}`,
+      borderRadius: 12,
+      padding: 28,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(24px)',
+      transition: 'all 0.6s cubic-bezier(.22,1,.36,1) 150ms',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: amberFaint, border: `1px solid ${amberBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <UserRoundSearch size={16} color={amber} />
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 600, color: amber, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member view</span>
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: T.textPrimary, marginBottom: 16 }}>Self-service booking in seconds</h3>
+      {/* Faux member booking card */}
+      <div style={{ background: T.bg, border: `1px solid ${T.borderBright}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ background: amber, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Codeburg</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>Welcome, Leo</div>
+          </div>
+        </div>
+        <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: T.textSecondary }}>Flex balance</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: amber }}>7/10 days</span>
+        </div>
+        <div style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
+          <div style={{ flex: 1, background: amberFaint, border: `1px solid ${amberBorder}`, borderRadius: 8, padding: '10px 8px', textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>Today</div>
+            <div style={{ fontSize: 10, color: T.textSecondary }}>3 free</div>
+          </div>
+          <div style={{ flex: 1, background: amberFaint, border: `1px solid ${amberBorder}`, borderRadius: 8, padding: '10px 8px', textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>Tomorrow</div>
+            <div style={{ fontSize: 10, color: T.textSecondary }}>5 free</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

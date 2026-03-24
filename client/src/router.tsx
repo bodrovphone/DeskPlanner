@@ -17,6 +17,7 @@ import SharePage from '@/pages/share';
 import PublicBookingPage from '@/pages/public-booking';
 import MeetingRoomsPage from '@/pages/meeting-rooms';
 import MembersPage from '@/pages/members';
+import MemberBookingPage from '@/pages/member-booking';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -210,6 +211,12 @@ export const router = createBrowserRouter(
         {
           path: '/share/:token',
           element: <SharePage />,
+        },
+        // Member self-service booking (no auth required) — must be before /:orgSlug catch-all
+        // TODO (DES-42): Replace memberId with secure token
+        {
+          path: '/book/:memberId/:orgSlug',
+          element: <MemberBookingPage />,
         },
         // Public booking page (no auth required) — must be before /:orgSlug catch-all
         {
