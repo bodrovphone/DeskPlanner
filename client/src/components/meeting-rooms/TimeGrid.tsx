@@ -131,7 +131,8 @@ export default function TimeGrid({ rooms, bookings, onSlotClick, onBookingClick,
                         className="border-r border-gray-200 p-1 align-top"
                       >
                         <div
-                          className={`h-full min-h-[36px] rounded border cursor-pointer p-1.5 transition-colors ${colors.booking}`}
+                          style={{ height: `${rowSpan * 2.5}rem` }}
+                          className={`rounded border cursor-pointer p-1.5 transition-colors ${colors.booking}`}
                           onClick={() => onBookingClick(booking)}
                         >
                           <p className="text-xs font-semibold text-gray-900 truncate">
