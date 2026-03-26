@@ -170,24 +170,36 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Progress */}
-        <div className="flex items-center justify-center mb-8 gap-2">
+        <div className="flex items-center justify-center mb-8">
           {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            <div key={label} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all duration-200 ${
+                    i < step
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      : i === step
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-md ring-4 ring-blue-100'
+                      : 'bg-white border-gray-300 text-gray-400'
+                  }`}
+                >
+                  {i < step ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
+                </div>
+                <span className={`text-xs mt-1.5 hidden sm:block whitespace-nowrap ${
                   i < step
-                    ? 'bg-blue-600 text-white'
+                    ? 'text-blue-600 font-medium'
                     : i === step
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {i < step ? <Check className="w-4 h-4" /> : i + 1}
+                    ? 'text-blue-600 font-semibold'
+                    : 'text-gray-400'
+                }`}>
+                  {label}
+                </span>
               </div>
-              <span className={`text-sm hidden sm:inline ${i === step ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-                {label}
-              </span>
-              {i < STEPS.length - 1 && <div className="w-8 h-px bg-gray-300" />}
+              {i < STEPS.length - 1 && (
+                <div className={`w-12 h-0.5 mx-1.5 rounded-full transition-colors duration-200 ${
+                  i < step ? 'bg-blue-600' : 'bg-gray-200'
+                }`} />
+              )}
             </div>
           ))}
         </div>
