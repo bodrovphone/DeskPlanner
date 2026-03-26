@@ -16,14 +16,15 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-function getNavItems(slug: string, user?: User | null, hasMeetingRooms?: boolean): NavItem[] {
+function getNavItems(slug: string, user?: User | null, hasMeetingRooms?: boolean, role?: string | null): NavItem[] {
   const base = `/${slug}`;
+  const isOwner = role === 'owner';
   const items: NavItem[] = [
     { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
     ...(hasMeetingRooms ? [{ to: `${base}/meeting-rooms`, label: 'Meeting Rooms', shortLabel: 'Rooms', icon: DoorOpen }] : []),
     { to: `${base}/members`, label: 'Members', shortLabel: 'Members', icon: UserRoundSearch },
     { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
-    { to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 },
+    ...(isOwner ? [{ to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 }] : []),
     { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
     { to: `${base}/settings`, label: 'Settings', shortLabel: 'Settings', icon: Settings },
   ];
@@ -54,8 +55,8 @@ function NavLinkItem({ item, onClick }: { item: NavItem; onClick?: () => void })
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
-  const { currentOrg, hasMeetingRooms } = useOrganization();
-  const navItems = getNavItems(currentOrg?.slug || 'app', user, hasMeetingRooms);
+  const { currentOrg, currentRole, hasMeetingRooms } = useOrganization();
+  const navItems = getNavItems(currentOrg?.slug || 'app', user, hasMeetingRooms, currentRole);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);

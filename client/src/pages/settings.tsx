@@ -12,8 +12,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, Users, Shield, UserMinus, Loader2 } from 'lucide-react';
 import { Organization } from '@shared/schema';
+import { useTeamMembersWithEmails, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
 import telegramIcon from '@/assets/telegram.svg';
 import viberIcon from '@/assets/viber.svg';
 import whatsappIcon from '@/assets/whatsapp.svg';
@@ -491,6 +492,10 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {currentRole === 'owner' && (
+          <TeamCard orgId={currentOrg.id} />
+        )}
+
         <FlexPlanCard
           orgId={currentOrg.id}
           currency={currentOrg.currency}
@@ -530,6 +535,123 @@ export default function SettingsPage() {
         />
       </div>
     </div>
+  );
+}
+
+function TeamCard({ orgId }: { orgId: string }) {
+  const { toast } = useToast();
+  const { data: members = [], isLoading } = useTeamMembersWithEmails(orgId);
+  const inviteManager = useInviteManager();
+  const removeManager = useRemoveManager();
+  const [email, setEmail] = useState('');
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+
+  const handleInvite = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      toast({ title: 'Please enter a valid email address', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const result = await inviteManager.mutateAsync({ organizationId: orgId, email: trimmed });
+      setEmail('');
+      if (result?.emailSent === false) {
+        toast({ title: 'Manager added', description: 'Account created but email failed to send. Share the credentials manually.' });
+      } else {
+        toast({ title: 'Invite sent!', description: `Login credentials sent to ${trimmed}` });
+      }
+    } catch (err) {
+      toast({ title: 'Failed to invite', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    }
+  };
+
+  const handleRemove = async (memberId: string) => {
+    try {
+      await removeManager.mutateAsync({ memberId, organizationId: orgId });
+      setConfirmRemoveId(null);
+      toast({ title: 'Team member removed' });
+    } catch (err) {
+      toast({ title: 'Failed to remove member', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    }
+  };
+
+  const maxReached = members.length >= 3;
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-blue-600" />
+          <CardTitle>Team</CardTitle>
+        </div>
+        <CardDescription>Invite managers to help run your space. Max 3 team members.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading team...
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {members.map((m) => (
+              <div key={m.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{m.email}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Shield className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-500 capitalize">{m.role === 'admin' ? 'Manager' : m.role}</span>
+                    </div>
+                  </div>
+                </div>
+                {m.role !== 'owner' && (
+                  confirmRemoveId === m.id ? (
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="destructive" onClick={() => handleRemove(m.id)} disabled={removeManager.isPending}>
+                        {removeManager.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Remove'}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmRemoveId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmRemoveId(m.id)}>
+                      <UserMinus className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!maxReached && (
+          <div className="pt-2 border-t">
+            <Label htmlFor="invite-email" className="text-sm">Invite a manager</Label>
+            <p className="text-xs text-gray-500 mb-2">We'll create an account and send them login credentials.</p>
+            <div className="flex gap-2">
+              <Input
+                id="invite-email"
+                type="email"
+                placeholder="manager@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+                disabled={inviteManager.isPending}
+              />
+              <Button onClick={handleInvite} disabled={inviteManager.isPending || !email.trim()}>
+                {inviteManager.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {maxReached && (
+          <p className="text-xs text-amber-600 pt-2 border-t">Maximum team size reached (3 members).</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

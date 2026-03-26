@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { MeetingRoom, MeetingRoomBooking } from '@shared/schema';
+import ClientAutocomplete from '@/components/ClientAutocomplete';
 import { useCreateMeetingRoomBooking, useUpdateMeetingRoomBooking, useCancelMeetingRoomBooking } from '@/hooks/use-meeting-room-bookings';
 import { currencySymbols } from '@/lib/settings';
 
@@ -65,6 +66,7 @@ export default function MeetingRoomBookingModal({
     return TIME_SLOTS[Math.min(startIdx + 2, TIME_SLOTS.length - 1)]; // default +1 hour
   });
   const [personName, setPersonName] = useState(isEdit ? (booking.personName ?? '') : '');
+  const [clientId, setClientId] = useState<string | undefined>(undefined);
   const [title, setTitle] = useState(isEdit ? (booking.title ?? '') : '');
   const [price, setPrice] = useState<string>(() => {
     if (isEdit && booking.price != null) return String(booking.price);
@@ -200,7 +202,11 @@ export default function MeetingRoomBookingModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Person</Label>
-              <Input value={personName} onChange={e => setPersonName(e.target.value)} placeholder="Name" />
+              <ClientAutocomplete
+                value={personName}
+                clientId={clientId}
+                onChange={(name, cId) => { setPersonName(name); setClientId(cId); }}
+              />
             </div>
             <div>
               <Label>Title</Label>
