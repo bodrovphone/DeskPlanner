@@ -25,3 +25,4 @@ video/
 test-results/
 playwright-report/
 e2e/.auth/
+.claude/skills/*

@@ -13,7 +13,8 @@ import { useConnectTelegram, useTelegramSettings } from '@/hooks/use-telegram';
 import { currencyLabels, currencySymbols, activeCurrencies } from '@/lib/settings';
 import { Currency } from '@shared/schema';
 import { DAY_LABELS, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
-import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil, Bell, Send } from 'lucide-react';
+import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil, Bell, Send, MapPin } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 function generateSlug(name: string): string {
   return name
@@ -68,6 +69,9 @@ export default function OnboardingPage() {
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [customCurrency, setCustomCurrency] = useState('');
   const [defaultPricePerDay, setDefaultPricePerDay] = useState('8');
+  const [hasMultipleLocations, setHasMultipleLocations] = useState(() =>
+    sessionStorage.getItem('onboarding-multi-location') === 'true'
+  );
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -148,6 +152,7 @@ export default function OnboardingPage() {
         meetingRooms: hasMeetingRooms
           ? meetingRoomNames.map((n, i) => ({ name: n, hourlyRate: meetingRoomRates[i] ?? 15 }))
           : undefined,
+        hasMultipleLocations,
       });
       setCreatedOrgId(org.id);
       setStep(4);
@@ -160,6 +165,7 @@ export default function OnboardingPage() {
     sessionStorage.removeItem('onboarding-step');
     sessionStorage.removeItem('onboarding-org-id');
     sessionStorage.removeItem('onboarding-slug');
+    sessionStorage.removeItem('onboarding-multi-location');
     navigate(`/${slug}/calendar`, { replace: true });
   };
 
@@ -170,38 +176,40 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Progress */}
-        <div className="flex items-center justify-center mb-8">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all duration-200 ${
+        <div className="flex justify-center mb-8">
+          <div className="flex items-start">
+            {STEPS.map((label, i) => (
+              <div key={label} className="flex items-start">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all duration-200 ${
+                      i < step
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                        : i === step
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md ring-4 ring-blue-100'
+                        : 'bg-white border-gray-300 text-gray-400'
+                    }`}
+                  >
+                    {i < step ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
+                  </div>
+                  <span className={`text-xs mt-1.5 hidden sm:block whitespace-nowrap ${
                     i < step
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      ? 'text-blue-600 font-medium'
                       : i === step
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md ring-4 ring-blue-100'
-                      : 'bg-white border-gray-300 text-gray-400'
-                  }`}
-                >
-                  {i < step ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
+                      ? 'text-blue-600 font-semibold'
+                      : 'text-gray-400'
+                  }`}>
+                    {label}
+                  </span>
                 </div>
-                <span className={`text-xs mt-1.5 hidden sm:block whitespace-nowrap ${
-                  i < step
-                    ? 'text-blue-600 font-medium'
-                    : i === step
-                    ? 'text-blue-600 font-semibold'
-                    : 'text-gray-400'
-                }`}>
-                  {label}
-                </span>
+                {i < STEPS.length - 1 && (
+                  <div className={`w-12 h-0.5 mx-1.5 mt-[1.125rem] rounded-full transition-colors duration-200 ${
+                    i < step ? 'bg-blue-600' : 'bg-gray-200'
+                  }`} />
+                )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={`w-12 h-0.5 mx-1.5 rounded-full transition-colors duration-200 ${
-                  i < step ? 'bg-blue-600' : 'bg-gray-200'
-                }`} />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Step 0: Space Info */}
@@ -261,6 +269,31 @@ export default function OnboardingPage() {
                   <p className="text-sm text-red-600 mt-1">This URL is already taken</p>
                 )}
               </div>
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="multi-location"
+                    checked={hasMultipleLocations}
+                    onCheckedChange={(checked) => {
+                      const val = checked === true;
+                      setHasMultipleLocations(val);
+                      sessionStorage.setItem('onboarding-multi-location', String(val));
+                    }}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <Label htmlFor="multi-location" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      I manage multiple locations
+                    </Label>
+                    <p className="text-xs text-gray-500 mt-0.5">Check this if your brand has more than one coworking space.</p>
+                  </div>
+                </div>
+                {hasMultipleLocations && (
+                  <p className="text-xs text-blue-600 mt-2 ml-7">Set up your first location now. You can add more from Settings later.</p>
+                )}
+              </div>
+
               <Button
                 className="w-full"
                 onClick={() => setStep(1)}
@@ -584,8 +617,34 @@ export default function OnboardingPage() {
         {step === 4 && createdOrgId && (
           <TelegramOnboardingStep
             orgId={createdOrgId}
-            onSkip={finishOnboarding}
+            onSkip={hasMultipleLocations ? () => setStep(5) : finishOnboarding}
           />
+        )}
+
+        {/* Step 5: Multi-location guidance (only for multi-location users) */}
+        {step === 5 && hasMultipleLocations && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-5 w-5 text-blue-600" />
+                <CardTitle>Your first location is ready!</CardTitle>
+              </div>
+              <CardDescription>
+                You mentioned you manage multiple locations. Here's what to do next.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-blue-900 font-medium">Adding more locations</p>
+                <p className="text-sm text-blue-800">
+                  Once you're comfortable with your first space, go to <span className="font-medium">Settings</span> to add another location. Each location gets its own calendar, rooms, and team.
+                </p>
+              </div>
+              <Button className="w-full" onClick={finishOnboarding}>
+                Go to my space <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -49,46 +49,57 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
       }
     }
 
+    const dateHeaderCells = currentDates.map((day) => {
+      const isTodayColumn = isToday(day.dateString);
+      const isNonWorking = isNonWorkingDay(day.dateString, workingDays);
+      return (
+        <th
+          key={day.dateString}
+          className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[120px] ${
+            isTodayColumn
+              ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300'
+              : isNonWorking
+              ? 'bg-gray-100 text-gray-400'
+              : 'text-gray-500'
+          }`}
+        >
+          <div className="flex flex-col">
+            <span className={`font-semibold ${
+              isTodayColumn ? 'text-blue-900' : isNonWorking ? 'text-gray-400' : 'text-gray-900'
+            }`}>
+              {day.dayName}
+            </span>
+            <span className="text-xs">{day.fullDate}</span>
+            {isTodayColumn && (
+              <span className="text-xs font-medium text-blue-600 mt-1">TODAY</span>
+            )}
+            {isNonWorking && (
+              <span className="text-xs font-medium text-gray-400 mt-1">DAY OFF</span>
+            )}
+          </div>
+        </th>
+      );
+    });
+
+    const dateHeaderRow = (key: string) => (
+      <tr key={key} className="bg-gray-50 border-b border-gray-200">
+        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 sticky left-0 bg-gray-50 z-20">
+          Desk
+        </th>
+        {dateHeaderCells}
+      </tr>
+    );
+
     return (
       <Card className="overflow-hidden">
-        <div ref={ref} className="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto pr-4">
+        <div ref={ref} className="overflow-x-auto pr-4">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-30">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 sticky left-0 bg-gray-50 z-40">
                   Desk
                 </th>
-                {currentDates.map((day) => {
-                  const isTodayColumn = isToday(day.dateString);
-                  const isNonWorking = isNonWorkingDay(day.dateString, workingDays);
-                  return (
-                    <th
-                      key={day.dateString}
-                      className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[120px] ${
-                        isTodayColumn
-                          ? 'bg-blue-50 text-blue-700 border-l-2 border-r-2 border-blue-300'
-                          : isNonWorking
-                          ? 'bg-gray-100 text-gray-400'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      <div className="flex flex-col">
-                        <span className={`font-semibold ${
-                          isTodayColumn ? 'text-blue-900' : isNonWorking ? 'text-gray-400' : 'text-gray-900'
-                        }`}>
-                          {day.dayName}
-                        </span>
-                        <span className="text-xs">{day.fullDate}</span>
-                        {isTodayColumn && (
-                          <span className="text-xs font-medium text-blue-600 mt-1">TODAY</span>
-                        )}
-                        {isNonWorking && (
-                          <span className="text-xs font-medium text-gray-400 mt-1">DAY OFF</span>
-                        )}
-                      </div>
-                    </th>
-                  );
-                })}
+                {dateHeaderCells}
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -97,6 +108,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                 const bgClass = ROOM_BG_COLORS[groupIdx % ROOM_BG_COLORS.length];
                 return (
                   <React.Fragment key={group.room}>
+                    {groupIdx > 0 && dateHeaderRow(`date-header-room-${group.room}`)}
                     <tr className={`${bgClass} ${groupIdx > 0 ? 'border-t-4 border-gray-300' : 'border-t border-gray-200'}`}>
                       <td
                         className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${colorClass} sticky left-0 ${bgClass} z-10 whitespace-nowrap overflow-visible`}
@@ -150,6 +162,7 @@ const DeskGrid = forwardRef<HTMLDivElement, DeskGridProps>(
                   </React.Fragment>
                 );
               })}
+              {roomGroups.length > 1 && dateHeaderRow('date-header-bottom')}
             </tbody>
           </table>
         </div>

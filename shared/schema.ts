@@ -100,8 +100,16 @@ export const organizationSchema = z.object({
   contactWhatsappEnabled: z.boolean().default(false),
   flexPlanDays: z.number().nullable().optional(),
   flexPlanPrice: z.number().nullable().optional(),
+  groupId: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+
+export const organizationGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  createdBy: z.string(),
+  createdAt: z.string(),
 });
 
 export const organizationMemberSchema = z.object({
@@ -138,6 +146,7 @@ export type Currency = z.infer<typeof currencySchema>;
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 export type WaitingListEntry = z.infer<typeof waitingListEntrySchema>;
 export type Organization = z.infer<typeof organizationSchema>;
+export type OrganizationGroup = z.infer<typeof organizationGroupSchema>;
 export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
 export type Room = z.infer<typeof roomSchema>;
 export type OrgDesk = z.infer<typeof orgDeskSchema>;

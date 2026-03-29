@@ -32,6 +32,7 @@ function mapOrg(row: Record<string, unknown>): Organization {
     contactWhatsappEnabled: (row.contact_whatsapp_enabled as boolean) ?? false,
     flexPlanDays: (row.flex_plan_days as number) ?? null,
     flexPlanPrice: (row.flex_plan_price as number) ?? null,
+    groupId: (row.group_id as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -132,6 +133,7 @@ interface CreateOrgInput {
   roomNames: string[];
   workingDays?: number[];
   meetingRooms?: Array<{ name: string; hourlyRate: number }>;
+  hasMultipleLocations?: boolean;
 }
 
 export function useCreateOrganization() {
@@ -141,6 +143,22 @@ export function useCreateOrganization() {
   return useMutation({
     mutationFn: async (input: CreateOrgInput) => {
       if (!user) throw new Error('Not authenticated');
+
+      // 0. Create organization group if multi-location
+      let groupId: string | null = null;
+      if (input.hasMultipleLocations) {
+        const { data: group, error: groupError } = await supabaseClient
+          .from('organization_groups')
+          .insert({
+            name: input.name,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (groupError) throw groupError;
+        groupId = group.id;
+      }
 
       // 1. Create organization
       const { data: org, error: orgError } = await supabaseClient
@@ -153,6 +171,7 @@ export function useCreateOrganization() {
           currency: input.currency,
           default_price_per_day: input.defaultPricePerDay,
           working_days: input.workingDays ?? [1, 2, 3, 4, 5],
+          ...(groupId ? { group_id: groupId } : {}),
         })
         .select()
         .single();

@@ -94,10 +94,12 @@ export function useBookingActions(
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    newDeskId?: string;
   }) => {
     if (!selectedBooking) return;
 
-    const { deskId, booking: existingBooking } = selectedBooking;
+    const { deskId: originalDeskId, booking: existingBooking } = selectedBooking;
+    const deskId = bookingData.newDeskId || originalDeskId;
     const newDateRange = generateDateRange(bookingData.startDate, bookingData.endDate);
 
     let oldDateRange: string[] = [];
@@ -127,13 +129,14 @@ export function useBookingActions(
     }
 
     if (existingBooking && oldDateRange.length > 0) {
-      // Delete ALL old dates — not just removed ones. This avoids duplicate rows
-      // when the existing booking has a different numeric ID than the new upsert.
+      // Delete ALL old dates from the ORIGINAL desk — not just removed ones.
+      // This avoids duplicate rows when the existing booking has a different
+      // numeric ID than the new upsert, and handles desk changes correctly.
       if (dataStore.bulkDeleteBookings) {
-        await dataStore.bulkDeleteBookings(oldDateRange.map(date => ({ deskId, date })));
+        await dataStore.bulkDeleteBookings(oldDateRange.map(date => ({ deskId: originalDeskId, date })));
       } else {
         for (const date of oldDateRange) {
-          await dataStore.deleteBooking(deskId, date);
+          await dataStore.deleteBooking(originalDeskId, date);
         }
       }
     }
@@ -182,9 +185,11 @@ export function useBookingActions(
     const dayCount = newDateRange.length;
     const currencySymbol = currencySymbols[bookingData.currency];
     const isUpdate = existingBooking !== null;
+    const deskChanged = bookingData.newDeskId && bookingData.newDeskId !== originalDeskId;
+    const movedLabel = deskChanged ? ` → ${desks.find(d => d.id === deskId)?.label || deskId}` : '';
     toast({
-      title: isUpdate ? 'Desk Booking Updated' : 'Desk Booking Created',
-      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total`,
+      title: isUpdate ? (deskChanged ? 'Booking Moved' : 'Desk Booking Updated') : 'Desk Booking Created',
+      description: `${bookingData.personName} ${statusText} for ${dayCount} day${dayCount > 1 ? 's' : ''} - ${currencySymbol}${bookingData.price} total${movedLabel}`,
     });
   }, [selectedBooking, toast, queryClient, currentCurrency, dataStore]);
 

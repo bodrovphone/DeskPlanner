@@ -8,9 +8,10 @@ import { Desk, DeskBooking, DeskStatus, Currency, Client } from '@shared/schema'
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package, ArrowRightLeft } from 'lucide-react';
 import ClientAutocomplete from './ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ interface BookingModalProps {
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    newDeskId?: string;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
   onPause?: () => void;
@@ -67,6 +69,9 @@ export default function BookingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [newDeskId, setNewDeskId] = useState<string>(deskId);
+  const [availableDesks, setAvailableDesks] = useState<Desk[]>([]);
+  const [loadingDesks, setLoadingDesks] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,6 +81,7 @@ export default function BookingModal({
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || String(defaultPrice));
       setStatus(booking?.status || 'assigned');
+      setNewDeskId(deskId);
 
       // Handle date logic more carefully
       if (booking) {
@@ -102,6 +108,41 @@ export default function BookingModal({
       setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
     }
   }, [isOpen, booking, date]);
+
+  // Load available desks when editing an existing booking
+  useEffect(() => {
+    if (!isOpen || !booking || !startDate || !endDate) {
+      setAvailableDesks(desks);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDesks(true);
+
+    dataStore.getBookingsForDateRange(startDate, endDate).then(allBookings => {
+      if (cancelled) return;
+
+      // Find desks that have no conflicts for the entire date range
+      const busyDeskIds = new Set<string>();
+      for (const b of allBookings) {
+        // Skip bookings on the current desk (we're moving away from it)
+        if (b.deskId === deskId) continue;
+        if (b.status !== 'available') {
+          busyDeskIds.add(b.deskId);
+        }
+      }
+
+      const available = desks.filter(d => d.id === deskId || !busyDeskIds.has(d.id));
+      setAvailableDesks(available);
+      setLoadingDesks(false);
+    }).catch(() => {
+      if (!cancelled) {
+        setAvailableDesks(desks);
+        setLoadingDesks(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [isOpen, booking, startDate, endDate, deskId, desks, dataStore]);
 
   // Fetch flex client data when a client is selected
   useEffect(() => {
@@ -142,6 +183,7 @@ export default function BookingModal({
           currency: currency,
           clientId: clientId,
           isFlex: !!flexClient,
+          newDeskId: newDeskId !== deskId ? newDeskId : undefined,
         });
         if (onShare) {
           onShare({
@@ -246,6 +288,43 @@ export default function BookingModal({
               {desk?.label} - {formattedDate}
             </p>
           </div>
+
+          {booking && (
+            <div>
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                <ArrowRightLeft className="h-3.5 w-3.5" />
+                Move to another desk
+              </Label>
+              <Select value={newDeskId} onValueChange={setNewDeskId} disabled={loadingDesks}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(() => {
+                    const roomGroups = new Map<number, Desk[]>();
+                    for (const d of availableDesks) {
+                      const group = roomGroups.get(d.room) || [];
+                      group.push(d);
+                      roomGroups.set(d.room, group);
+                    }
+                    return Array.from(roomGroups.entries()).map(([roomNum, roomDesks]) => (
+                      <SelectGroup key={roomNum}>
+                        <SelectLabel>{roomDesks[0]?.roomName || `Room ${roomNum}`}</SelectLabel>
+                        {roomDesks.map(d => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.label}{d.id === deskId ? ' (current)' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ));
+                  })()}
+                </SelectContent>
+              </Select>
+              {newDeskId !== deskId && (
+                <p className="text-xs text-amber-600 mt-1">Booking will be moved to {desks.find(d => d.id === newDeskId)?.label}</p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div>
