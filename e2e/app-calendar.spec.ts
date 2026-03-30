@@ -30,8 +30,8 @@ test.describe('Calendar — page load', () => {
   });
 
   test('calendar grid renders with desk rows and dates', async ({ page }) => {
-    // Table header with "Desk" column label
-    await expect(page.locator('table th', { hasText: 'Desk' })).toBeVisible({ timeout: 10_000 });
+    // Table header with "Desk" column label (multiple room groups produce multiple headers)
+    await expect(page.locator('table th').filter({ hasText: 'Desk' }).first()).toBeVisible({ timeout: 10_000 });
 
     // At least one desk row is visible
     await expect(page.locator('.desk-cell').first()).toBeVisible();
@@ -45,8 +45,9 @@ test.describe('Calendar — page load', () => {
     const roomHeader = page.locator('td').filter({ hasText: /room/i }).first();
     await expect(roomHeader).toBeVisible({ timeout: 10_000 });
 
-    // Desk label in the left sticky column
-    const deskLabel = page.locator('td').filter({ hasText: /desk/i }).first();
+    // Desk label in the left sticky column (custom labels may not contain "desk",
+    // so match the sticky left-column td that holds desk info)
+    const deskLabel = page.locator('td.sticky span.text-sm.font-semibold').first();
     await expect(deskLabel).toBeVisible();
   });
 });

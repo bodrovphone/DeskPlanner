@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="OhMyDesk landing icon">
   <defs>
     <linearGradient id="landing-icon-bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00ff41"/>
-      <stop offset="100%" stop-color="#00cc33"/>
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#2bb583"/>
     </linearGradient>
   </defs>
 
@@ -23,10 +23,10 @@
   <rect x="21.5" y="22" width="5" height="2.5" rx="0.5" fill="rgba(10,10,10,0.85)"/>
 
   <!-- Calendar grid dots on monitor -->
-  <circle cx="19" cy="13" r="1.5" fill="#00ff41"/>
+  <circle cx="19" cy="13" r="1.5" fill="#34d399"/>
   <circle cx="24" cy="13" r="1.5" fill="#ff9f1c"/>
-  <circle cx="29" cy="13" r="1.5" fill="#00ff41"/>
+  <circle cx="29" cy="13" r="1.5" fill="#34d399"/>
   <circle cx="19" cy="18" r="1.5" fill="#ff9f1c"/>
-  <circle cx="24" cy="18" r="1.5" fill="#00ff41"/>
-  <circle cx="29" cy="18" r="1.5" fill="#00ff41"/>
+  <circle cx="24" cy="18" r="1.5" fill="#34d399"/>
+  <circle cx="29" cy="18" r="1.5" fill="#34d399"/>
 </svg>

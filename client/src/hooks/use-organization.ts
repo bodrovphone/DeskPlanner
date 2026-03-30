@@ -134,6 +134,7 @@ interface CreateOrgInput {
   workingDays?: number[];
   meetingRooms?: Array<{ name: string; hourlyRate: number }>;
   hasMultipleLocations?: boolean;
+  groupId?: string;
 }
 
 export function useCreateOrganization() {
@@ -144,9 +145,9 @@ export function useCreateOrganization() {
     mutationFn: async (input: CreateOrgInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      // 0. Create organization group if multi-location
-      let groupId: string | null = null;
-      if (input.hasMultipleLocations) {
+      // 0. Use existing group, or create new one if multi-location
+      let groupId: string | null = input.groupId || null;
+      if (!groupId && input.hasMultipleLocations) {
         const { data: group, error: groupError } = await supabaseClient
           .from('organization_groups')
           .insert({

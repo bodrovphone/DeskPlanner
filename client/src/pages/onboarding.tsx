@@ -13,7 +13,8 @@ import { useConnectTelegram, useTelegramSettings } from '@/hooks/use-telegram';
 import { currencyLabels, currencySymbols, activeCurrencies } from '@/lib/settings';
 import { Currency } from '@shared/schema';
 import { DAY_LABELS, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
-import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil, Bell, Send, MapPin } from 'lucide-react';
+import { Loader2, Building2, LayoutGrid, Coins, ArrowRight, ArrowLeft, Check, Pencil, Bell, Send, MapPin, Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 
 function generateSlug(name: string): string {
@@ -29,10 +30,13 @@ const STEPS = ['Space Info', 'Rooms & Desks', 'Meeting Rooms', 'Pricing', 'Notif
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isAddLocation = searchParams.get('add-location') === 'true';
   const createOrg = useCreateOrganization();
   const checkSlug = useCheckSlugAvailable();
   const { hasOrganization, currentOrg } = useOrganization();
   const { signOut } = useAuth();
+  const existingGroupId = isAddLocation ? currentOrg?.groupId : undefined;
 
   // Persist step & createdOrgId in sessionStorage to survive re-mounts from query invalidation
   const [step, _setStep] = useState(() => {
@@ -66,9 +70,9 @@ export default function OnboardingPage() {
   const [meetingRoomNames, setMeetingRoomNames] = useState<string[]>(['Conference Room']);
   const [meetingRoomRates, setMeetingRoomRates] = useState<number[]>([15]);
   const [workingDays, setWorkingDays] = useState<number[]>([...DEFAULT_WORKING_DAYS]);
-  const [currency, setCurrency] = useState<Currency>('EUR');
+  const [currency, setCurrency] = useState<Currency>(isAddLocation && currentOrg ? currentOrg.currency : 'EUR');
   const [customCurrency, setCustomCurrency] = useState('');
-  const [defaultPricePerDay, setDefaultPricePerDay] = useState('8');
+  const [defaultPricePerDay, setDefaultPricePerDay] = useState(isAddLocation && currentOrg ? String(currentOrg.defaultPricePerDay) : '8');
   const [hasMultipleLocations, setHasMultipleLocations] = useState(() =>
     sessionStorage.getItem('onboarding-multi-location') === 'true'
   );
@@ -153,9 +157,16 @@ export default function OnboardingPage() {
           ? meetingRoomNames.map((n, i) => ({ name: n, hourlyRate: meetingRoomRates[i] ?? 15 }))
           : undefined,
         hasMultipleLocations,
+        groupId: existingGroupId || undefined,
       });
       setCreatedOrgId(org.id);
-      setStep(4);
+      if (isAddLocation) {
+        // Skip notifications — go straight to new location's calendar
+        setSlug(slug);
+        finishOnboarding();
+      } else {
+        setStep(4);
+      }
     } catch (error) {
       console.error('Failed to create organization:', error);
     }
@@ -217,10 +228,10 @@ export default function OnboardingPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
-                <Building2 className="h-5 w-5 text-blue-600" />
-                <CardTitle>Name your coworking space</CardTitle>
+                {isAddLocation ? <Plus className="h-5 w-5 text-blue-600" /> : <Building2 className="h-5 w-5 text-blue-600" />}
+                <CardTitle>{isAddLocation ? 'Add a new location' : 'Name your coworking space'}</CardTitle>
               </div>
-              <CardDescription>This will be visible to your team members.</CardDescription>
+              <CardDescription>{isAddLocation ? 'Set up another location for your brand.' : 'This will be visible to your team members.'}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -269,7 +280,7 @@ export default function OnboardingPage() {
                   <p className="text-sm text-red-600 mt-1">This URL is already taken</p>
                 )}
               </div>
-              <div className="border rounded-lg p-3 bg-gray-50">
+              {!isAddLocation && <div className="border rounded-lg p-3 bg-gray-50">
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id="multi-location"
@@ -292,7 +303,7 @@ export default function OnboardingPage() {
                 {hasMultipleLocations && (
                   <p className="text-xs text-blue-600 mt-2 ml-7">Set up your first location now. You can add more from Settings later.</p>
                 )}
-              </div>
+              </div>}
 
               <Button
                 className="w-full"

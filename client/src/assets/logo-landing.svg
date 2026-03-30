@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 48" role="img" aria-label="OhMyDesk landing logo">
   <defs>
     <linearGradient id="landing-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00ff41"/>
-      <stop offset="100%" stop-color="#00cc33"/>
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#2bb583"/>
     </linearGradient>
   </defs>
 
@@ -24,12 +24,12 @@
     <rect x="18" y="19" width="4" height="2" rx="0.5" fill="rgba(10,10,10,0.85)"/>
 
     <!-- Calendar dots -->
-    <circle cx="16" cy="11.5" r="1.2" fill="#00ff41"/>
+    <circle cx="16" cy="11.5" r="1.2" fill="#34d399"/>
     <circle cx="20" cy="11.5" r="1.2" fill="#ff9f1c"/>
-    <circle cx="24" cy="11.5" r="1.2" fill="#00ff41"/>
+    <circle cx="24" cy="11.5" r="1.2" fill="#34d399"/>
     <circle cx="16" cy="15.5" r="1.2" fill="#ff9f1c"/>
-    <circle cx="20" cy="15.5" r="1.2" fill="#00ff41"/>
-    <circle cx="24" cy="15.5" r="1.2" fill="#00ff41"/>
+    <circle cx="20" cy="15.5" r="1.2" fill="#34d399"/>
+    <circle cx="24" cy="15.5" r="1.2" fill="#34d399"/>
   </g>
 
   <!-- Compact wordmark -->
@@ -37,10 +37,10 @@
     <text x="0" y="31" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', monospace" font-size="22" font-weight="600" fill="#e0e0e0" letter-spacing="-0.3">
       OhMy
     </text>
-    <text x="60" y="31" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', monospace" font-size="22" font-weight="700" fill="#00ff41" letter-spacing="-0.3">
+    <text x="52" y="31" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', monospace" font-size="22" font-weight="700" fill="#34d399" letter-spacing="-0.3">
       Desk
     </text>
     <!-- Green dot accent -->
-    <circle cx="120" cy="28" r="2.2" fill="#ff9f1c"/>
+    <circle cx="112" cy="28" r="2.2" fill="#ff9f1c"/>
   </g>
 </svg>

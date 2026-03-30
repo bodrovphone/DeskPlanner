@@ -1,13 +1,15 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal } from 'lucide-react';
+import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
 import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
 import { isAdmin } from '@/lib/admin';
 import type { User } from '@supabase/supabase-js';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Organization } from '@shared/schema';
 
 interface NavItem {
   to: string;
@@ -53,9 +55,90 @@ function NavLinkItem({ item, onClick }: { item: NavItem; onClick?: () => void })
   );
 }
 
+function OrgSwitcher({
+  currentOrg,
+  organizations,
+  onSwitch,
+}: {
+  currentOrg: Organization;
+  organizations: Organization[];
+  onSwitch: (org: Organization) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasMultipleOrgs = organizations.length > 1;
+  const canAddLocation = !!currentOrg.groupId;
+
+  if (!hasMultipleOrgs && !canAddLocation) {
+    // Single org, no group — just show name (no dropdown)
+    return (
+      <div className="px-4 py-2 border-b flex items-center gap-2 min-w-0">
+        {currentOrg.logoUrl ? (
+          <img src={currentOrg.logoUrl} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
+        ) : null}
+        <p className="text-sm text-gray-500 truncate">{currentOrg.name}</p>
+      </div>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="w-full px-4 py-2 border-b flex items-center gap-2 min-w-0 hover:bg-gray-50 transition-colors text-left">
+          {currentOrg.logoUrl ? (
+            <img src={currentOrg.logoUrl} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
+          ) : (
+            <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+          )}
+          <span className="text-sm text-gray-700 truncate flex-1">{currentOrg.name}</span>
+          <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-1" sideOffset={4}>
+        <div className="text-xs font-medium text-gray-400 uppercase tracking-wider px-2 py-1.5">
+          Locations
+        </div>
+        {organizations.map((org) => (
+          <button
+            key={org.id}
+            onClick={() => {
+              onSwitch(org);
+              setOpen(false);
+            }}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left ${
+              org.id === currentOrg.id
+                ? 'bg-blue-50 text-blue-700 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            {org.logoUrl ? (
+              <img src={org.logoUrl} alt="" className="h-4 w-4 rounded object-contain shrink-0" />
+            ) : (
+              <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+            )}
+            <span className="truncate">{org.name}</span>
+          </button>
+        ))}
+        {canAddLocation && (
+          <>
+            <div className="border-t my-1" />
+            <a
+              href="/onboarding?add-location=true"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add location
+            </a>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
-  const { currentOrg, currentRole, hasMeetingRooms } = useOrganization();
+  const { currentOrg, currentRole, hasMeetingRooms, organizations, setCurrentOrg } = useOrganization();
   const navItems = getNavItems(currentOrg?.slug || 'app', user, hasMeetingRooms, currentRole);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -103,12 +186,14 @@ export default function DashboardLayout() {
         </div>
 
         {sidebarOpen && currentOrg && (
-          <div className="px-4 py-2 border-b flex items-center gap-2 min-w-0">
-            {currentOrg.logoUrl ? (
-              <img src={currentOrg.logoUrl} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
-            ) : null}
-            <p className="text-sm text-gray-500 truncate">{currentOrg.name}</p>
-          </div>
+          <OrgSwitcher
+            currentOrg={currentOrg}
+            organizations={organizations}
+            onSwitch={(org) => {
+              setCurrentOrg(org);
+              navigate(`/${org.slug}/calendar`);
+            }}
+          />
         )}
 
         <nav className={`flex-1 p-3 space-y-1 ${sidebarOpen ? '' : 'px-2'}`}>

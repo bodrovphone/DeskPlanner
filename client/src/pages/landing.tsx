@@ -27,16 +27,16 @@ import { trackEvent, EVENTS } from '@/lib/analytics';
 
 /* ─── palette tokens (scoped via inline styles) ─── */
 const T = {
-  bg: '#0a0a0a',
-  bgCard: '#111111',
-  bgCardHover: '#161616',
-  border: '#1a1a1a',
-  borderBright: '#222222',
-  green: '#00ff41',
-  greenDim: '#00cc33',
-  greenFaint: 'rgba(0,255,65,0.06)',
-  greenGlow: 'rgba(0,255,65,0.15)',
-  greenGlowStrong: 'rgba(0,255,65,0.25)',
+  bg: '#121214',
+  bgCard: '#1a1a1e',
+  bgCardHover: '#202024',
+  border: '#242428',
+  borderBright: '#2c2c32',
+  green: '#34d399',
+  greenDim: '#2bb583',
+  greenFaint: 'rgba(52,211,153,0.08)',
+  greenGlow: 'rgba(52,211,153,0.15)',
+  greenGlowStrong: 'rgba(52,211,153,0.25)',
   orange: '#ff9f1c',
   orangeFaint: 'rgba(255,159,28,0.12)',
   blue: '#4ea8de',
@@ -139,7 +139,7 @@ const steps = [
 const pricingTiers = [
   { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Member management', 'Flex day packages', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
-  { name: 'Enterprise', price: 'Custom', period: '', desc: 'For multi-location operators.', features: ['Multiple locations', 'API access', 'Dedicated support', 'Custom integrations*', 'SLA guarantee'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true, footnote: '* We build custom integrations on request — Slack, Stripe, Shopify, and more.' },
+  { name: 'Multi-Location', price: '50', period: '/mo', desc: 'For brands with multiple spaces.', features: ['Everything in Pro', 'Unlimited locations', 'Location switcher', 'Shared member directory', 'Cross-location booking', 'Unified billing'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true },
 ];
 
 const integrations = [
@@ -390,7 +390,7 @@ function FauxCalendar() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '10px 16px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, position: 'sticky', left: 0, background: T.bgCard, zIndex: 1, minWidth: isMobile ? 100 : 140 }}>Desk</th>
+              <th style={{ textAlign: 'left', padding: '10px 16px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, position: 'fixed', width: '100%', left: 0, background: T.bgCard, zIndex: 1, minWidth: isMobile ? 100 : 140 }}>Desk</th>
               {dates.map(d => (
                 <th key={d} style={{ textAlign: 'center', padding: '10px 8px', fontFamily: 'monospace', fontSize: 11, color: T.textMuted, fontWeight: 500, borderBottom: `1px solid ${T.border}`, minWidth: isMobile ? 56 : 72 }}>{d}</th>
               ))}
@@ -399,7 +399,7 @@ function FauxCalendar() {
           <tbody>
             {DESKS.map((desk, ri) => (
               <tr key={desk}>
-                <td style={{ padding: '6px 16px', fontFamily: 'monospace', fontSize: 12, color: T.textSecondary, borderBottom: `1px solid ${T.border}`, position: 'sticky', left: 0, background: T.bgCard, zIndex: 1, whiteSpace: 'nowrap' }}>{desk}</td>
+                <td style={{ padding: '6px 16px', fontFamily: 'monospace', fontSize: 12, color: T.textSecondary, borderBottom: `1px solid ${T.border}`, position: 'fixed', width: '100%', left: 0, background: T.bgCard, zIndex: 1, whiteSpace: 'nowrap' }}>{desk}</td>
                 {CELL_MAP[ri].slice(0, colCount).map((cell, ci) => {
                   const c = cellColor(cell.status);
                   const delay = (ri * colCount + ci) * 35;
@@ -501,6 +501,7 @@ function FauxRevenue() {
 export default function LandingPage() {
   const heroTyping = useTyping('Coworking desk management for operators who ship.', 45, 800);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const isMobile = useNarrow(768);
 
   useEffect(() => {
@@ -519,15 +520,30 @@ export default function LandingPage() {
   });
 
   return (
-    <div style={{ background: T.bg, color: T.textPrimary, fontFamily: '"Inter", system-ui, sans-serif', minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ background: T.bg, color: T.textPrimary, fontFamily: '"Inter", system-ui, sans-serif', minHeight: '100vh', overflowX: 'hidden' }}>
       <style>{KEYFRAMES}</style>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "OhMyDesk Demo — Coworking Desk Booking Software",
+        "description": "A quick walkthrough of how coworking spaces use OhMyDesk to manage desks, bookings, and revenue tracking.",
+        "thumbnailUrl": "https://img.youtube.com/vi/H6J3tkI8EUk/maxresdefault.jpg",
+        "uploadDate": "2026-03-26",
+        "contentUrl": "https://www.youtube.com/watch?v=H6J3tkI8EUk",
+        "embedUrl": "https://www.youtube.com/embed/H6J3tkI8EUk",
+        "publisher": {
+          "@type": "Organization",
+          "name": "OhMyDesk",
+          "url": "https://ohmydesk.app"
+        }
+      }) }} />
 
       {/* ── noise overlay ── */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, opacity: 0.025, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat', mixBlendMode: 'overlay' }} />
 
       {/* ── NAV ── */}
       <nav style={{
-        position: 'sticky',
+        position: 'fixed', width: '100%',
         top: 0,
         zIndex: 100,
         background: navScrolled ? 'rgba(10,10,10,0.92)' : 'transparent',
@@ -539,6 +555,52 @@ export default function LandingPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={logoLanding} alt="OhMyDesk" style={{ height: 32 }} />
           </div>
+          {navScrolled && !isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {[
+                { label: 'Product', href: '#product' },
+                { label: 'Demo', href: '#demo' },
+                { label: 'Features', href: '#features' },
+                { label: 'Pricing', href: '#pricing' },
+              ].map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: T.textSecondary,
+                    textDecoration: 'none',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {link.label}
+                </a>
+              ))}
+              <button
+                onClick={() => setDemoOpen(true)}
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  color: T.textSecondary,
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; }}
+                onMouseLeave={e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; }}
+              >
+                Contact
+              </button>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link to="/login" style={{ textDecoration: 'none' }}>
               <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
@@ -563,7 +625,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ paddingTop: 80, paddingBottom: 100, position: 'relative' }}>
+      <section style={{ paddingTop: 144, paddingBottom: 100, position: 'relative' }}>
         {/* radial glow */}
         <div style={{ position: 'absolute', top: -200, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: `radial-gradient(ellipse at center, ${T.greenFaint} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
@@ -674,6 +736,30 @@ export default function LandingPage() {
                 Log In
               </button>
             </Link>
+            <button style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 14,
+              fontWeight: 500,
+              padding: '14px 32px',
+              borderRadius: 8,
+              border: `1px solid ${T.borderBright}`,
+              background: 'transparent',
+              color: T.textSecondary,
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              minHeight: 48,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+              {...touchHoverProps(
+                e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.color = T.green; },
+                e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; },
+              )}
+              onClick={() => setDemoOpen(true)}
+            >
+              <MessageCircle size={16} /> Book a Call
+            </button>
           </div>
         </div>
       </section>
@@ -701,7 +787,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── APP SHOWCASE ── */}
-      <section style={sectionStyle(100)}>
+      <section id="product" style={{ ...sectionStyle(100), scrollMarginTop: 120 }}>
         <SectionHeading
           tag="Product"
           title="Your entire coworking space, one screen."
@@ -720,6 +806,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── DEMO VIDEO ── */}
+      <section id="demo" style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}`, scrollMarginTop: 120 }}>
+        <SectionHeading
+          tag="Demo"
+          title="See OhMyDesk in action."
+          sub="A quick walkthrough of how coworking spaces use OhMyDesk to manage desks, bookings, and revenue."
+        />
+        <div style={{ maxWidth: 720, margin: '0 auto', borderRadius: 12, overflow: 'hidden', border: `1px solid ${T.borderBright}`, background: T.bgCard }}>
+          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+            <iframe
+              src="https://www.youtube.com/embed/H6J3tkI8EUk"
+              title="OhMyDesk Demo — Coworking Desk Booking Software"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── PUBLIC BOOKING SPOTLIGHT ── */}
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
@@ -731,7 +837,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+      <section id="features" style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}`, scrollMarginTop: 120 }}>
         <SectionHeading
           tag="Features"
           title="Desk booking features for every operator."
@@ -812,7 +918,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── PRICING ── */}
-      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+      <section id="pricing" style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}`, scrollMarginTop: 120 }}>
         <SectionHeading
           tag="Pricing"
           title="Coworking software pricing. Start free."
@@ -867,6 +973,9 @@ export default function LandingPage() {
           Don't see yours? <span style={{ color: T.green }}>We build custom integrations on request.</span>
         </p>
       </section>
+
+      {/* ── DEMO REQUEST ── */}
+      <DemoRequestSection open={demoOpen} onOpenChange={setDemoOpen} />
 
       {/* ── CTA ── */}
       <section style={{ borderTop: `1px solid ${T.border}`, position: 'relative' }}>
@@ -1162,9 +1271,6 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
             <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>{btn}</Link>
           );
         })()}
-        {'footnote' in tier && tier.footnote && (
-          <p style={{ fontFamily: 'monospace', fontSize: 11, color: T.textMuted, marginTop: 12, lineHeight: 1.5, textAlign: 'center' }}>{tier.footnote}</p>
-        )}
       </div>
     </div>
   );
@@ -1234,6 +1340,179 @@ function NotificationChannelCard({ icon: Icon, name, desc, live, index }: { icon
       <h3 style={{ fontSize: 16, fontWeight: 600, color: live ? T.textPrimary : T.textSecondary, marginBottom: 8 }}>{name}</h3>
       <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6, margin: 0, opacity: live ? 1 : 0.7 }}>{desc}</p>
     </div>
+  );
+}
+
+function DemoRequestSection({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { ref, visible } = useReveal();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [spaceName, setSpaceName] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !email.trim()) {
+      setError('Please fill in your name and email.');
+      return;
+    }
+    setSending(true);
+    setError('');
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/demo-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), spaceName: spaceName.trim(), message: message.trim() }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+      setSent(true);
+    } catch {
+      setError('Something went wrong. Please email us at hello@ohmydesk.app instead.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const inputStyle: CSSProperties = {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 8,
+    border: `1px solid ${T.borderBright}`,
+    background: T.bg,
+    color: T.textPrimary,
+    fontFamily: 'monospace',
+    fontSize: 14,
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+  };
+
+  const labelStyle: CSSProperties = {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: T.textSecondary,
+    marginBottom: 6,
+    display: 'block',
+  };
+
+  return (
+    <section id="contact" style={{ borderTop: `1px solid ${T.border}`, maxWidth: 1120, margin: '0 auto', padding: '80px 24px', scrollMarginTop: 120 }}>
+      <div ref={ref} style={{ textAlign: 'center', opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(.22,1,.36,1)' }}>
+        <MessageCircle size={32} style={{ color: T.green, margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, color: T.textPrimary, lineHeight: 1.2, margin: 0 }}>
+          Have questions?
+        </h2>
+        <p style={{ marginTop: 12, fontSize: 17, color: T.textSecondary, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+          Book a call and we'll walk you through everything.
+        </p>
+        <button
+          onClick={() => { onOpenChange(true); setSent(false); setError(''); }}
+          style={{
+            marginTop: 24,
+            padding: '12px 32px',
+            borderRadius: 8,
+            border: `1px solid ${T.green}`,
+            background: 'transparent',
+            color: T.green,
+            fontFamily: 'monospace',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.green; }}
+        >
+          Book a Call
+        </button>
+      </div>
+
+      {/* Modal overlay */}
+      {open && (
+        <div
+          onClick={() => onOpenChange(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: T.bgCard, border: `1px solid ${T.borderBright}`, borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}
+          >
+            {sent ? (
+              <div style={{ textAlign: 'center' }}>
+                <Check size={40} style={{ color: T.green, margin: '0 auto 16px' }} />
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, margin: 0 }}>Request sent!</h3>
+                <p style={{ fontSize: 14, color: T.textSecondary, marginTop: 8, lineHeight: 1.5 }}>
+                  We'll get back to you shortly with a personalized demo.
+                </p>
+                <button
+                  onClick={() => onOpenChange(false)}
+                  style={{ marginTop: 20, padding: '10px 24px', borderRadius: 8, border: 'none', background: T.green, color: T.bg, fontFamily: 'monospace', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: T.textPrimary, margin: '0 0 4px' }}>Book a Call</h3>
+                <p style={{ fontSize: 13, color: T.textSecondary, margin: '0 0 20px', lineHeight: 1.5 }}>
+                  Tell us about your space and we'll set up a walkthrough.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={labelStyle}>Name *</label>
+                    <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="Your name" onFocus={e => { e.currentTarget.style.borderColor = T.green; }} onBlur={e => { e.currentTarget.style.borderColor = T.borderBright; }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Email *</label>
+                    <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" onFocus={e => { e.currentTarget.style.borderColor = T.green; }} onBlur={e => { e.currentTarget.style.borderColor = T.borderBright; }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Space name (optional)</label>
+                    <input style={inputStyle} value={spaceName} onChange={e => setSpaceName(e.target.value)} placeholder="e.g. Downtown Hub" onFocus={e => { e.currentTarget.style.borderColor = T.green; }} onBlur={e => { e.currentTarget.style.borderColor = T.borderBright; }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Message (optional)</label>
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
+                      value={message}
+                      onChange={e => setMessage(e.target.value)}
+                      placeholder="Tell us about your space or what you'd like to see..."
+                      onFocus={e => { e.currentTarget.style.borderColor = T.green; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = T.borderBright; }}
+                    />
+                  </div>
+                  {error && <p style={{ fontSize: 13, color: '#F97066', margin: 0 }}>{error}</p>}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={sending}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: sending ? T.borderBright : T.green,
+                      color: T.bg,
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: sending ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    {sending ? 'Sending...' : <><Send size={14} /> Send Request</>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
