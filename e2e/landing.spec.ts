@@ -194,7 +194,7 @@ test.describe('Landing page — pricing', () => {
 
   test('all 3 tiers render', async ({ page }) => {
     // Pricing card names
-    for (const tier of ['Free', 'Pro', 'Enterprise']) {
+    for (const tier of ['Free', 'Pro', 'Multi-Location']) {
       await expect(page.getByText(tier, { exact: true }).first()).toBeVisible();
     }
   });
@@ -208,8 +208,8 @@ test.describe('Landing page — pricing', () => {
     await expect(contactLink).toBeVisible();
   });
 
-  test('Enterprise card shows custom integrations footnote', async ({ page }) => {
-    await expect(page.getByText('* We build custom')).toBeVisible();
+  test('Multi-Location card shows cross-location booking feature', async ({ page }) => {
+    await expect(page.getByText('Cross-location booking')).toBeVisible();
   });
 });
 
