@@ -11,41 +11,14 @@ export interface TeamMember {
   createdAt: string;
 }
 
-export function useTeamMembers(orgId: string | undefined) {
-  return useQuery<TeamMember[]>({
-    queryKey: ['team-members', orgId],
-    queryFn: async () => {
-      if (!orgId) return [];
-
-      const { data, error } = await supabaseClient
-        .from('organization_members')
-        .select('id, user_id, role, created_at')
-        .eq('organization_id', orgId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      if (!data) return [];
-
-      // Fetch emails for all user IDs via the Edge Function or RPC
-      // Since we can't query auth.users directly from client, we'll use
-      // a workaround: the owner's own email comes from auth context,
-      // and for others we store email in a lookup during invite.
-      // For now, use the admin API via an edge function or store email on org_members.
-      //
-      // Pragmatic approach: query the organization_members view that includes email
-      // We'll need to create a simple RPC or view for this.
-      // For MVP, we call a simple edge function to resolve emails.
-
-      return data.map((row) => ({
-        id: row.id,
-        userId: row.user_id,
-        email: '', // Will be resolved below
-        role: row.role as OrgMemberRole,
-        createdAt: row.created_at,
-      }));
-    },
-    enabled: !!orgId,
-  });
+export interface GroupTeamMember {
+  id: string;
+  userId: string;
+  email: string;
+  role: OrgMemberRole;
+  orgIds: string[];
+  orgNames: string[];
+  createdAt: string;
 }
 
 export function useTeamMembersWithEmails(orgId: string | undefined) {
@@ -54,7 +27,6 @@ export function useTeamMembersWithEmails(orgId: string | undefined) {
     queryFn: async () => {
       if (!orgId) return [];
 
-      // Use RPC function that joins org_members with auth.users (SECURITY DEFINER)
       const { data, error } = await supabaseClient
         .rpc('get_team_members', { org_id: orgId });
 
@@ -73,12 +45,38 @@ export function useTeamMembersWithEmails(orgId: string | undefined) {
   });
 }
 
+export function useGroupTeamMembers(groupId: string | undefined) {
+  return useQuery<GroupTeamMember[]>({
+    queryKey: ['group-team-members', groupId],
+    queryFn: async () => {
+      if (!groupId) return [];
+
+      const { data, error } = await supabaseClient
+        .rpc('get_group_team_members', { p_group_id: groupId });
+
+      if (error) throw error;
+      if (!data) return [];
+
+      return (data as Array<Record<string, unknown>>).map((row) => ({
+        id: row.member_id as string,
+        userId: row.user_id as string,
+        email: row.email as string,
+        role: row.role as OrgMemberRole,
+        orgIds: row.org_ids as string[],
+        orgNames: row.org_names as string[],
+        createdAt: row.created_at as string,
+      }));
+    },
+    enabled: !!groupId,
+  });
+}
+
 export function useInviteManager() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ organizationId, email }: { organizationId: string; email: string }) => {
+    mutationFn: async ({ organizationId, email, groupId }: { organizationId: string; email: string; groupId?: string }) => {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabaseClient.functions.invoke('invite-manager', {
@@ -92,11 +90,13 @@ export function useInviteManager() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      return data;
+      return { ...data, groupId };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      if (data.groupId) {
+        queryClient.invalidateQueries({ queryKey: ['group-team-members', data.groupId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['team-members-with-emails', variables.organizationId] });
-      queryClient.invalidateQueries({ queryKey: ['team-members', variables.organizationId] });
     },
   });
 }
@@ -105,19 +105,30 @@ export function useRemoveManager() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ memberId, organizationId }: { memberId: string; organizationId: string }) => {
+    mutationFn: async ({ userId, organizationId, groupId, orgIds }: {
+      userId: string;
+      organizationId: string;
+      groupId?: string;
+      orgIds?: string[];
+    }) => {
+      // For group members, remove from all orgs in the group
+      const targetOrgIds = groupId && orgIds ? orgIds : [organizationId];
+
       const { error } = await supabaseClient
         .from('organization_members')
         .delete()
-        .eq('id', memberId);
+        .eq('user_id', userId)
+        .in('organization_id', targetOrgIds);
 
       if (error) throw error;
 
-      return { organizationId };
+      return { organizationId, groupId };
     },
     onSuccess: (data) => {
+      if (data.groupId) {
+        queryClient.invalidateQueries({ queryKey: ['group-team-members', data.groupId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['team-members-with-emails', data.organizationId] });
-      queryClient.invalidateQueries({ queryKey: ['team-members', data.organizationId] });
     },
   });
 }

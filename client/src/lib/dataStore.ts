@@ -62,6 +62,6 @@ export interface IDataStore {
 
 import { SupabaseDataStore } from './supabaseDataStore';
 
-export function createDataStore(organizationId?: string): IDataStore {
-  return new SupabaseDataStore(organizationId);
+export function createDataStore(organizationId?: string, groupId?: string): IDataStore {
+  return new SupabaseDataStore(organizationId, groupId);
 }

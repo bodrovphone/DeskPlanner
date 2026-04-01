@@ -5,7 +5,7 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
-# Docs
+# Docs & local notes
 docs/
 research/
 
@@ -25,4 +25,7 @@ video/
 test-results/
 playwright-report/
 e2e/.auth/
-.claude/skills/*
+# Claude Code local config (skills, local settings)
+.claude/skills/
+.claude/skills-lock.json
+.claude/settings.local.json

@@ -17,7 +17,7 @@ export default defineConfig({
   timeout: 30_000,
   retries: 1,
   use: {
-    baseURL: 'https://ohmydesk.app',
+    baseURL: process.env.E2E_BASE_URL ?? 'https://ohmydesk.app',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },

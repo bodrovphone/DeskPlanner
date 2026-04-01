@@ -19,8 +19,8 @@ export function DataStoreProvider({ children }: { children: React.ReactNode }) {
   const prevOrgId = useRef(currentOrg?.id);
 
   const store = useMemo(
-    () => createDataStore(currentOrg?.id),
-    [currentOrg?.id]
+    () => createDataStore(currentOrg?.id, currentOrg?.groupId ?? undefined),
+    [currentOrg?.id, currentOrg?.groupId]
   );
 
   // Clear all org-scoped query caches when the organization changes

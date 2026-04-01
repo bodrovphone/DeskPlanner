@@ -152,6 +152,19 @@ Located in `supabase/functions/`. Pattern: CORS handling, service role key for D
 - `flex-email` - Flex plan lifecycle emails
 - `invite-manager` - Creates user account, adds to org, sends credentials
 
+## Linear MCP
+
+Linear is available via MCP (`mcp__linear-server__*`). Key usage:
+
+- **List issues**: `list_issues` — filter by `state`, `priority` (1=Urgent, 2=High, 3=Normal, 4=Low), `team`
+- **Get issue**: `get_issue` with issue ID (e.g. `DES-48`)
+- **Create/update issue**: `save_issue` — use `state` (not `status`/`stateId`) to set status, e.g. `state: "Done"`
+- **List statuses**: `list_issue_statuses` with `team: "Deskplanner"` to get state IDs and names
+- **Team name**: `"Deskplanner"` (used in `team` param)
+- **Mark done**: `save_issue` with `id: "DES-XX"` and `state: "Done"`
+
+The MCP server can disconnect — if tools are unavailable, ask the user to run `/mcp` to reconnect.
+
 ## Testing
 
 No test framework is currently configured. When implementing tests, consider the calendar interaction logic and data store abstraction as priority areas for coverage.

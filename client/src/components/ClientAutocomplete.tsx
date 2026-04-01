@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Client } from '@shared/schema';
 import { useDataStore } from '@/contexts/DataStoreContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { UserPlus, User } from 'lucide-react';
 
 interface ClientAutocompleteProps {
@@ -24,6 +25,12 @@ export default function ClientAutocomplete({
   id,
 }: ClientAutocompleteProps) {
   const dataStore = useDataStore();
+  const { currentOrg, organizations } = useOrganization();
+  const orgNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    organizations.forEach(o => { map[o.id] = o.name; });
+    return map;
+  }, [organizations]);
   const [suggestions, setSuggestions] = useState<Client[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -145,8 +152,15 @@ export default function ClientAutocomplete({
               <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                 <User className="h-3.5 w-3.5 text-blue-600" />
               </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-medium text-gray-900">{client.name}</span>
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-gray-900">{client.name}</span>
+                  {currentOrg?.groupId && client.organizationId !== currentOrg.id && (
+                    <span className="shrink-0 text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded font-medium">
+                      {orgNameById[client.organizationId] ?? 'Other location'}
+                    </span>
+                  )}
+                </div>
                 {(client.contact || client.email) && (
                   <span className="text-gray-400 text-xs truncate">{client.contact || client.email}</span>
                 )}

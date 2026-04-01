@@ -50,7 +50,12 @@ export default function MembersPage() {
   const dataStore = useDataStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { currentOrg } = useOrganization();
+  const { currentOrg, organizations } = useOrganization();
+  const orgNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    organizations.forEach(o => { map[o.id] = o.name; });
+    return map;
+  }, [organizations]);
   const debouncedSave = useDebouncedSave(dataStore, toast);
   const [localClients, setLocalClients] = useState<Client[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -236,14 +241,21 @@ export default function MembersPage() {
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
                     <td className="px-4 py-1.5">
-                      <input
-                        ref={index === 0 ? newNameRef : undefined}
-                        type="text"
-                        value={client.name}
-                        onChange={(e) => updateField(client.id, 'name', e.target.value)}
-                        placeholder="Enter name..."
-                        className="w-full bg-transparent border-0 outline-none text-sm text-gray-900 placeholder-gray-300 focus:ring-0 py-1"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          ref={index === 0 ? newNameRef : undefined}
+                          type="text"
+                          value={client.name}
+                          onChange={(e) => updateField(client.id, 'name', e.target.value)}
+                          placeholder="Enter name..."
+                          className="flex-1 bg-transparent border-0 outline-none text-sm text-gray-900 placeholder-gray-300 focus:ring-0 py-1"
+                        />
+                        {currentOrg?.groupId && client.organizationId !== currentOrg.id && (
+                          <span className="shrink-0 text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded font-medium">
+                            {orgNameById[client.organizationId] ?? 'Other location'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-1.5">
                       <input

@@ -9,10 +9,12 @@ export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
   private readonly DAYS_TO_KEEP = 60; // Keep bookings for 60 days
   private organizationId: string | null;
+  private groupId: string | null;
 
-  constructor(organizationId?: string) {
+  constructor(organizationId?: string, groupId?: string) {
     this.client = supabaseClient;
     this.organizationId = organizationId || null;
+    this.groupId = groupId || null;
 
     // Check authentication status on initialization
     this.checkAuthStatus();
@@ -45,6 +47,17 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   private scopeQuery<T>(query: T): T {
+    if (this.organizationId) {
+      return (query as any).eq('organization_id', this.organizationId) as T;
+    }
+    return query;
+  }
+
+  // Client queries scope by group_id when the org is in a group, else by org_id
+  private scopeClientQuery<T>(query: T): T {
+    if (this.groupId) {
+      return (query as any).eq('group_id', this.groupId) as T;
+    }
     if (this.organizationId) {
       return (query as any).eq('organization_id', this.organizationId) as T;
     }
@@ -904,7 +917,7 @@ export class SupabaseDataStore implements IDataStore {
   // Client operations
   async getClients(): Promise<Client[]> {
     // Fetch clients with their most recent booking date for sorting
-    const { data, error } = await this.scopeQuery(
+    const { data, error } = await this.scopeClientQuery(
       this.client.from('clients').select('*, desk_bookings(date)')
     ).order('name');
 
@@ -933,7 +946,7 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   async searchClients(query: string): Promise<Client[]> {
-    const { data, error } = await this.scopeQuery(
+    const { data, error } = await this.scopeClientQuery(
       this.client.from('clients').select('*').ilike('name', `%${query}%`)
     ).order('name').limit(10);
 
@@ -948,6 +961,7 @@ export class SupabaseDataStore implements IDataStore {
     if (isNew) {
       const record: any = {
         organization_id: this.organizationId,
+        group_id: this.groupId || null,
         name: client.name,
         contact: client.contact || null,
         email: client.email || null,

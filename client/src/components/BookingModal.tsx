@@ -9,6 +9,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
 import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package, ArrowRightLeft } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import ClientAutocomplete from './ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -69,6 +70,7 @@ export default function BookingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [shareOnSave, setShareOnSave] = useState(false);
   const [newDeskId, setNewDeskId] = useState<string>(deskId);
   const [availableDesks, setAvailableDesks] = useState<Desk[]>([]);
   const [loadingDesks, setLoadingDesks] = useState(false);
@@ -105,6 +107,7 @@ export default function BookingModal({
 
       setConflictError('');
       setConfirmDiscard(false);
+      setShareOnSave(false);
       setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
     }
   }, [isOpen, booking, date]);
@@ -154,15 +157,15 @@ export default function BookingModal({
     dataStore.getClientById(clientId).then(c => {
       if (!cancelled) {
         setFlexClient(c?.flexActive ? c : null);
-        // Auto-fill per-visit price for flex members
-        if (c?.flexActive && flexPerVisit > 0) {
+        // Auto-fill per-visit price for flex members — only for new bookings
+        if (c?.flexActive && flexPerVisit > 0 && !booking) {
           setPrice(flexPerVisit.toFixed(2));
           setStatus('assigned');
         }
       }
     });
     return () => { cancelled = true; };
-  }, [clientId, flexConfigured]);
+  }, [clientId, flexConfigured, booking]);
 
   const handleSave = async () => {
     const trimmedName = personName.trim();
@@ -185,7 +188,7 @@ export default function BookingModal({
           isFlex: !!flexClient,
           newDeskId: newDeskId !== deskId ? newDeskId : undefined,
         });
-        if (onShare) {
+        if (onShare && shareOnSave) {
           onShare({
             personName: trimmedName,
             startDate,
@@ -469,6 +472,20 @@ export default function BookingModal({
               Enter the total price for this booking
             </p>
           </div>
+
+          {!isExistingBooking && onShare && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="shareOnSave"
+                checked={shareOnSave}
+                onCheckedChange={(v) => setShareOnSave(!!v)}
+              />
+              <label htmlFor="shareOnSave" className="text-sm text-gray-600 cursor-pointer select-none flex items-center gap-1.5">
+                <Share2 className="h-3.5 w-3.5" />
+                Share booking confirmation after saving
+              </label>
+            </div>
+          )}
 
           {conflictError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
