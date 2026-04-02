@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client, ExpenseCategory } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -704,10 +704,11 @@ export class SupabaseDataStore implements IDataStore {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('expenses')
-          .select('*')
+          .select('*, expense_categories(id, name)')
           .gte('date', startDate)
           .lte('date', endDate)
-      ).order('date');
+          .order('date', { ascending: false })
+      );
 
       if (error) throw error;
 
@@ -756,8 +757,9 @@ export class SupabaseDataStore implements IDataStore {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('recurring_expenses')
-          .select('*')
-      ).order('created_at');
+          .select('*, expense_categories(id, name)')
+          .eq('is_active', true)
+      );
 
       if (error) throw error;
 
@@ -824,7 +826,8 @@ export class SupabaseDataStore implements IDataStore {
             date: expenseDate,
             amount: recurring.amount,
             currency: recurring.currency,
-            category: recurring.category,
+            categoryId: recurring.categoryId,
+            categoryName: recurring.categoryName,
             description: recurring.description,
             isRecurring: true,
             recurringExpenseId: recurring.id,
@@ -856,7 +859,7 @@ export class SupabaseDataStore implements IDataStore {
       date: expense.date,
       amount: expense.amount,
       currency: expense.currency,
-      category: expense.category,
+      category_id: expense.categoryId,
       description: expense.description,
       is_recurring: expense.isRecurring,
       recurring_expense_id: recurringId,
@@ -874,7 +877,8 @@ export class SupabaseDataStore implements IDataStore {
       date: row.date,
       amount: parseFloat(row.amount),
       currency: row.currency,
-      category: row.category,
+      categoryId: row.category_id,
+      categoryName: row.expense_categories?.name ?? '',
       description: row.description,
       isRecurring: row.is_recurring || false,
       recurringExpenseId: row.recurring_expense_id ? String(row.recurring_expense_id) : undefined,
@@ -889,7 +893,7 @@ export class SupabaseDataStore implements IDataStore {
       id: numericId,
       amount: expense.amount,
       currency: expense.currency,
-      category: expense.category,
+      category_id: expense.categoryId,
       description: expense.description,
       day_of_month: expense.dayOfMonth,
       is_active: expense.isActive,
@@ -906,12 +910,47 @@ export class SupabaseDataStore implements IDataStore {
       id: String(row.id),
       amount: parseFloat(row.amount),
       currency: row.currency,
-      category: row.category,
+      categoryId: row.category_id,
+      categoryName: row.expense_categories?.name ?? '',
       description: row.description,
       dayOfMonth: row.day_of_month,
       isActive: row.is_active,
       createdAt: row.created_at,
     };
+  }
+
+  async getExpenseCategories(): Promise<ExpenseCategory[]> {
+    const { data, error } = await this.scopeQuery(
+      this.client.from('expense_categories').select('id, name, is_default').order('name')
+    );
+    if (error) throw new Error('Failed to fetch expense categories');
+    return (data || []).map(row => ({ id: row.id, name: row.name, isDefault: row.is_default }));
+  }
+
+  async createExpenseCategory(name: string): Promise<ExpenseCategory> {
+    const { data, error } = await this.client
+      .from('expense_categories')
+      .insert({ organization_id: this.organizationId, name: name.trim() })
+      .select('id, name, is_default')
+      .single();
+    if (error) throw new Error('Failed to create expense category');
+    return { id: data.id, name: data.name, isDefault: data.is_default };
+  }
+
+  async renameExpenseCategory(id: string, name: string): Promise<void> {
+    const { error } = await this.client
+      .from('expense_categories')
+      .update({ name: name.trim() })
+      .eq('id', id);
+    if (error) throw new Error('Failed to rename expense category');
+  }
+
+  async deleteExpenseCategory(id: string): Promise<void> {
+    const { error } = await this.client
+      .from('expense_categories')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error('Failed to delete expense category');
   }
 
   // Client operations

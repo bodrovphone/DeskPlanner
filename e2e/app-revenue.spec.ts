@@ -17,6 +17,7 @@ import { test, expect } from './fixtures';
  */
 
 const REVENUE_URL = '/e2e-testspace/revenue';
+const EXPENSES_URL = '/e2e-testspace/expenses';
 
 test.describe('Revenue — page load', () => {
   test('dashboard loads with heading and stats cards', async ({ page }) => {
@@ -44,9 +45,9 @@ test.describe('Revenue — page load', () => {
 
 test.describe('Revenue — expenses', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(REVENUE_URL);
+    await page.goto(EXPENSES_URL);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: 'Revenue Dashboard' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Expenses' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('add and delete expense', async ({ page }) => {
@@ -60,11 +61,11 @@ test.describe('Revenue — expenses', () => {
     const dialog = page.getByRole('dialog', { name: 'Add Expense' });
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
+    // Wait for categories to auto-load before the combobox shows a selection
+    await expect(dialog.getByRole('combobox')).not.toContainText('Select category', { timeout: 5_000 });
+
     // Fill amount
     await dialog.getByRole('spinbutton', { name: /Amount/ }).fill('42.50');
-
-    // Skip category selection — the Radix Select portal click closes the parent Radix Dialog
-    // (nested portal outside-click detection bug). Default category 'supplies' is fine.
 
     // Set date to today
     const today = new Date().toISOString().split('T')[0];
@@ -73,22 +74,14 @@ test.describe('Revenue — expenses', () => {
     // Description
     await dialog.getByLabel('Description (Optional)').fill(desc);
 
-    // Submit via keyboard shortcut to avoid any button-targeting issues
+    // Submit via keyboard shortcut
     await page.keyboard.press('Control+Enter');
     await expect(dialog).not.toBeVisible({ timeout: 5_000 });
 
-    // Expand the expenses list (collapsed by default — only rendered when expenses.length > 0)
-    // Use filter to avoid matching "Add Expense" button via accessible name heuristics
-    const expandBtn = page.locator('button').filter({ has: page.getByText('Expenses', { exact: true }) });
-    await expect(expandBtn).toBeVisible({ timeout: 15_000 });
-    await expandBtn.click();
-
-    // Our expense should appear
+    // Our expense should appear directly in the list (no expand needed)
     await expect(page.getByText(desc)).toBeVisible({ timeout: 10_000 });
 
-    // Delete: the trash button is in the same row as our expense description.
-    // Row structure: [icon + date/category/desc] [amount + edit-btn + delete-btn]
-    // Navigate from desc text up to the row, then find the last button (delete/trash).
+    // Delete: navigate from desc text up to the row, then click the last button (trash)
     const row = page.getByText(desc).locator('..').locator('..').locator('..');
     await row.locator('button').last().click();
 
@@ -97,7 +90,7 @@ test.describe('Revenue — expenses', () => {
   });
 
   test('recurring expenses modal opens', async ({ page }) => {
-    await page.getByRole('button', { name: /Recurring/ }).click();
+    await page.getByRole('button', { name: /Recurring/ }).first().click();
 
     // Modal opens with title
     const dialog = page.getByRole('dialog', { name: 'Manage Recurring Expenses' });

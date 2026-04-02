@@ -242,6 +242,16 @@ export function useCreateOrganization() {
         if (mrError) throw mrError;
       }
 
+      // 6. Seed default expense categories (non-critical, fire-and-forget)
+      const defaultCategories = ['Rent', 'Supplies', 'Internet', 'Bills', 'Accountant', 'Other'];
+      void supabaseClient
+        .from('expense_categories')
+        .insert(defaultCategories.map(name => ({
+          organization_id: org.id,
+          name,
+          is_default: true,
+        })));
+
       // Fire-and-forget welcome email (skip e2e accounts)
       if (user.email && !E2E_EMAILS.includes(user.email)) {
         supabaseClient.functions.invoke('email-welcome', {

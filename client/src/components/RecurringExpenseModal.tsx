@@ -4,20 +4,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { RecurringExpense, ExpenseCategory, Currency } from '@shared/schema';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { RecurringExpense, Currency } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   useRecurringExpenses,
   useSaveRecurringExpense,
-  useDeleteRecurringExpense
+  useDeleteRecurringExpense,
+  useExpenseCategories,
+  useCreateExpenseCategory,
 } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Trash2, Plus, Edit2, Repeat, Loader2, Check,
-  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal
+  Trash2, Plus, Edit2, Repeat, Loader2, Check, Tag, ChevronsUpDown,
 } from 'lucide-react';
 
 interface RecurringExpenseModalProps {
@@ -25,39 +34,25 @@ interface RecurringExpenseModalProps {
   onClose: () => void;
 }
 
-const categoryLabels: Record<ExpenseCategory, string> = {
-  rent: 'Rent',
-  supplies: 'Supplies',
-  internet: 'Internet',
-  bills: 'Bills',
-  accountant: 'Accountant',
-  other: 'Other',
-};
-
-const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  rent: { Icon: Home, color: 'text-purple-600' },
-  supplies: { Icon: Coffee, color: 'text-green-600' },
-  internet: { Icon: Wifi, color: 'text-blue-600' },
-  bills: { Icon: Zap, color: 'text-yellow-600' },
-  accountant: { Icon: Calculator, color: 'text-indigo-600' },
-  other: { Icon: MoreHorizontal, color: 'text-gray-600' },
-};
-
 export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpenseModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('supplies');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [dayOfMonth, setDayOfMonth] = useState('1');
   const [isActive, setIsActive] = useState(true);
   const [currency, setCurrency] = useState<Currency>('EUR');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const { toast } = useToast();
   const { currentOrg } = useOrganization();
   const { data: recurringExpenses = [], isLoading } = useRecurringExpenses();
+  const { data: categories = [] } = useExpenseCategories();
   const saveRecurringExpense = useSaveRecurringExpense();
   const deleteRecurringExpense = useDeleteRecurringExpense();
+  const createCategory = useCreateExpenseCategory();
 
   useEffect(() => {
     if (isOpen && !isEditing) {
@@ -65,39 +60,78 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
     }
   }, [isOpen]);
 
+  // When categories load and no category selected, pick first
+  useEffect(() => {
+    if (!categoryId && categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories]);
+
   const resetForm = () => {
     setIsEditing(false);
     setEditingId(null);
     setAmount('');
-    setCategory('supplies');
+    setCategoryId(categories[0]?.id ?? '');
     setDescription('');
     setDayOfMonth('1');
     setIsActive(true);
     setCurrency(currentOrg?.currency || 'EUR');
+    setCategorySearch('');
   };
 
   const handleEdit = (expense: RecurringExpense) => {
     setIsEditing(true);
     setEditingId(expense.id);
     setAmount(expense.amount.toString());
-    setCategory(expense.category);
+    setCategoryId(expense.categoryId);
     setDescription(expense.description || '');
     setDayOfMonth(expense.dayOfMonth.toString());
     setIsActive(expense.isActive);
     setCurrency(expense.currency);
+    setCategorySearch('');
+  };
+
+  const selectedCategoryName = categories.find(c => c.id === categoryId)?.name ?? '';
+
+  const filteredCategories = categories.filter(c =>
+    c.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
+  const showCreateOption =
+    categorySearch.trim().length > 0 &&
+    !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase());
+
+  const handleSelectCategory = (id: string) => {
+    setCategoryId(id);
+    setCategoryOpen(false);
+    setCategorySearch('');
+  };
+
+  const handleCreateCategory = async () => {
+    const name = categorySearch.trim();
+    if (!name) return;
+    try {
+      const created = await createCategory.mutateAsync(name);
+      setCategoryId(created.id);
+      setCategoryOpen(false);
+      setCategorySearch('');
+    } catch {
+      toast({ title: 'Error', description: 'Failed to create category', variant: 'destructive' });
+    }
   };
 
   const handleSave = async () => {
     const parsedAmount = parseFloat(amount);
     const parsedDay = parseInt(dayOfMonth);
 
-    if (parsedAmount >= 0 && parsedDay >= 1 && parsedDay <= 28) {
+    if (parsedAmount >= 0 && parsedDay >= 1 && parsedDay <= 28 && categoryId) {
       try {
         const expenseData: RecurringExpense = {
           id: editingId || `recurring-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           amount: parsedAmount,
           currency,
-          category,
+          categoryId,
+          categoryName: selectedCategoryName,
           description: description.trim() || undefined,
           dayOfMonth: parsedDay,
           isActive,
@@ -108,7 +142,7 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
 
         toast({
           title: editingId ? 'Recurring Expense Updated' : 'Recurring Expense Added',
-          description: `${categoryLabels[category]} - ${currencySymbols[currency]}${parsedAmount.toFixed(2)}/month on day ${parsedDay}`,
+          description: `${selectedCategoryName} - ${currencySymbols[currency]}${parsedAmount.toFixed(2)}/month on day ${parsedDay}`,
         });
 
         resetForm();
@@ -144,7 +178,8 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
     dayOfMonth.trim() &&
     !isNaN(parseInt(dayOfMonth)) &&
     parseInt(dayOfMonth) >= 1 &&
-    parseInt(dayOfMonth) <= 28;
+    parseInt(dayOfMonth) <= 28 &&
+    !!categoryId;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -163,7 +198,9 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
               <Label className="text-sm font-medium text-gray-700">Active Templates</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {recurringExpenses.map((expense) => {
-                  const { Icon: CategoryIcon, color } = categoryIcons[expense.category];
+                  const catName = expense.categoryName
+                    || categories.find(c => c.id === expense.categoryId)?.name
+                    || '—';
                   return (
                     <div
                       key={expense.id}
@@ -172,11 +209,11 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <CategoryIcon className={`h-5 w-5 ${color}`} />
+                        <Tag className="h-5 w-5 text-gray-400" />
                         <div>
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${expense.isActive ? 'text-gray-900' : 'text-gray-500'}`}>
-                              {categoryLabels[expense.category]}
+                              {catName}
                             </span>
                             {!expense.isActive && (
                               <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
@@ -231,52 +268,60 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
             </div>
 
             <div>
-              <Label htmlFor="recurringCategory" className="text-sm font-medium text-gray-700">
-                Category *
-              </Label>
-              <Select value={category} onValueChange={(value: ExpenseCategory) => setCategory(value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="rent">
-                    <div className="flex items-center gap-2">
-                      <Home className="h-4 w-4 text-purple-600" />
-                      <span>Rent</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="supplies">
-                    <div className="flex items-center gap-2">
-                      <Coffee className="h-4 w-4 text-green-600" />
-                      <span>Supplies</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="internet">
-                    <div className="flex items-center gap-2">
-                      <Wifi className="h-4 w-4 text-blue-600" />
-                      <span>Internet</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="bills">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-yellow-600" />
-                      <span>Bills</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="accountant">
-                    <div className="flex items-center gap-2">
-                      <Calculator className="h-4 w-4 text-indigo-600" />
-                      <span>Accountant</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="other">
-                    <div className="flex items-center gap-2">
-                      <MoreHorizontal className="h-4 w-4 text-gray-600" />
-                      <span>Other</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-sm font-medium text-gray-700">Category *</Label>
+              <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={categoryOpen}
+                    className="mt-1 w-full justify-between font-normal"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <Tag className="h-4 w-4 text-gray-500 shrink-0" />
+                      {selectedCategoryName || 'Select category...'}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 text-gray-400 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search or create..."
+                      value={categorySearch}
+                      onValueChange={setCategorySearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {showCreateOption ? null : 'No categories found.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {filteredCategories.map(cat => (
+                          <CommandItem
+                            key={cat.id}
+                            value={cat.name}
+                            onSelect={() => handleSelectCategory(cat.id)}
+                          >
+                            <Tag className="h-4 w-4 mr-2 text-gray-400" />
+                            {cat.name}
+                            {cat.id === categoryId && <Check className="h-4 w-4 ml-auto text-green-600" />}
+                          </CommandItem>
+                        ))}
+                        {showCreateOption && (
+                          <CommandItem
+                            value={`__create__${categorySearch}`}
+                            onSelect={handleCreateCategory}
+                            className="text-blue-600"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create "{categorySearch.trim()}"
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense, Client } from '@/../../shared/schema';
+import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense, Client, ExpenseCategory } from '@/../../shared/schema';
 
 /**
  * Abstract data store interface for desk bookings
@@ -50,6 +50,12 @@ export interface IDataStore {
 
   // Share token operations
   getOrCreateShareToken?(bookingId: string, deskId?: string, date?: string): Promise<string>;
+
+  // Expense category operations
+  getExpenseCategories?(): Promise<ExpenseCategory[]>;
+  createExpenseCategory?(name: string): Promise<ExpenseCategory>;
+  renameExpenseCategory?(id: string, name: string): Promise<void>;
+  deleteExpenseCategory?(id: string): Promise<void>;
 
   // Client operations
   getClients?(): Promise<Client[]>;

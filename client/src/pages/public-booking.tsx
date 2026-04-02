@@ -390,8 +390,9 @@ export default function PublicBookingPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
+                    <label htmlFor="visitor-name" className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
                     <input
+                      id="visitor-name"
                       type="text"
                       value={visitorName}
                       onChange={(e) => setVisitorName(e.target.value)}
@@ -402,8 +403,9 @@ export default function PublicBookingPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone *</label>
+                    <label htmlFor="visitor-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Phone *</label>
                     <input
+                      id="visitor-phone"
                       type="tel"
                       value={visitorPhone}
                       onChange={(e) => {

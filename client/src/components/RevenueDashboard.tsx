@@ -1,23 +1,16 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { useMonthlyStats, useDateRangeStats } from '@/hooks/use-monthly-stats';
-import { useExpenses, useDeleteExpense } from '@/hooks/use-expenses';
+import { useExpenses } from '@/hooks/use-expenses';
 import { useMeetingRoomBookingsRange } from '@/hooks/use-meeting-room-bookings';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Expense, ExpenseCategory } from '@shared/schema';
-import ExpenseModal from './ExpenseModal';
-import RecurringExpenseModal from './RecurringExpenseModal';
 import {
-  ChevronDown, ChevronUp, Plus, Settings, Trash2, Edit2,
   TrendingUp, TrendingDown, Banknote, Receipt, Armchair, BarChart3,
-  Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal, DoorOpen
+  DoorOpen
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 interface RevenueDashboardProps {
   viewMode: 'week' | 'month';
@@ -26,32 +19,7 @@ interface RevenueDashboardProps {
   endDate?: string;
 }
 
-const categoryLabels: Record<ExpenseCategory, string> = {
-  rent: 'Rent',
-  supplies: 'Supplies',
-  internet: 'Internet',
-  bills: 'Bills',
-  accountant: 'Accountant',
-  other: 'Other',
-};
-
-const categoryIcons: Record<ExpenseCategory, { Icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  rent: { Icon: Home, color: 'text-purple-600' },
-  supplies: { Icon: Coffee, color: 'text-green-600' },
-  internet: { Icon: Wifi, color: 'text-blue-600' },
-  bills: { Icon: Zap, color: 'text-yellow-600' },
-  accountant: { Icon: Calculator, color: 'text-indigo-600' },
-  other: { Icon: MoreHorizontal, color: 'text-gray-600' },
-};
-
 export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate, endDate }: RevenueDashboardProps) {
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [isExpensesExpanded, setIsExpensesExpanded] = useState(false);
-
-  const { toast } = useToast();
-  const deleteExpense = useDeleteExpense();
   const { currentOrg, hasMeetingRooms } = useOrganization();
   const defaultPricePerDay = currentOrg?.defaultPricePerDay ?? 8;
 
@@ -72,7 +40,7 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
   // Fetch expenses for the period
   const expensesStartDate = viewMode === 'week' ? (startDate || monthStart) : monthStart;
   const expensesEndDate = viewMode === 'week' ? (endDate || monthEnd) : monthEnd;
-  const { data: expenses = [], isLoading: expensesLoading } = useExpenses(expensesStartDate, expensesEndDate);
+  const { data: expenses = [] } = useExpenses(expensesStartDate, expensesEndDate);
 
   // Fetch meeting room bookings for the period
   const { data: mrBookings = [] } = useMeetingRoomBookingsRange(currentOrg?.id, expensesStartDate, expensesEndDate);
@@ -100,99 +68,46 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
 
   const title = isWeekView ? 'Weekly Revenue & Occupancy' : 'Monthly Revenue & Occupancy';
 
-  const handleEditExpense = (expense: Expense) => {
-    setEditingExpense(expense);
-    setIsExpenseModalOpen(true);
-  };
-
-  const handleDeleteExpense = async (id: string) => {
-    try {
-      await deleteExpense.mutateAsync(id);
-      toast({
-        title: 'Expense Deleted',
-        description: 'The expense has been removed',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete expense',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleCloseExpenseModal = () => {
-    setIsExpenseModalOpen(false);
-    setEditingExpense(null);
-  };
-
-  const formatExpenseDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
   return (
     <>
-      <Card className="mt-6">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <Card className="mt-4">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-              <p className="text-sm text-gray-500">{periodLabel}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsExpenseModalOpen(true)}
-                className="text-red-600 border-red-200 hover:bg-red-50 flex-1 sm:flex-none"
-              >
-                <Plus className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Add Expense</span>
-                <span className="sm:hidden">Expense</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsRecurringModalOpen(true)}
-                className="text-purple-600 border-purple-200 hover:bg-purple-50 flex-1 sm:flex-none"
-              >
-                <Settings className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Recurring</span>
-                <span className="sm:hidden">Recurring</span>
-              </Button>
+              <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+              <p className="text-xs text-gray-500">{periodLabel}</p>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 pb-3">
           {isLoading ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-20" />
+                  <Skeleton key={i} className="h-14" />
                 ))}
               </div>
-              <Skeleton className="h-6" />
+              <Skeleton className="h-4" />
             </div>
           ) : stats ? (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
                 {/* Net Profit - First */}
-                <div className={`p-3 sm:p-4 rounded-lg border ${
+                <div className={`p-2 rounded-lg border ${
                   netProfit >= 0
                     ? 'bg-green-50 border-green-100'
                     : 'bg-red-50 border-red-100'
                 }`}>
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1">
                     {netProfit >= 0 ? (
-                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                      <TrendingUp className="h-3.5 w-3.5 text-green-600 shrink-0" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                      <TrendingDown className="h-3.5 w-3.5 text-red-600 shrink-0" />
                     )}
-                    <span className="text-xs sm:text-sm text-gray-600">Net Profit</span>
+                    <span className="text-xs text-gray-600">Net Profit</span>
                   </div>
-                  <div className={`text-lg sm:text-2xl font-bold mt-1 ${
+                  <div className={`text-base font-bold mt-0.5 ${
                     netProfit >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {formatCurrency(netProfit)}
@@ -200,24 +115,24 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 </div>
 
                 {/* Total Revenue */}
-                <div className="p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                    <span className="text-xs sm:text-sm text-gray-600">Desk Revenue</span>
+                <div className="p-2 bg-yellow-50 rounded-lg border border-yellow-100">
+                  <div className="flex items-center gap-1">
+                    <Banknote className="h-3.5 w-3.5 text-yellow-600 shrink-0" />
+                    <span className="text-xs text-gray-600">Desk Revenue</span>
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold text-yellow-600 mt-1">
+                  <div className="text-base font-bold text-yellow-600 mt-0.5">
                     {formatCurrency(stats.totalRevenue)}
                   </div>
                 </div>
 
                 {/* Meeting Room Revenue (only when enabled) */}
                 {hasMeetingRooms && (
-                  <div className="p-3 sm:p-4 bg-orange-50 rounded-lg border border-orange-100">
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <DoorOpen className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-                      <span className="text-xs sm:text-sm text-gray-600">Room Revenue</span>
+                  <div className="p-2 bg-orange-50 rounded-lg border border-orange-100">
+                    <div className="flex items-center gap-1">
+                      <DoorOpen className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                      <span className="text-xs text-gray-600">Room Revenue</span>
                     </div>
-                    <div className="text-lg sm:text-2xl font-bold text-orange-600 mt-1">
+                    <div className="text-base font-bold text-orange-600 mt-0.5">
                       {formatCurrency(meetingRoomRevenue)}
                     </div>
                     <div className="text-xs text-gray-400">{mrBookings.length} bookings</div>
@@ -225,24 +140,24 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 )}
 
                 {/* Total Expenses */}
-                <div className="p-3 sm:p-4 bg-red-50 rounded-lg border border-red-100">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-                    <span className="text-xs sm:text-sm text-gray-600">Expenses</span>
+                <div className="p-2 bg-red-50 rounded-lg border border-red-100">
+                  <div className="flex items-center gap-1">
+                    <Receipt className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                    <span className="text-xs text-gray-600">Expenses</span>
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold text-red-600 mt-1">
+                  <div className="text-base font-bold text-red-600 mt-0.5">
                     {formatCurrency(totalExpenses)}
                   </div>
                   <div className="text-xs text-gray-400">{expenses.length} items</div>
                 </div>
 
                 {/* Occupancy Rate */}
-                <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-100">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Armchair className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
-                    <span className="text-xs sm:text-sm text-gray-600">Occupancy</span>
+                <div className="p-2 bg-purple-50 rounded-lg border border-purple-100">
+                  <div className="flex items-center gap-1">
+                    <Armchair className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                    <span className="text-xs text-gray-600">Occupancy</span>
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold text-purple-600 mt-1">
+                  <div className="text-base font-bold text-purple-600 mt-0.5">
                     {Math.floor(stats.occupancyRate)}%
                   </div>
                   <div className="text-xs text-gray-400">
@@ -254,12 +169,12 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="p-3 sm:p-4 bg-teal-50 rounded-lg border border-teal-100 cursor-help">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
-                          <span className="text-xs sm:text-sm text-gray-600">Avg/Day</span>
+                      <div className="p-2 bg-teal-50 rounded-lg border border-teal-100 cursor-help">
+                        <div className="flex items-center gap-1">
+                          <BarChart3 className="h-3.5 w-3.5 text-teal-600 shrink-0" />
+                          <span className="text-xs text-gray-600">Avg/Day</span>
                         </div>
-                        <div className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">
+                        <div className="text-base font-bold text-teal-600 mt-0.5">
                           {formatCurrency(stats.revenuePerOccupiedDay)}
                         </div>
                       </div>
@@ -274,12 +189,12 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-help">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                          <span className="text-xs sm:text-sm text-gray-600">Max Revenue</span>
+                      <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-help">
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                          <span className="text-xs text-gray-600">Max Revenue</span>
                         </div>
-                        <div className="text-lg sm:text-2xl font-bold text-gray-500 mt-1">
+                        <div className="text-base font-bold text-gray-500 mt-0.5">
                           {formatCurrency(stats.totalDeskDays * defaultPricePerDay)}
                         </div>
                         <div className="text-xs text-gray-400">
@@ -295,95 +210,14 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
               </div>
 
               {/* Occupancy Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm mb-2">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-600">Occupancy Rate</span>
                   <span className="font-medium">{Math.floor(stats.occupancyRate)}%</span>
                 </div>
-                <Progress value={stats.occupancyRate} className="h-3" />
+                <Progress value={stats.occupancyRate} className="h-2" />
               </div>
 
-              {/* Expenses List */}
-              {expenses.length > 0 && (
-                <div className="border rounded-lg">
-                  <button
-                    className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 transition-colors"
-                    onClick={() => setIsExpensesExpanded(!isExpensesExpanded)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-                      <span className="font-medium text-gray-900 text-sm sm:text-base">
-                        Expenses
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-500">({expenses.length})</span>
-                    </div>
-                    {isExpensesExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </button>
-
-                  {isExpensesExpanded && (
-                    <div className="border-t divide-y">
-                      {expenses.map((expense) => {
-                        const { Icon: CategoryIcon, color } = categoryIcons[expense.category];
-                        return (
-                          <div
-                            key={expense.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50 gap-2"
-                          >
-                            <div className="flex items-start sm:items-center gap-2 sm:gap-3">
-                              <CategoryIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${color}`} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                  <span className="font-medium text-gray-900 text-sm">
-                                    {formatExpenseDate(expense.date)}
-                                  </span>
-                                  <span className="text-gray-600 text-sm">
-                                    {categoryLabels[expense.category]}
-                                  </span>
-                                  {expense.isRecurring && (
-                                    <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">
-                                      Auto
-                                    </span>
-                                  )}
-                                </div>
-                                {expense.description && (
-                                  <div className="text-xs sm:text-sm text-gray-500 truncate">{expense.description}</div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between sm:justify-end gap-2 pl-6 sm:pl-0">
-                              <span className="font-bold text-red-600 text-sm sm:text-base">
-                                {currencySymbol}{expense.amount.toFixed(2)}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditExpense(expense)}
-                                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                                >
-                                  <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteExpense(expense.id)}
-                                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <div className="text-center text-gray-500 py-8">
@@ -393,17 +227,6 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <ExpenseModal
-        isOpen={isExpenseModalOpen}
-        onClose={handleCloseExpenseModal}
-        expense={editingExpense}
-      />
-
-      <RecurringExpenseModal
-        isOpen={isRecurringModalOpen}
-        onClose={() => setIsRecurringModalOpen(false)}
-      />
     </>
   );
 }

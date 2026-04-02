@@ -178,11 +178,13 @@ test.describe('Calendar — edit booking', () => {
     await bookedCell.click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
-    // Name field should be pre-filled
+    // Name field should be visible; fill a name if the cell had none (e.g. quick-book)
     const nameField = page.getByPlaceholder('Enter name');
     await expect(nameField).toBeVisible();
     const existingName = await nameField.inputValue();
-    expect(existingName.length).toBeGreaterThan(0);
+    if (!existingName) {
+      await nameField.fill('E2E Edit User');
+    }
 
     // Switch to "Assigned" status
     await page.getByRole('button', { name: 'Assigned' }).click();

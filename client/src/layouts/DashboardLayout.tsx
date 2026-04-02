@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin } from 'lucide-react';
+import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin, LayoutGrid, Bell, Package, Globe, Receipt } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg';
 import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
@@ -18,22 +18,57 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-function getNavItems(slug: string, user?: User | null, hasMeetingRooms?: boolean, role?: string | null): NavItem[] {
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+function getNavGroups(slug: string, user?: User | null, hasMeetingRooms?: boolean, role?: string | null): NavGroup[] {
   const base = `/${slug}`;
   const isOwner = role === 'owner';
-  const items: NavItem[] = [
-    { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
-    ...(hasMeetingRooms ? [{ to: `${base}/meeting-rooms`, label: 'Meeting Rooms', shortLabel: 'Rooms', icon: DoorOpen }] : []),
-    { to: `${base}/members`, label: 'Members', shortLabel: 'Members', icon: UserRoundSearch },
-    { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
-    ...(isOwner ? [{ to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 }] : []),
-    { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
-    { to: `${base}/settings`, label: 'Settings', shortLabel: 'Settings', icon: Settings },
+
+  const groups: NavGroup[] = [
+    {
+      label: 'Bookings',
+      items: [
+        { to: `${base}/calendar`, label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
+        ...(hasMeetingRooms ? [{ to: `${base}/meeting-rooms`, label: 'Meeting Rooms', shortLabel: 'Rooms', icon: DoorOpen }] : []),
+      ],
+    },
+    {
+      label: 'Members',
+      items: [
+        { to: `${base}/members`, label: 'Members', shortLabel: 'Members', icon: UserRoundSearch },
+        { to: `${base}/waiting-list`, label: 'Waiting List', shortLabel: 'Waitlist', icon: Users },
+      ],
+    },
+    {
+      label: 'Finances',
+      items: [
+        ...(isOwner ? [{ to: `${base}/revenue`, label: 'Revenue', shortLabel: 'Revenue', icon: BarChart3 }] : []),
+        ...(isOwner ? [{ to: `${base}/expenses`, label: 'Expenses', shortLabel: 'Expenses', icon: Receipt }] : []),
+        { to: `${base}/insights`, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
+      ],
+    },
+    {
+      label: 'Settings',
+      items: [
+        { to: `${base}/organization`, label: 'Organization', shortLabel: 'Org', icon: Settings },
+        { to: `${base}/rooms`, label: 'Rooms', shortLabel: 'Rooms', icon: LayoutGrid },
+        { to: `${base}/plans`, label: 'Plans', shortLabel: 'Plans', icon: Package },
+        { to: `${base}/team`, label: 'Team', shortLabel: 'Team', icon: Users },
+        { to: `${base}/notifications`, label: 'Notifications', shortLabel: 'Alerts', icon: Bell },
+        { to: `${base}/integrations`, label: 'Integrations', shortLabel: 'Integr.', icon: Globe },
+        ...(isAdmin(user) ? [{ to: `${base}/admin`, label: 'Admin', shortLabel: 'Admin', icon: Shield }] : []),
+      ],
+    },
   ];
-  if (isAdmin(user)) {
-    items.push({ to: `${base}/admin`, label: 'Admin', shortLabel: 'Admin', icon: Shield });
-  }
-  return items;
+
+  return groups.filter((g) => g.items.length > 0);
+}
+
+function flattenGroups(groups: NavGroup[]): NavItem[] {
+  return groups.flatMap((g) => g.items);
 }
 
 const MOBILE_MAX = 5;
@@ -139,7 +174,8 @@ function OrgSwitcher({
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { currentOrg, currentRole, hasMeetingRooms, organizations, setCurrentOrg } = useOrganization();
-  const navItems = getNavItems(currentOrg?.slug || 'app', user, hasMeetingRooms, currentRole);
+  const navGroups = getNavGroups(currentOrg?.slug || 'app', user, hasMeetingRooms, currentRole);
+  const navItems = flattenGroups(navGroups);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -196,23 +232,35 @@ export default function DashboardLayout() {
           />
         )}
 
-        <nav className={`flex-1 p-3 space-y-1 ${sidebarOpen ? '' : 'px-2'}`}>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={sidebarOpen ? undefined : item.label}
-              className={({ isActive }) =>
-                `flex items-center gap-3 ${sidebarOpen ? 'px-3' : 'justify-center px-0'} py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`
-              }
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {sidebarOpen && item.label}
-            </NavLink>
+        <nav className={`flex-1 p-3 overflow-y-auto ${sidebarOpen ? '' : 'px-2'}`}>
+          {navGroups.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? 'mt-4' : ''}>
+              {sidebarOpen && (
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 select-none">
+                  {group.label}
+                </p>
+              )}
+              {!sidebarOpen && gi > 0 && <div className="border-t my-2 mx-1" />}
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    title={sidebarOpen ? undefined : item.label}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 ${sidebarOpen ? 'px-3' : 'justify-center px-0'} py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`
+                    }
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {sidebarOpen && item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

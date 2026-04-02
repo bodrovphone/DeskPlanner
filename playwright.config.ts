@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,6 +11,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 const AUTH_STATE = 'e2e/.auth/user.json';
+const SIGNUP_AUTH_STATE = 'e2e/.auth/signup.json';
 
 export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
@@ -47,6 +49,12 @@ export default defineConfig({
       name: 'onboarding',
       testMatch: 'onboarding.spec.ts',
       dependencies: ['signup'],
+      use: {
+        // Use auth state saved by the signup test; fall back to empty state if not yet created
+        storageState: fs.existsSync(path.resolve(__dirname, SIGNUP_AUTH_STATE))
+          ? SIGNUP_AUTH_STATE
+          : { cookies: [], origins: [] },
+      },
     },
 
     // Authenticated app suites — depend on auth-setup

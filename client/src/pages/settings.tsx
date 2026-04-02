@@ -12,7 +12,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, Users, Shield, UserMinus, Loader2 } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, Users, Shield, UserMinus, Loader2, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Organization } from '@shared/schema';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
 import telegramIcon from '@/assets/telegram.svg';
@@ -85,15 +86,133 @@ function InlineEdit({
   );
 }
 
-export default function SettingsPage() {
-  const { currentOrg, currentRole, rooms, desks } = useOrganization();
+function OrgSettingsCard() {
+  const { currentOrg } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState(currentOrg?.name || '');
   const [currency, setCurrency] = useState(currentOrg?.currency || 'EUR');
-  const [defaultPrice, setDefaultPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
   const [workingDays, setWorkingDays] = useState<number[]>(currentOrg?.workingDays || [1, 2, 3, 4, 5]);
+
+  const toggleWorkingDay = (day: number) => {
+    setWorkingDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+    );
+  };
+
+  const hasOrgChanges =
+    orgName !== (currentOrg?.name || '') ||
+    currency !== (currentOrg?.currency || 'EUR') ||
+    JSON.stringify(workingDays) !== JSON.stringify(currentOrg?.workingDays || [1, 2, 3, 4, 5]);
+
+  const handleSave = async () => {
+    if (!currentOrg) return;
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({ name: orgName, currency, working_days: workingDays })
+        .eq('id', currentOrg.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Settings Saved', description: 'Organization name updated.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save settings.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!currentOrg) return null;
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-blue-600" />
+          <CardTitle>Organization</CardTitle>
+        </div>
+        <CardDescription>Manage your coworking space details.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="orgName">Space Name</Label>
+          <Input
+            id="orgName"
+            value={orgName}
+            onChange={(e) => setOrgName(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label>Slug</Label>
+          <Input value={currentOrg.slug} disabled />
+          <p className="text-xs text-gray-500 mt-1">Slug cannot be changed after creation.</p>
+        </div>
+        <div>
+          <Label>Currency</Label>
+          <div className="flex gap-2">
+            {activeCurrencies.map(c => (
+              <Button
+                key={c}
+                type="button"
+                variant={currency === c ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrency(c)}
+              >
+                {currencyLabels[c] || c}
+              </Button>
+            ))}
+            <Input
+              value={activeCurrencies.includes(currency) ? '' : currency}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+                if (val) setCurrency(val);
+              }}
+              placeholder="Other (e.g. RSD)"
+              className="w-32"
+              maxLength={3}
+            />
+          </div>
+          {currency && !activeCurrencies.includes(currency) && currency.length === 3 && (
+            <p className="text-xs text-blue-600 mt-1">Using custom currency: {currency}</p>
+          )}
+        </div>
+        <div>
+          <Label>Working Days</Label>
+          <p className="text-xs text-gray-500 mb-2">Select which days your space is open for bookings.</p>
+          <div className="flex gap-1.5">
+            {([1, 2, 3, 4, 5, 6, 7] as const).map(day => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleWorkingDay(day)}
+                className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
+                  workingDays.includes(day)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {DAY_LABELS[day]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <LogoUploadInline orgId={currentOrg.id} logoUrl={currentOrg.logoUrl ?? null} />
+        <Button onClick={handleSave} disabled={saving || !hasOrgChanges}>
+          <Save className="mr-2 h-4 w-4" />
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RoomsSettingsCard() {
+  const { currentOrg, rooms, desks } = useOrganization();
+  const { toast } = useToast();
   const renameRoom = useRenameRoom();
   const renameDesk = useRenameDesk();
   const addRoom = useAddRoom();
@@ -111,18 +230,6 @@ export default function SettingsPage() {
   const [pendingNewRooms, setPendingNewRooms] = useState<Array<{ name: string; deskCount: number }>>([]);
   const [savingRooms, setSavingRooms] = useState(false);
 
-  const toggleWorkingDay = (day: number) => {
-    setWorkingDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
-    );
-  };
-
-  const hasOrgChanges =
-    orgName !== (currentOrg?.name || '') ||
-    currency !== (currentOrg?.currency || 'EUR') ||
-    defaultPrice !== (currentOrg?.defaultPricePerDay?.toString() || '8') ||
-    JSON.stringify(workingDays) !== JSON.stringify(currentOrg?.workingDays || [1, 2, 3, 4, 5]);
-
   const hasRoomChanges =
     Object.keys(draftRoomNames).length > 0 ||
     Object.keys(draftDeskLabels).length > 0 ||
@@ -134,26 +241,6 @@ export default function SettingsPage() {
       newRoomInputRef.current?.focus();
     }
   }, [addingRoom]);
-
-  const handleSave = async () => {
-    if (!currentOrg) return;
-    setSaving(true);
-    try {
-      const { error } = await supabaseClient
-        .from('organizations')
-        .update({ name: orgName, currency, default_price_per_day: parseFloat(defaultPrice) || 8, working_days: workingDays })
-        .eq('id', currentOrg.id);
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
-      toast({ title: 'Settings Saved', description: 'Organization name updated.' });
-    } catch {
-      toast({ title: 'Error', description: 'Failed to save settings.', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDraftRoomRename = (roomId: string, newName: string) => {
     const original = rooms.find((r) => r.id === roomId);
@@ -275,264 +362,169 @@ export default function SettingsPage() {
   if (!currentOrg) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-blue-600" />
-              <CardTitle>Organization</CardTitle>
-            </div>
-            <CardDescription>Manage your coworking space details.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="orgName">Space Name</Label>
-              <Input
-                id="orgName"
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Slug</Label>
-              <Input value={currentOrg.slug} disabled />
-              <p className="text-xs text-gray-500 mt-1">Slug cannot be changed after creation.</p>
-            </div>
-            <div>
-              <Label>Currency</Label>
-              <div className="flex gap-2">
-                {activeCurrencies.map(c => (
-                  <Button
-                    key={c}
-                    type="button"
-                    variant={currency === c ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCurrency(c)}
-                  >
-                    {currencyLabels[c] || c}
-                  </Button>
-                ))}
-                <Input
-                  value={activeCurrencies.includes(currency) ? '' : currency}
-                  onChange={(e) => {
-                    const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-                    if (val) setCurrency(val);
-                  }}
-                  placeholder="Other (e.g. RSD)"
-                  className="w-32"
-                  maxLength={3}
-                />
-              </div>
-              {currency && !activeCurrencies.includes(currency) && currency.length === 3 && (
-                <p className="text-xs text-blue-600 mt-1">Using custom currency: {currency}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="defaultPrice">Default price per desk/day ({currency})</Label>
-              <Input
-                id="defaultPrice"
-                type="number"
-                min="0"
-                step="0.01"
-                value={defaultPrice}
-                onChange={(e) => setDefaultPrice(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Working Days</Label>
-              <p className="text-xs text-gray-500 mb-2">Select which days your space is open for bookings.</p>
-              <div className="flex gap-1.5">
-                {([1, 2, 3, 4, 5, 6, 7] as const).map(day => (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => toggleWorkingDay(day)}
-                    className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
-                      workingDays.includes(day)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    }`}
-                  >
-                    {DAY_LABELS[day]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <LogoUploadInline orgId={currentOrg.id} logoUrl={currentOrg.logoUrl ?? null} />
-            <Button onClick={handleSave} disabled={saving || !hasOrgChanges}>
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="flex flex-col">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-5 w-5 text-blue-600" />
-              <CardTitle>Rooms & Desks</CardTitle>
-            </div>
-            <CardDescription>Click any name to rename it. Change desk counts by editing the number.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col flex-1">
-            <div className="space-y-3 flex-1">
-              {rooms.map((room) => {
-                const roomDesks = desks.filter((d) => d.roomId === room.id);
-                const displayDeskCount = draftDeskCounts[room.id] ?? roomDesks.length;
-                return (
-                  <div key={room.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between gap-2">
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="h-5 w-5 text-blue-600" />
+          <CardTitle>Rooms & Desks</CardTitle>
+        </div>
+        <CardDescription>Click any name to rename it. Change desk counts by editing the number.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1">
+        <div className="space-y-3 flex-1">
+          {rooms.map((room) => {
+            const roomDesks = desks.filter((d) => d.roomId === room.id);
+            const displayDeskCount = draftDeskCounts[room.id] ?? roomDesks.length;
+            return (
+              <div key={room.id} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <InlineEdit
+                    value={draftRoomNames[room.id] ?? room.name}
+                    onSave={(newName) => handleDraftRoomRename(room.id, newName)}
+                    className="font-medium text-gray-900"
+                  />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={displayDeskCount}
+                    onChange={(e) => handleDraftDeskCountChange(room.id, Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-28 h-8 text-sm"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {roomDesks.map((desk) => (
+                    <div
+                      key={desk.id}
+                      className="px-2 py-1 bg-white border rounded text-xs text-gray-600"
+                    >
                       <InlineEdit
-                        value={draftRoomNames[room.id] ?? room.name}
-                        onSave={(newName) => handleDraftRoomRename(room.id, newName)}
-                        className="font-medium text-gray-900"
-                      />
-                      <Input
-                        type="number"
-                        min="1"
-                        value={displayDeskCount}
-                        onChange={(e) => handleDraftDeskCountChange(room.id, Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-28 h-8 text-sm"
+                        value={draftDeskLabels[desk.id] ?? desk.label}
+                        onSave={(newLabel) => handleDraftDeskRename(desk.id, newLabel)}
+                        className="text-xs"
                       />
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {roomDesks.map((desk) => (
-                        <div
-                          key={desk.id}
-                          className="px-2 py-1 bg-white border rounded text-xs text-gray-600"
-                        >
-                          <InlineEdit
-                            value={draftDeskLabels[desk.id] ?? desk.label}
-                            onSave={(newLabel) => handleDraftDeskRename(desk.id, newLabel)}
-                            className="text-xs"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Pending new rooms (not yet saved) */}
-              {pendingNewRooms.map((newRoom, idx) => (
-                <div key={`pending-${idx}`} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-gray-900">{newRoom.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">{newRoom.deskCount} {newRoom.deskCount === 1 ? 'desk' : 'desks'}</span>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleRemovePendingRoom(idx)}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-1">New — will be created on save</p>
+                  ))}
                 </div>
-              ))}
+              </div>
+            );
+          })}
 
-              {addingRoom ? (
-                <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-blue-300">
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <Label className="text-xs text-gray-500 mb-1">Room name</Label>
-                      <Input
-                        ref={newRoomInputRef}
-                        value={newRoomName}
-                        onChange={(e) => setNewRoomName(e.target.value)}
-                        placeholder="e.g. Open Space"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && newRoomName.trim()) handleAddRoom();
-                          if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 mb-1">Desks</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={newRoomDesks}
-                        onChange={(e) => setNewRoomDesks(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-24 h-9 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim()}>
-                      Add
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setAddingRoom(false); setNewRoomName(''); }}>
-                      <X className="h-4 w-4 mr-1" /> Cancel
-                    </Button>
-                  </div>
+          {/* Pending new rooms (not yet saved) */}
+          {pendingNewRooms.map((newRoom, idx) => (
+            <div key={`pending-${idx}`} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-gray-900">{newRoom.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">{newRoom.deskCount} {newRoom.deskCount === 1 ? 'desk' : 'desks'}</span>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleRemovePendingRoom(idx)}>
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setAddingRoom(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Room
+              </div>
+              <p className="text-xs text-blue-600 mt-1">New — will be created on save</p>
+            </div>
+          ))}
+
+          {addingRoom ? (
+            <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-blue-300">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label className="text-xs text-gray-500 mb-1">Room name</Label>
+                  <Input
+                    ref={newRoomInputRef}
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    placeholder="e.g. Open Space"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newRoomName.trim()) handleAddRoom();
+                      if (e.key === 'Escape') { setAddingRoom(false); setNewRoomName(''); }
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1">Desks</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newRoomDesks}
+                    onChange={(e) => setNewRoomDesks(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-24 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" onClick={handleAddRoom} disabled={!newRoomName.trim()}>
+                  Add
                 </Button>
-              )}
-
-              {rooms.length === 0 && pendingNewRooms.length === 0 && !addingRoom && (
-                <p className="text-sm text-gray-500">No rooms configured yet.</p>
-              )}
+                <Button size="sm" variant="ghost" onClick={() => { setAddingRoom(false); setNewRoomName(''); }}>
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
             </div>
-            <div className="mt-4 pt-4 border-t">
-              <Button onClick={handleSaveRooms} disabled={!hasRoomChanges || savingRooms}>
-                <Save className="mr-2 h-4 w-4" />
-                {savingRooms ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setAddingRoom(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Room
+            </Button>
+          )}
 
-        {currentRole === 'owner' && (
-          <TeamCard orgId={currentOrg.id} groupId={currentOrg.groupId ?? undefined} />
-        )}
+          {rooms.length === 0 && pendingNewRooms.length === 0 && !addingRoom && (
+            <p className="text-sm text-gray-500">No rooms configured yet.</p>
+          )}
+        </div>
+        <div className="mt-4 pt-4 border-t">
+          <Button onClick={handleSaveRooms} disabled={!hasRoomChanges || savingRooms}>
+            <Save className="mr-2 h-4 w-4" />
+            {savingRooms ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-        <FlexPlanCard
-          orgId={currentOrg.id}
-          currency={currentOrg.currency}
-          flexPlanDays={currentOrg.flexPlanDays ?? null}
-          flexPlanPrice={currentOrg.flexPlanPrice ?? null}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-        />
+export default function SettingsPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg) return null;
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Organization</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <OrgSettingsCard />
+        <SpaceContactCard orgId={currentOrg.id} org={currentOrg} isAdmin={isAdmin} />
+      </div>
+    </div>
+  );
+}
 
-        <MeetingRoomsCard
-          orgId={currentOrg.id}
-          currency={currentOrg.currency}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-        />
+export function SettingsTeamPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg || currentRole !== 'owner') return null;
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Team</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <TeamCard orgId={currentOrg.id} groupId={currentOrg.groupId ?? undefined} />
+      </div>
+    </div>
+  );
+}
 
-        <SpaceContactCard
-          orgId={currentOrg.id}
-          org={currentOrg}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-        />
-
-        <TelegramNotificationsCard
-          orgId={currentOrg.id}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-        />
-
-        <EmailNotificationsCard
-          orgId={currentOrg.id}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-        />
-
-        <PublicBookingCard
-          orgId={currentOrg.id}
-          orgSlug={currentOrg.slug}
-          isAdmin={currentRole === 'owner' || currentRole === 'admin'}
-          enabled={currentOrg.publicBookingEnabled}
-          maxDaysAhead={currentOrg.publicBookingMaxDaysAhead}
-        />
+export function SettingsNotificationsPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg) return null;
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Notifications</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <TelegramNotificationsCard orgId={currentOrg.id} isAdmin={isAdmin} />
+        <EmailNotificationsCard orgId={currentOrg.id} isAdmin={isAdmin} />
       </div>
     </div>
   );
@@ -1496,53 +1488,78 @@ function FlexPlanCard({
           Offer day packages to members (e.g. 10 days for {currency} 80). Each visit deducts one day from their balance.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col flex-1">
         {!isAdmin ? (
           <p className="text-sm text-gray-500">Ask a space owner or admin to configure the flex plan.</p>
         ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="flexDays">Days per plan</Label>
-                <Input
-                  id="flexDays"
-                  type="number"
-                  min="1"
-                  placeholder="e.g. 10"
-                  value={days}
-                  onChange={(e) => setDays(e.target.value)}
-                />
+          <>
+            <div className="space-y-4 flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="flexDays">Days per plan</Label>
+                  <Input
+                    id="flexDays"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 10"
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="flexPrice">Plan price ({currency})</Label>
+                  <Input
+                    id="flexPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 80"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="flexPrice">Plan price ({currency})</Label>
-                <Input
-                  id="flexPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="e.g. 80"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-            </div>
-            {parsedDays > 0 && parsedPrice > 0 && (
-              <p className="text-sm text-gray-600">
-                Per visit: <span className="font-medium">{currency} {perVisitPrice.toFixed(2)}</span>
-              </p>
-            )}
-            <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={saving || !hasChanges || parsedDays <= 0 || parsedPrice <= 0}>
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-              {isConfigured && (
-                <Button variant="outline" onClick={handleClear} disabled={saving} className="text-gray-500">
-                  Clear
-                </Button>
+              {parsedDays > 0 && parsedPrice > 0 && (
+                <p className="text-sm text-gray-600">
+                  Per visit: <span className="font-medium">{currency} {perVisitPrice.toFixed(2)}</span>
+                </p>
               )}
             </div>
-          </div>
+            <div className="mt-4 pt-4 border-t flex gap-2">
+              <Button onClick={handleSave} disabled={saving || !hasChanges || parsedDays <= 0 || parsedPrice <= 0}>
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              {isConfigured && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={saving} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                      <AlertTriangle className="mr-2 h-4 w-4" />
+                      Disable
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Disable flex plan?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <span className="block">This will remove the flex plan configuration. New plans can no longer be sold.</span>
+                        <span className="block font-medium text-gray-700">Existing member balances are not affected — members keep their remaining days and can still check in as usual.</span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleClear}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Disable flex plan
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
@@ -1679,5 +1696,168 @@ function PublicBookingCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+export function SettingsRoomsPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg) return null;
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Rooms</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <RoomsSettingsCard />
+        <MeetingRoomsCard orgId={currentOrg.id} currency={currentOrg.currency} isAdmin={isAdmin} />
+      </div>
+    </div>
+  );
+}
+
+function ComingSoonCard({ name, description, svgPath }: { name: string; description: string; svgPath: string }) {
+  return (
+    <Card className="flex flex-col opacity-50 select-none pointer-events-none">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-gray-500">
+                <path d={svgPath} />
+              </svg>
+            </div>
+            <CardTitle className="text-base">{name}</CardTitle>
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
+            Coming soon
+          </span>
+        </div>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+
+const COMING_SOON_INTEGRATIONS = [
+  {
+    name: 'Slack',
+    description: 'Get booking notifications and daily summaries delivered straight to your Slack channel.',
+    svgPath: 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.315A2.528 2.528 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z',
+  },
+  {
+    name: 'Stripe',
+    description: 'Collect desk booking payments online. Send invoices and track revenue automatically.',
+    svgPath: 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z',
+  },
+  {
+    name: 'Google Calendar',
+    description: "Sync all desk bookings to Google Calendar so your team always knows who's in.",
+    svgPath: 'M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM0 5.684v12.632h5.684V5.684H0zM5.684 0v5.684h12.632V0H5.684zM18.316 0v5.684H24V0h-5.684zM0 0v5.684h5.684V0H0zM0 18.316V24h5.684v-5.684H0zM18.316 18.316V24H24v-5.684h-5.684z',
+  },
+];
+
+export function SettingsIntegrationsPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg) return null;
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Integrations</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <PublicBookingCard
+          orgId={currentOrg.id}
+          orgSlug={currentOrg.slug}
+          isAdmin={isAdmin}
+          enabled={currentOrg.publicBookingEnabled}
+          maxDaysAhead={currentOrg.publicBookingMaxDaysAhead}
+        />
+        {COMING_SOON_INTEGRATIONS.map((item) => (
+          <ComingSoonCard key={item.name} {...item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DayPassPlanCard() {
+  const { currentOrg } = useOrganization();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [price, setPrice] = useState(currentOrg?.defaultPricePerDay?.toString() || '8');
+  const [saving, setSaving] = useState(false);
+
+  const hasChanges = price !== (currentOrg?.defaultPricePerDay?.toString() || '8');
+
+  const handleSave = async () => {
+    if (!currentOrg) return;
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({ default_price_per_day: parseFloat(price) || 0 })
+        .eq('id', currentOrg.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Saved', description: 'Day pass price updated.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!currentOrg) return null;
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-blue-600" />
+          <CardTitle>Day Pass</CardTitle>
+        </div>
+        <CardDescription>Default price charged per desk per day for walk-in and public bookings.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1">
+        <div className="space-y-4 flex-1">
+          <div>
+            <Label htmlFor="dayPassPrice">Price per desk / day ({currentOrg.currency})</Label>
+            <Input
+              id="dayPassPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t">
+          <Button onClick={handleSave} disabled={saving || !hasChanges}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function SettingsPlansPage() {
+  const { currentOrg, currentRole } = useOrganization();
+  if (!currentOrg) return null;
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Plans</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <DayPassPlanCard />
+        <FlexPlanCard
+          orgId={currentOrg.id}
+          currency={currentOrg.currency}
+          flexPlanDays={currentOrg.flexPlanDays ?? null}
+          flexPlanPrice={currentOrg.flexPlanPrice ?? null}
+          isAdmin={isAdmin}
+        />
+      </div>
+    </div>
   );
 }

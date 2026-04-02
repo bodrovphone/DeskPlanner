@@ -4,13 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, ExpenseCategory, Currency } from '@shared/schema';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Expense, Currency } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { useSaveExpense } from '@/hooks/use-expenses';
+import { useSaveExpense, useExpenseCategories, useCreateExpenseCategory } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
-import { Receipt, Loader2, Check, Home, Coffee, Wifi, Zap, Calculator, MoreHorizontal } from 'lucide-react';
+import { Receipt, Loader2, Check, ChevronsUpDown, Plus, Tag } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -18,50 +26,82 @@ interface ExpenseModalProps {
   expense?: Expense | null;
 }
 
-const categoryLabels: Record<ExpenseCategory, string> = {
-  rent: 'Rent',
-  supplies: 'Supplies (coffee, tea, water, etc.)',
-  internet: 'Internet',
-  bills: 'Bills (electricity, water)',
-  accountant: 'Accountant',
-  other: 'Other',
-};
-
 export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalProps) {
   const [date, setDate] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('supplies');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [isLoading, setIsLoading] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const { toast } = useToast();
   const { currentOrg } = useOrganization();
   const saveExpense = useSaveExpense();
+  const { data: categories = [] } = useExpenseCategories();
+  const createCategory = useCreateExpenseCategory();
 
   useEffect(() => {
     if (isOpen) {
       if (expense) {
         setDate(expense.date);
         setAmount(expense.amount.toString());
-        setCategory(expense.category);
+        setCategoryId(expense.categoryId);
         setDescription(expense.description || '');
         setCurrency(expense.currency);
       } else {
         const today = new Date().toISOString().split('T')[0];
         setDate(today);
         setAmount('');
-        setCategory('supplies');
+        setCategoryId(categories[0]?.id ?? '');
         setDescription('');
         setCurrency(currentOrg?.currency || 'EUR');
       }
+      setCategorySearch('');
     }
   }, [isOpen, expense]);
+
+  // When categories load and no category selected, pick first
+  useEffect(() => {
+    if (!categoryId && categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories]);
+
+  const selectedCategoryName = categories.find(c => c.id === categoryId)?.name ?? '';
+
+  const filteredCategories = categories.filter(c =>
+    c.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
+  const showCreateOption =
+    categorySearch.trim().length > 0 &&
+    !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase());
+
+  const handleSelectCategory = (id: string) => {
+    setCategoryId(id);
+    setCategoryOpen(false);
+    setCategorySearch('');
+  };
+
+  const handleCreateCategory = async () => {
+    const name = categorySearch.trim();
+    if (!name) return;
+    try {
+      const created = await createCategory.mutateAsync(name);
+      setCategoryId(created.id);
+      setCategoryOpen(false);
+      setCategorySearch('');
+    } catch {
+      toast({ title: 'Error', description: 'Failed to create category', variant: 'destructive' });
+    }
+  };
 
   const handleSave = async () => {
     const parsedAmount = parseFloat(amount);
 
-    if (date && parsedAmount >= 0) {
+    if (date && parsedAmount >= 0 && categoryId) {
       try {
         setIsLoading(true);
 
@@ -70,7 +110,8 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
           date,
           amount: parsedAmount,
           currency,
-          category,
+          categoryId,
+          categoryName: selectedCategoryName,
           description: description.trim() || undefined,
           isRecurring: expense?.isRecurring || false,
           recurringExpenseId: expense?.recurringExpenseId,
@@ -81,7 +122,7 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
 
         toast({
           title: expense ? 'Expense Updated' : 'Expense Added',
-          description: `${categoryLabels[category]} - ${currencySymbols[currency]}${parsedAmount.toFixed(2)}`,
+          description: `${selectedCategoryName} - ${currencySymbols[currency]}${parsedAmount.toFixed(2)}`,
         });
 
         onClose();
@@ -105,7 +146,7 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
     }
   };
 
-  const isValidForm = date && amount.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) >= 0;
+  const isValidForm = date && amount.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) >= 0 && !!categoryId;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -134,52 +175,60 @@ export default function ExpenseModal({ isOpen, onClose, expense }: ExpenseModalP
           </div>
 
           <div>
-            <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-              Category *
-            </Label>
-            <Select value={category} onValueChange={(value: ExpenseCategory) => setCategory(value)}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rent">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-purple-600" />
-                    <span>Rent</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="supplies">
-                  <div className="flex items-center gap-2">
-                    <Coffee className="h-4 w-4 text-green-600" />
-                    <span>Supplies (coffee, tea, water, etc.)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="internet">
-                  <div className="flex items-center gap-2">
-                    <Wifi className="h-4 w-4 text-blue-600" />
-                    <span>Internet</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="bills">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-600" />
-                    <span>Bills (electricity, water)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="accountant">
-                  <div className="flex items-center gap-2">
-                    <Calculator className="h-4 w-4 text-indigo-600" />
-                    <span>Accountant</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="other">
-                  <div className="flex items-center gap-2">
-                    <MoreHorizontal className="h-4 w-4 text-gray-600" />
-                    <span>Other</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium text-gray-700">Category *</Label>
+            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryOpen}
+                  className="mt-1 w-full justify-between font-normal"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <Tag className="h-4 w-4 text-gray-500 shrink-0" />
+                    {selectedCategoryName || 'Select category...'}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 text-gray-400 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder="Search or create..."
+                    value={categorySearch}
+                    onValueChange={setCategorySearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {showCreateOption ? null : 'No categories found.'}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {filteredCategories.map(cat => (
+                        <CommandItem
+                          key={cat.id}
+                          value={cat.name}
+                          onSelect={() => handleSelectCategory(cat.id)}
+                        >
+                          <Tag className="h-4 w-4 mr-2 text-gray-400" />
+                          {cat.name}
+                          {cat.id === categoryId && <Check className="h-4 w-4 ml-auto text-green-600" />}
+                        </CommandItem>
+                      ))}
+                      {showCreateOption && (
+                        <CommandItem
+                          value={`__create__${categorySearch}`}
+                          onSelect={handleCreateCategory}
+                          className="text-blue-600"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create "{categorySearch.trim()}"
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div>

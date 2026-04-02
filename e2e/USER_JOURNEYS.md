@@ -29,17 +29,21 @@ Config: `playwright.config.ts` | Tests: `e2e/` | Run: `npm run test:e2e`
 
 ---
 
-## Journey 2–9: In-App Suites ❌ Not covered
+## Journey 2–9: In-App Suites
 
 Full plan with test cases, infrastructure setup, and implementation order:
-**See [`docs/todo/e2e-test-plan.md`](../docs/todo/e2e-test-plan.md)**
+**See [`docs/roadmap/e2e-test-plan.md`](../docs/roadmap/e2e-test-plan.md)**
 
-Suites planned:
-- Sign Up & Onboarding (fresh account per run)
-- Login / Returning User
-- Calendar (core booking flow)
-- Revenue & Expenses
-- Waiting List
-- Settings (incl. public booking card)
-- Insights
-- Public Booking page (no auth)
+| Suite | File | Status |
+|-------|------|--------|
+| Login / Returning User | `app-login.spec.ts` | ✅ 4/4 passing |
+| Calendar (core booking flow) | `app-calendar.spec.ts` | ✅ 10/10 passing |
+| Settings | `app-settings.spec.ts` | ✅ 12/12 passing |
+| Revenue & Expenses | `app-revenue.spec.ts` | ✅ 6/6 passing |
+| Waiting List | `app-waiting-list.spec.ts` | ✅ 4/4 passing |
+| Insights | `app-insights.spec.ts` | ✅ 7/7 passing |
+| Sign Up | `signup.spec.ts` | ✅ 5 tests written |
+| Onboarding | `onboarding.spec.ts` | ✅ 12 tests written |
+| Public Booking page (no auth) | `public-booking.spec.ts` | ✅ 9 tests written |
+| Team Management | `app-team.spec.ts` | ❌ Not yet written |
+| Members | `app-members.spec.ts` | ❌ Blocked on client seeding |

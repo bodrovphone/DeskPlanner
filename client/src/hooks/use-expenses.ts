@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataStore } from '@/contexts/DataStoreContext';
-import { Expense, RecurringExpense } from '@shared/schema';
+import { Expense, RecurringExpense, ExpenseCategory } from '@shared/schema';
 
 export function useExpenses(startDate: string, endDate: string) {
   const dataStore = useDataStore();
@@ -115,6 +115,51 @@ export function useGenerateRecurringExpenses() {
       queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
       queryClient.invalidateQueries({ queryKey: ['date-range-stats'] });
     },
+  });
+}
+
+export function useExpenseCategories() {
+  const dataStore = useDataStore();
+  return useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: () => dataStore.getExpenseCategories?.() ?? Promise.resolve([]),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateExpenseCategory() {
+  const dataStore = useDataStore();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => {
+      if (!dataStore.createExpenseCategory) return Promise.reject(new Error('not implemented'));
+      return dataStore.createExpenseCategory(name);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expense-categories'] }),
+  });
+}
+
+export function useRenameExpenseCategory() {
+  const dataStore = useDataStore();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => {
+      if (!dataStore.renameExpenseCategory) return Promise.reject(new Error('not implemented'));
+      return dataStore.renameExpenseCategory(id, name);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expense-categories'] }),
+  });
+}
+
+export function useDeleteExpenseCategory() {
+  const dataStore = useDataStore();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (!dataStore.deleteExpenseCategory) return Promise.reject(new Error('not implemented'));
+      return dataStore.deleteExpenseCategory(id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expense-categories'] }),
   });
 }
 

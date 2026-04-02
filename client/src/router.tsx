@@ -10,7 +10,7 @@ import OnboardingPage from '@/pages/onboarding';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import RevenuePage from '@/pages/revenue';
 import WaitingListPage from '@/pages/waiting-list';
-import SettingsPage from '@/pages/settings';
+import SettingsPage, { SettingsRoomsPage, SettingsPlansPage, SettingsTeamPage, SettingsNotificationsPage, SettingsIntegrationsPage } from '@/pages/settings';
 import InsightsPage from '@/pages/insights';
 import AdminPage from '@/pages/admin';
 import SharePage from '@/pages/share';
@@ -18,6 +18,7 @@ import PublicBookingPage from '@/pages/public-booking';
 import MeetingRoomsPage from '@/pages/meeting-rooms';
 import MembersPage from '@/pages/members';
 import MemberBookingPage from '@/pages/member-booking';
+import ExpensesPage from '@/pages/expenses';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -254,12 +255,36 @@ export const router = createBrowserRouter(
                       element: <RevenuePage />,
                     },
                     {
+                      path: 'expenses',
+                      element: <ExpensesPage />,
+                    },
+                    {
                       path: 'waiting-list',
                       element: <WaitingListPage />,
                     },
                     {
-                      path: 'settings',
+                      path: 'organization',
                       element: <SettingsPage />,
+                    },
+                    {
+                      path: 'rooms',
+                      element: <SettingsRoomsPage />,
+                    },
+                    {
+                      path: 'plans',
+                      element: <SettingsPlansPage />,
+                    },
+                    {
+                      path: 'team',
+                      element: <SettingsTeamPage />,
+                    },
+                    {
+                      path: 'notifications',
+                      element: <SettingsNotificationsPage />,
+                    },
+                    {
+                      path: 'integrations',
+                      element: <SettingsIntegrationsPage />,
                     },
                     {
                       path: 'admin',

@@ -190,14 +190,20 @@ export interface MonthlyStats {
 }
 
 // Expense tracking schemas
-export const expenseCategorySchema = z.enum(['rent', 'supplies', 'internet', 'bills', 'accountant', 'other']);
+export const expenseCategorySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  isDefault: z.boolean().optional(),
+});
+export type ExpenseCategory = z.infer<typeof expenseCategorySchema>;
 
 export const expenseSchema = z.object({
   id: z.string(),
   date: z.string(), // YYYY-MM-DD
   amount: z.number().nonnegative(),
   currency: currencySchema,
-  category: expenseCategorySchema,
+  categoryId: z.string().uuid(),
+  categoryName: z.string().optional(),
   description: z.string().optional(),
   isRecurring: z.boolean().default(false),
   recurringExpenseId: z.string().optional(),
@@ -209,7 +215,8 @@ export const recurringExpenseSchema = z.object({
   id: z.string(),
   amount: z.number().nonnegative(),
   currency: currencySchema,
-  category: expenseCategorySchema,
+  categoryId: z.string().uuid(),
+  categoryName: z.string().optional(),
   description: z.string().optional(),
   dayOfMonth: z.number().min(1).max(28).default(1),
   isActive: z.boolean().default(true),
@@ -217,7 +224,6 @@ export const recurringExpenseSchema = z.object({
   createdAt: z.string(),
 });
 
-export type ExpenseCategory = z.infer<typeof expenseCategorySchema>;
 export type Expense = z.infer<typeof expenseSchema>;
 export type RecurringExpense = z.infer<typeof recurringExpenseSchema>;
 

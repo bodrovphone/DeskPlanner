@@ -45,7 +45,7 @@ export default function DeskCalendar() {
   }, [desks]);
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
     rooms.length >= 4 ? 'single' : 'all'
   );

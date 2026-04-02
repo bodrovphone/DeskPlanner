@@ -102,7 +102,6 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  minLength={6}
                 />
                 <button
                   type="button"
