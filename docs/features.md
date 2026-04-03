@@ -1,6 +1,6 @@
 # OhMyDesk — Feature List
 
-**49 features** across desk booking, meeting rooms, members, flex plans, revenue tracking, analytics, notifications, and workspace management.
+**52 features** across desk booking, meeting rooms, members, flex plans, revenue tracking, analytics, notifications, team management, and workspace management.
 
 > **Roadmap & upcoming features** are managed in [Linear (Deskplanner team)](https://linear.app/deskplanner). The `docs/roadmap/` folder contains detailed specs for each feature but Linear is the source of truth for priorities, status, and dependencies.
 
@@ -96,8 +96,13 @@
     - Run: `npm run test:e2e` (headless) or `npm run test:e2e:headed` (with browser)
     - Covers: meta tags, nav, hero, social proof, product showcase, features, notifications, pricing, CTAs, footer, analytics script
 
+## Team Management
+49. **Manager invitations** — owner invites managers by email; system creates their account with generated credentials, sends branded email via Resend, and adds them to the space automatically
+50. **Role-based access** — two roles: Owner (full access) and Manager (bookings, calendar, members, waiting list — no revenue or expense visibility); sidebar and settings filtered by role
+51. **Team settings card** — owner-only card in Settings showing current team members with role badges, invite form, and remove button; max 3 members per space (owner + 2 managers)
+
 ## Platform
-49. **Multi-organization support** — manage multiple coworking spaces from one account
+52. **Multi-organization support** — manage multiple coworking spaces from one account
 - Shareable public pages — booking confirmation pages accessible without login
 - 2-minute onboarding wizard
 - Works on desktop and mobile

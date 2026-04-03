@@ -45,7 +45,11 @@ test.describe('Sign Up', () => {
     await page.getByLabel('Full Name').fill('Test User');
     await page.getByLabel('Email').fill('test@example.com');
     await page.getByLabel('Password').fill('abc');
-    await page.getByRole('button', { name: 'Sign Up' }).click();
+    // Dispatch submit directly so HTML5 minLength validation doesn't swallow the click
+    await page.evaluate(() => {
+      const form = document.querySelector('form') as HTMLFormElement;
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
 
     await expect(page.getByText('Password must be at least 6 characters')).toBeVisible({
       timeout: 5_000,

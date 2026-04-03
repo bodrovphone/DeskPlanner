@@ -19,26 +19,31 @@ import { test, expect } from './fixtures';
  *   - Shareable link textbox has no label — use readonly input filter
  */
 
-const SETTINGS_URL = '/e2e-testspace/settings';
+// Settings was split into separate sub-routes
+const SETTINGS_ORG_URL = '/e2e-testspace/organization';
+const SETTINGS_ROOMS_URL = '/e2e-testspace/rooms';
+const SETTINGS_NOTIFICATIONS_URL = '/e2e-testspace/notifications';
+const SETTINGS_INTEGRATIONS_URL = '/e2e-testspace/integrations';
 
 test.describe('Settings — page load', () => {
-  test('page loads with all cards visible', async ({ page }) => {
-    await page.goto(SETTINGS_URL);
-    await page.waitForLoadState('networkidle');
-
-    // Page h1 is a real heading
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 10_000 });
-    // CardTitle renders as generic element, not heading role
-    await expect(page.getByText('Organization', { exact: true })).toBeVisible();
-    await expect(page.getByText('Rooms & Desks', { exact: true })).toBeVisible();
-    await expect(page.getByText('Notifications', { exact: true })).toBeVisible();
-    await expect(page.getByText('Public Booking Page', { exact: true })).toBeVisible();
+  test('all settings sub-pages load without errors', async ({ page }) => {
+    // Settings is split into separate routes — verify each loads
+    for (const [url, heading] of [
+      [SETTINGS_ORG_URL, 'Organization'],
+      [SETTINGS_ROOMS_URL, 'Rooms'],
+      [SETTINGS_NOTIFICATIONS_URL, 'Notifications'],
+      [SETTINGS_INTEGRATIONS_URL, 'Integrations'],
+    ] as [string, string][]) {
+      await page.goto(url);
+      await page.waitForLoadState('networkidle');
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 10_000 });
+    }
   });
 });
 
 test.describe('Settings — organization card', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_ORG_URL);
     await page.waitForLoadState('networkidle');
   });
 
@@ -67,7 +72,7 @@ test.describe('Settings — organization card', () => {
 
 test.describe('Settings — working days', () => {
   test('toggling a day enables/disables it and activates Save button', async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_ORG_URL);
     await page.waitForLoadState('networkidle');
 
     // Sat is off by default (DEFAULT_WORKING_DAYS = [1,2,3,4,5])
@@ -90,7 +95,7 @@ test.describe('Settings — working days', () => {
 
 test.describe('Settings — save organization changes', () => {
   test('editing org name enables Save, save persists, state restored', async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_ORG_URL);
     await page.waitForLoadState('networkidle');
 
     const nameInput = page.getByLabel('Space Name');
@@ -139,7 +144,7 @@ test.describe('Settings — save organization changes', () => {
 
 test.describe('Settings — rooms & desks', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_ROOMS_URL);
     await page.waitForLoadState('networkidle');
   });
 
@@ -190,10 +195,10 @@ test.describe('Settings — rooms & desks', () => {
 
 test.describe('Settings — notifications card', () => {
   test('Notifications card renders with connect or connected state', async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_NOTIFICATIONS_URL);
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Notifications', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible({ timeout: 10_000 });
 
     // Either shows "Connect Telegram" button (not connected) or "Connected" badge
     const isConnected = await page.getByText('Connected', { exact: true }).isVisible();
@@ -207,7 +212,7 @@ test.describe('Settings — notifications card', () => {
 
 test.describe('Settings — public booking card', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(SETTINGS_URL);
+    await page.goto(SETTINGS_INTEGRATIONS_URL);
     await page.waitForLoadState('networkidle');
   });
 

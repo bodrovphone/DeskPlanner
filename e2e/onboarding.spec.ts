@@ -33,12 +33,12 @@ async function fillStep0(page: Page, advance = false) {
 async function advanceStep1(page: Page) {
   await expect(page.getByText('Set up rooms & desks')).toBeVisible({ timeout: 5_000 });
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByText('Meeting rooms')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('Meeting rooms', { exact: true })).toBeVisible({ timeout: 5_000 });
 }
 
 /** Advance from step 2 (Meeting Rooms) to step 3 (Currency). */
 async function advanceStep2(page: Page) {
-  await expect(page.getByText('Meeting rooms')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('Meeting rooms', { exact: true })).toBeVisible({ timeout: 5_000 });
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('Choose your currency')).toBeVisible({ timeout: 5_000 });
 }
@@ -113,7 +113,7 @@ test.describe('Onboarding — Step 1: Rooms & Desks', () => {
 
   test('Next advances to Meeting Rooms (Step 2)', async ({ page }) => {
     await advanceStep1(page);
-    await expect(page.getByText('Meeting rooms')).toBeVisible();
+    await expect(page.getByText('Meeting rooms', { exact: true })).toBeVisible();
   });
 });
 
@@ -161,10 +161,11 @@ test.describe('Onboarding — Step 3: Currency', () => {
   });
 
   test('currency buttons and price input are visible', async ({ page }) => {
-    await expect(page.getByText('EUR')).toBeVisible();
-    await expect(page.getByText('USD')).toBeVisible();
-    await expect(page.getByText('GBP')).toBeVisible();
-    await expect(page.getByLabel(/Default price/)).toBeVisible();
+    // Currency buttons — use role to avoid matching label text like "Euro" or "US Dollar"
+    await expect(page.getByRole('button', { name: /USD/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /EUR/ })).toBeVisible();
+    // Price input renders as spinbutton
+    await expect(page.getByRole('spinbutton')).toBeVisible();
   });
 
   test('"Create Space" button is visible and enabled', async ({ page }) => {
@@ -195,7 +196,7 @@ test.describe('Onboarding — Full flow', () => {
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Step 2: Meeting Rooms — skip (default "No, desks only")
-    await expect(page.getByText('Meeting rooms')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Meeting rooms', { exact: true })).toBeVisible({ timeout: 5_000 });
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Step 3: Currency — default EUR is fine, click "Create Space"

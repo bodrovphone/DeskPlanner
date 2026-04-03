@@ -105,8 +105,8 @@ test.describe('Public Booking — date selection', () => {
     }
 
     await expect(page.getByText('Your details')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByLabel('Name *')).toBeVisible();
-    await expect(page.getByLabel('Phone *')).toBeVisible();
+    await expect(page.getByPlaceholder('Your full name')).toBeVisible();
+    await expect(page.locator('input[type="tel"]').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Book Desk' })).toBeVisible();
   });
 
@@ -166,16 +166,16 @@ test.describe('Public Booking — form validation', () => {
     }
   });
 
-  test('shows error for invalid phone (no country code)', async ({ page }) => {
+  test('shows error for invalid phone (too few digits)', async ({ page }) => {
     const reached = await goToContactForm(page as Page);
     if (!reached) {
       test.skip(true, 'No available dates — cannot test form validation');
       return;
     }
 
-    await page.getByLabel('Name *').fill('E2E Validator');
-    // Enter a phone without proper country code — just digits
-    await page.getByLabel('Phone *').fill('0888123456');
+    await page.getByPlaceholder('Your full name').fill('E2E Validator');
+    // Phone input auto-prepends '+', so provide a short sequence to trigger the < 7 digits check
+    await page.locator('input[type="tel"]').first().fill('+4');
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
     await expect(
@@ -190,8 +190,8 @@ test.describe('Public Booking — form validation', () => {
       return;
     }
 
-    await page.getByLabel('Name *').fill('E2E Validator');
-    await page.getByLabel('Phone *').fill('+123');
+    await page.getByPlaceholder('Your full name').fill('E2E Validator');
+    await page.locator('input[type="tel"]').first().fill('+123');
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
     await expect(
@@ -235,9 +235,9 @@ test.describe('Public Booking — successful booking', () => {
 
     await page.getByText('Your details').waitFor({ timeout: 5_000 });
 
-    await page.getByLabel('Name *').fill(`E2E Visitor ${Date.now()}`);
+    await page.getByPlaceholder('Your full name').fill(`E2E Visitor ${Date.now()}`);
     // Valid phone with country code
-    await page.getByLabel('Phone *').fill('+359888123456');
+    await page.locator('input[type="tel"]').first().fill('+359888123456');
 
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
