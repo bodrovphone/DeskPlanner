@@ -37,7 +37,8 @@ test.describe('Calendar — page load', () => {
     await expect(page.locator('.desk-cell').first()).toBeVisible();
 
     // Date range string is rendered in the nav card
-    await expect(page.locator('text=/\\w+ \\d{4}/').first()).toBeVisible();
+    // Matches month view ("April 2026") or week view ("April 1-7, 2026" / "Mar 30 - Apr 5, 2026")
+    await expect(page.locator('text=/\\w+ [\\d,\\-– ]*(\\d{4})/').first()).toBeVisible();
   });
 
   test('room and desk labels are visible', async ({ page }) => {
