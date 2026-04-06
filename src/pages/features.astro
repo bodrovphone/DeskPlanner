@@ -21,6 +21,7 @@ const features = [
       'Today is auto-highlighted and scrolled into view',
       'Sub-second updates — no spinners between clicks',
     ],
+    images: [{ src: '/screenshots/booking-modal.png', alt: 'Desk booking modal showing date range, member, and pricing fields' }],
   },
   {
     slug: 'members',
@@ -35,6 +36,7 @@ const features = [
       'Soft delete preserves historical bookings even after a member leaves',
       'Member self-service booking link (no login required)',
     ],
+    images: [{ src: '/screenshots/members.png', alt: 'Members list with autocomplete and contact details' }],
   },
   {
     slug: 'flex-plans',
@@ -49,6 +51,7 @@ const features = [
       'Email reminders when balance is low or about to expire',
       'Disable mid-flight without losing any historical balance data',
     ],
+    images: [{ src: '/screenshots/flex-plan.png', alt: 'Flex day package configuration and member balance tracking' }],
   },
   {
     slug: 'meeting-rooms',
@@ -63,6 +66,7 @@ const features = [
       'Revenue tracked separately from desks for clean reporting',
       'Visible to public booking page if you want walk-in revenue',
     ],
+    images: [{ src: '/screenshots/meeting-room.png', alt: 'Hourly meeting room reservation grid with conflict detection' }],
   },
   {
     slug: 'public-booking',
@@ -77,6 +81,7 @@ const features = [
       'Approve, decline, or auto-confirm based on your preference',
       'Free SEO surface — every coworking space gets its own indexable page',
     ],
+    images: [{ src: '/screenshots/public-booking-confirmation.png', alt: 'Public booking confirmation page that visitors see after submitting a request' }],
   },
   {
     slug: 'revenue',
@@ -91,6 +96,7 @@ const features = [
       'Prorated calculations for partial-period bookings',
       'Owner-only by default — staff and members never see numbers',
     ],
+    images: [{ src: '/screenshots/revenue.png', alt: 'Revenue dashboard showing confirmed and projected income breakdowns' }],
   },
   {
     slug: 'expenses',
@@ -105,6 +111,7 @@ const features = [
       'Net revenue card on the dashboard combines income and outflow',
       '6 sensible defaults seeded for new workspaces',
     ],
+    images: [{ src: '/screenshots/expenses.png', alt: 'Expense tracking page with custom categories and recurring expenses' }],
   },
   {
     slug: 'waiting-list',
@@ -119,6 +126,7 @@ const features = [
       'Mark contacted, converted, or lost so you have a paper trail',
       'Demand signal — see when you should consider expanding capacity',
     ],
+    images: [{ src: '/screenshots/waiting-list.png', alt: 'Waiting list with prospect contact info and preferred dates' }],
   },
   {
     slug: 'notifications',
@@ -132,6 +140,10 @@ const features = [
       'Per-channel and per-event toggles (mute what you do not need)',
       'Public booking notifications include visitor contact info',
       'WhatsApp and SMS coming soon',
+    ],
+    images: [
+      { src: '/screenshots/notifications.png', alt: 'In-app notification settings showing per-event toggles' },
+      { src: '/screenshots/tg-booking-notification.png', alt: 'Example Telegram notification when a new booking comes in' },
     ],
   },
   {
@@ -147,6 +159,7 @@ const features = [
       'Unified billing — one invoice for all your spaces',
       'Per-location revenue and expense reports',
     ],
+    images: [{ src: '/screenshots/multi-locations.png', alt: 'Multi-location switcher showing several coworking spaces under one account' }],
   },
 ];
 ---
@@ -168,6 +181,15 @@ const features = [
         and more. Built specifically for the people running coworking spaces — not retrofitted
         from a generic calendar app.
       </p>
+      <div class="hero-shot">
+        <img
+          src="/screenshots/hero-calendar.png"
+          alt="OhMyDesk calendar showing weekly desk availability across multiple rooms"
+          width="1600"
+          height="1000"
+          decoding="async"
+        />
+      </div>
     </section>
 
     <!-- Sidebar + sections -->
@@ -197,6 +219,15 @@ const features = [
                 </li>
               ))}
             </ul>
+            {f.images && f.images.length > 0 && (
+              <div class={`feature-shots${f.images.length > 1 ? ' feature-shots--two' : ''}`}>
+                {f.images.map((img) => (
+                  <figure>
+                    <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+                  </figure>
+                ))}
+              </div>
+            )}
             {i < features.length - 1 && <hr/>}
           </article>
         ))}
@@ -252,6 +283,22 @@ const features = [
     font-size: 18px;
     color: var(--text-secondary);
     line-height: 1.6;
+  }
+  .hero-shot {
+    margin: 56px auto 0;
+    max-width: 980px;
+    border-radius: 14px;
+    border: 1px solid var(--border-bright);
+    overflow: hidden;
+    box-shadow:
+      0 24px 48px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(52, 211, 153, 0.06),
+      0 0 60px rgba(52, 211, 153, 0.08);
+  }
+  .hero-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   /* Layout: sticky sidebar + content */
@@ -375,6 +422,44 @@ const features = [
     flex-shrink: 0;
     margin-top: 4px;
   }
+  .feature-shots {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .feature-shots--two {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 720px) {
+    .feature-shots--two {
+      grid-template-columns: 1fr;
+    }
+  }
+  .feature-shots figure {
+    margin: 0;
+    border-radius: 12px;
+    border: 1px solid var(--border-bright);
+    overflow: hidden;
+    background: var(--bg-card);
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(52, 211, 153, 0.04);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .feature-shots figure:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 16px 40px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(52, 211, 153, 0.12),
+      0 0 32px rgba(52, 211, 153, 0.08);
+  }
+  .feature-shots img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   .feature hr {
     border: none;
     border-top: 1px solid var(--border);

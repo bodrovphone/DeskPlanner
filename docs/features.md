@@ -33,7 +33,7 @@
 20. **Expense tracking** — log expenses by category (rent, supplies, internet, bills, accountant)
 21. **Recurring expenses** — auto-generated monthly expenses (e.g. rent on the 1st)
 22. **Per-desk pricing** — configurable default price per desk per day
-23. **Multi-currency support** — EUR, USD, GBP
+23. **Multi-currency support** — EUR, USD (Bulgaria adopted EUR; GBP available for legacy data)
 
 ## Insights & Analytics
 24. **Next available dates** — shows first 5 upcoming free dates
@@ -90,11 +90,26 @@
     - Helper: `client/src/lib/analytics.ts` (event names in `EVENTS` constant)
 
 ## E2E Tests (Playwright)
-- **Landing page e2e tests** — 21 tests against production (`https://ohmydesk.app`)
+- **96 tests across 11 spec files** — runs against production (`https://ohmydesk.app`)
     - Config: `playwright.config.ts`
-    - Tests: `e2e/landing.spec.ts`
     - Run: `npm run test:e2e` (headless) or `npm run test:e2e:headed` (with browser)
-    - Covers: meta tags, nav, hero, social proof, product showcase, features, notifications, pricing, CTAs, footer, analytics script
+
+| Spec file | Tests | Coverage |
+|-----------|-------|----------|
+| `e2e/landing.spec.ts` | 21 | Meta tags, nav, hero, social proof, product showcase, features, notifications, pricing, CTAs, footer, analytics script |
+| `e2e/signup.spec.ts` | 5 | Form validation, password length error, sign-in link, successful signup + auth state save |
+| `e2e/onboarding.spec.ts` | 13 | All 5 steps of the onboarding wizard, slug availability, full flow to calendar redirect |
+| `e2e/app-login.spec.ts` | 3 | Page load, wrong password error, successful login redirect |
+| `e2e/app-calendar.spec.ts` | 11 | Grid load, room/desk labels, view toggle, navigation, booking dialog, create/edit/delete booking, Quick Book, right-click cycle, share modal |
+| `e2e/app-settings.spec.ts` | 9 | All 4 sub-routes load, org name + slug, currency buttons, working days toggle, rooms & desks, add room staging, notifications card, public booking toggle + shareable link, save persists |
+| `e2e/app-revenue.spec.ts` | 4 | Dashboard load + stats, currency values, add/delete expense, recurring expense modal, chart render |
+| `e2e/app-expenses.spec.ts` | — | (covered by app-revenue suite) |
+| `e2e/app-waiting-list.spec.ts` | 4 | Page load, add + delete entry, empty state, modal validation |
+| `e2e/app-insights.spec.ts` | 7 | Page load, stats cards, next available/booked dates, expiring assignments, click date → booking modal |
+| `e2e/public-booking.spec.ts` | 9 | Not-found org, page load, date selection, calendar picker, contact form, phone validation (2 cases), successful booking |
+
+    - **Auth strategy**: landing + public booking run unauthenticated; signup creates a fresh account; all `app-*` suites use a permanent test account (`e2e-testspace` org)
+    - **Test data reset**: `reset_e2e_test_data` Supabase RPC runs in `globalSetup` before each full suite run
 
 ## Team Management
 49. **Manager invitations** — owner invites managers by email; system creates their account with generated credentials, sends branded email via Resend, and adds them to the space automatically
