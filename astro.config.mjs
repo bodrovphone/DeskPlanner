@@ -5,6 +5,12 @@ import path from 'path';
 
 export default defineConfig({
   output: 'static',
+  build: {
+    // Cloudflare Pages does not serve files/directories prefixed with `_`
+    // (it treats them as build config). Default Astro output `_astro/` is
+    // dropped at deploy time. Rename to a non-underscore directory.
+    assets: 'astro-assets',
+  },
   integrations: [
     react(),
     tailwind({ configFile: './tailwind.config.ts' }),
