@@ -1,0 +1,31 @@
+/* Shared design tokens and base styles for all marketing pages.
+   Import this file from any .astro page that uses MarketingNav or
+   MarketingFooter — both components rely on these CSS variables. */
+
+:root {
+  --bg: #121214;
+  --bg-card: #1a1a1e;
+  --bg-card-hover: #202024;
+  --border: #242428;
+  --border-bright: #2c2c32;
+  --green: #34d399;
+  --green-dim: #2bb583;
+  --green-faint: rgba(52, 211, 153, 0.08);
+  --green-glow: rgba(52, 211, 153, 0.15);
+  --text-primary: #e0e0e0;
+  --text-secondary: #999999;
+  --text-muted: #555555;
+  --strike: #f97066;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; padding: 0; margin: 0; }

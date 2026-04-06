@@ -1,0 +1,84 @@
+---
+// Shared top nav for marketing pages (/, /pricing, /features, etc.)
+// Highlights the current page automatically based on the URL.
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+const links = [
+  { href: '/features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
+];
+
+function isCurrent(href: string) {
+  return path === href || path.startsWith(href + '/');
+}
+---
+
+<nav class="topnav" aria-label="Main">
+  <a href="/" class="brand">OhMyDesk</a>
+  <div class="topnav-links">
+    {links.map((link) => (
+      <a
+        href={link.href}
+        {...(isCurrent(link.href) ? { 'aria-current': 'page' } : {})}
+      >
+        {link.label}
+      </a>
+    ))}
+    <a href="/login" class="login">Log in</a>
+    <a href="/signup" class="cta">Start Free</a>
+  </div>
+</nav>
+
+<style>
+  .topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.5px;
+    text-decoration: none;
+  }
+  .topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .topnav-links a {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .topnav-links a:hover { color: var(--green); }
+  .topnav-links a[aria-current="page"] { color: var(--text-primary); }
+  .topnav-links .login {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .topnav-links .login:hover { border-color: var(--green); color: var(--green); }
+  .topnav-links .cta {
+    padding: 8px 18px;
+    border: 1px solid var(--green);
+    background: var(--green-faint);
+    color: var(--green);
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .topnav-links .cta:hover { background: var(--green); color: var(--bg); }
+
+  @media (max-width: 640px) {
+    .topnav { padding: 18px 0; }
+    .topnav-links { gap: 16px; }
+    .topnav-links a { font-size: 13px; }
+    .topnav-links .login { display: none; }
+  }
+</style>

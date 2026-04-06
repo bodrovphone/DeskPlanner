@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketingNav from '../components/MarketingNav.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import '../styles/marketing.css';
 
 // Single source of truth for pricing tiers. If you change these,
 // also update the `pricingTiers` array in client/src/pages/landing.tsx
@@ -148,16 +151,7 @@ const productSchema = {
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(productSchema)} />
 
   <main>
-    <!-- Top nav -->
-    <nav class="topnav">
-      <a href="/" class="brand">OhMyDesk</a>
-      <div class="topnav-links">
-        <a href="/#features">Features</a>
-        <a href="/pricing" aria-current="page">Pricing</a>
-        <a href="/login" class="login">Log in</a>
-        <a href="/signup" class="cta">Start Free</a>
-      </div>
-    </nav>
+    <MarketingNav />
 
     <!-- Hero -->
     <section class="hero">
@@ -246,91 +240,16 @@ const productSchema = {
       <a href="/signup" class="cta cta--big">Start Free Trial</a>
     </section>
 
-    <!-- Footer -->
-    <footer>
-      <p>© 2026 OhMyDesk. <a href="mailto:hello@ohmydesk.app">hello@ohmydesk.app</a></p>
-    </footer>
+    <MarketingFooter />
   </main>
 </BaseLayout>
 
 <style is:global>
-  :root {
-    --bg: #121214;
-    --bg-card: #1a1a1e;
-    --bg-card-hover: #202024;
-    --border: #242428;
-    --border-bright: #2c2c32;
-    --green: #34d399;
-    --green-dim: #2bb583;
-    --green-faint: rgba(52, 211, 153, 0.08);
-    --green-glow: rgba(52, 211, 153, 0.15);
-    --text-primary: #e0e0e0;
-    --text-secondary: #999999;
-    --text-muted: #555555;
-    --strike: #f97066;
-  }
-
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.55;
-  }
-  a { color: inherit; text-decoration: none; }
-  ul { list-style: none; padding: 0; margin: 0; }
-
   main {
     max-width: 1180px;
     margin: 0 auto;
     padding: 0 24px;
   }
-
-  /* Top nav */
-  .topnav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .brand {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--green);
-    letter-spacing: -0.5px;
-  }
-  .topnav-links {
-    display: flex;
-    align-items: center;
-    gap: 28px;
-  }
-  .topnav-links a {
-    font-size: 14px;
-    color: var(--text-secondary);
-    transition: color 0.2s ease;
-  }
-  .topnav-links a:hover { color: var(--green); }
-  .topnav-links a[aria-current="page"] { color: var(--text-primary); }
-  .topnav-links .login {
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-  }
-  .topnav-links .login:hover { border-color: var(--green); color: var(--green); }
-  .topnav-links .cta {
-    padding: 8px 18px;
-    border: 1px solid var(--green);
-    background: var(--green-faint);
-    color: var(--green);
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-  .topnav-links .cta:hover { background: var(--green); color: var(--bg); }
 
   /* Hero */
   .hero {
@@ -638,14 +557,4 @@ const productSchema = {
     box-shadow: 0 8px 24px var(--green-glow);
   }
 
-  /* Footer */
-  footer {
-    padding: 40px 0;
-    text-align: center;
-    border-top: 1px solid var(--border);
-    color: var(--text-muted);
-    font-size: 13px;
-  }
-  footer a { color: var(--text-secondary); }
-  footer a:hover { color: var(--green); }
 </style>

@@ -565,7 +565,7 @@ export default function LandingPage() {
               {[
                 { label: 'Product', href: '#product' },
                 { label: 'Demo', href: '#demo' },
-                { label: 'Features', href: '#features' },
+                { label: 'Features', href: '/features' },
                 { label: 'Pricing', href: '/pricing' },
               ].map(link => (
                 <a
@@ -853,6 +853,26 @@ export default function LandingPage() {
             const Icon = f.icon;
             return <FeatureCard key={f.title} icon={Icon} title={f.title} desc={f.desc} index={i} />;
           })}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <a
+            href="/features"
+            style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 13,
+              color: T.green,
+              textDecoration: 'none',
+              padding: '10px 20px',
+              border: `1px solid ${T.green}33`,
+              borderRadius: 6,
+              transition: 'all 0.2s ease',
+              display: 'inline-block',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.borderColor = T.green; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${T.green}33`; }}
+          >
+            See all features in detail →
+          </a>
         </div>
       </section>
 

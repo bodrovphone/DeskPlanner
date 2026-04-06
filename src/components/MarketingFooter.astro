@@ -1,0 +1,91 @@
+---
+// Shared footer for marketing pages.
+const year = new Date().getFullYear();
+---
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand">OhMyDesk</span>
+      <p>Coworking desk booking & management software.</p>
+    </div>
+    <div class="footer-links">
+      <div>
+        <h4>Product</h4>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/signup">Start Free</a>
+        <a href="/login">Log in</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="mailto:hello@ohmydesk.app">hello@ohmydesk.app</a>
+        <a href="https://www.linkedin.com/company/ohmydesk" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© {year} OhMyDesk. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 64px 0 24px;
+    margin-top: 32px;
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 64px;
+    margin-bottom: 48px;
+  }
+  @media (max-width: 720px) {
+    .footer-inner { grid-template-columns: 1fr; gap: 40px; }
+  }
+  .footer-brand .brand {
+    display: block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 12px;
+  }
+  .footer-brand p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    max-width: 280px;
+  }
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+  .footer-links h4 {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+  }
+  .footer-links a {
+    display: block;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+  }
+  .footer-links a:hover { color: var(--green); }
+  .footer-bottom {
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .footer-bottom p { margin: 0; }
+</style>
