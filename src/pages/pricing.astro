@@ -1,0 +1,651 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Single source of truth for pricing tiers. If you change these,
+// also update the `pricingTiers` array in client/src/pages/landing.tsx
+// so the landing teaser stays in sync.
+const tiers = [
+  {
+    name: 'Free Trial',
+    tagline: '3 months free, no card required',
+    price: '0',
+    period: '/mo',
+    desc: 'Try every feature with no limits. After 3 months pick a plan or your account pauses.',
+    cta: 'Start Free Trial',
+    href: '/signup',
+    highlighted: false,
+    features: [
+      'Every feature unlocked',
+      'Unlimited rooms & desks',
+      'Calendar, members, flex plans',
+      'Revenue & expenses',
+      'Public booking page',
+      'Telegram notifications',
+      '3 months free, no card required',
+    ],
+  },
+  {
+    name: 'Pro',
+    tagline: 'For a single coworking space',
+    price: '18',
+    originalPrice: '29',
+    period: '/mo',
+    desc: 'Lock the early-bird rate during your trial. Everything you need to run one space.',
+    cta: 'Start Free Trial',
+    href: '/signup',
+    highlighted: true,
+    features: [
+      'Everything in Free Trial',
+      'Ongoing subscription (no time limit)',
+      'Priority support',
+      'Custom branding',
+      'Early-bird price locked for life',
+    ],
+  },
+  {
+    name: 'Multi-Location',
+    tagline: 'For brands with multiple spaces',
+    price: '50',
+    period: '/mo',
+    desc: 'Manage many locations from one account with shared members and unified billing.',
+    cta: 'Contact Us',
+    href: 'mailto:hello@ohmydesk.app',
+    external: true,
+    highlighted: false,
+    features: [
+      'Everything in Pro',
+      'Unlimited locations',
+      'Shared member directory',
+      'Cross-location bookings',
+      'Unified billing across spaces',
+      'Per-location revenue reports',
+    ],
+  },
+];
+
+const includedEverywhere = [
+  'Visual booking calendar (week & month views)',
+  'Unlimited rooms and desks',
+  'Member management with flex day packages',
+  'Public booking page for visitors',
+  'Meeting room reservations (hourly)',
+  'Revenue and expense tracking',
+  'Telegram and email notifications',
+  'Waiting list',
+  'Multi-currency support (EUR, USD, GBP)',
+  'Team members with role-based access',
+];
+
+const faq = [
+  {
+    q: 'Is the 3-month free trial really free?',
+    a: 'Yes. No credit card required, no hidden charges. Sign up with an email, set up your space, and use every feature for 3 months. We will not auto-charge you.',
+  },
+  {
+    q: 'What happens after the 3 months are over?',
+    a: 'You will see a banner asking you to choose a paid plan. If you do not upgrade, your account is paused (data preserved) until you do. Nothing is deleted and you can come back any time.',
+  },
+  {
+    q: 'Can I switch plans later?',
+    a: 'Yes. Move between Pro and Multi-Location any time, prorated. You can also downgrade if your needs change.',
+  },
+  {
+    q: 'Do you charge per user or per admin?',
+    a: 'No. All plans include unlimited team members at no extra cost. Pricing is per workspace, not per seat.',
+  },
+  {
+    q: 'Can I cancel any time?',
+    a: 'Yes. Cancel from your billing settings. There is no contract and no cancellation fee. Your data stays available for 90 days after cancellation in case you change your mind.',
+  },
+  {
+    q: 'What if I have more than one location?',
+    a: 'The Multi-Location plan handles unlimited locations under one account, with a shared member directory and cross-location bookings. Get in touch and we will set you up.',
+  },
+];
+
+// Product schema for Google Rich Results
+const productSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'OhMyDesk',
+  description: 'Coworking desk booking and management software. Visual calendar, members, flex plans, revenue tracking, multi-location support.',
+  brand: { '@type': 'Brand', name: 'OhMyDesk' },
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Free Trial',
+      price: '0',
+      priceCurrency: 'USD',
+      description: '3 months free, no card required',
+      url: 'https://ohmydesk.app/signup',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro',
+      price: '18',
+      priceCurrency: 'USD',
+      description: 'Single coworking space, early-bird pricing',
+      url: 'https://ohmydesk.app/signup',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Multi-Location',
+      price: '50',
+      priceCurrency: 'USD',
+      description: 'Multiple coworking spaces under one account',
+      url: 'mailto:hello@ohmydesk.app',
+    },
+  ],
+};
+---
+
+<BaseLayout
+  title="OhMyDesk Pricing — Coworking Software from $18/mo"
+  description="Run your coworking space for $18/mo. 3 months free, no credit card required. Every feature unlocked. Pro and Multi-Location plans available."
+  canonical="https://ohmydesk.app/pricing"
+  defaultStructuredData={false}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(productSchema)} />
+
+  <main>
+    <!-- Top nav -->
+    <nav class="topnav">
+      <a href="/" class="brand">OhMyDesk</a>
+      <div class="topnav-links">
+        <a href="/#features">Features</a>
+        <a href="/pricing" aria-current="page">Pricing</a>
+        <a href="/login" class="login">Log in</a>
+        <a href="/signup" class="cta">Start Free</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <span class="eyebrow">Pricing</span>
+      <h1>Simple pricing.<br/><span class="accent">3 months free.</span></h1>
+      <p class="lede">
+        Try every feature with no time pressure and no card. After 3 months pick the plan
+        that fits your space — or pause your account and come back later.
+      </p>
+    </section>
+
+    <!-- Tier cards -->
+    <section class="tiers">
+      {tiers.map((tier) => (
+        <article class={`tier${tier.highlighted ? ' tier--highlighted' : ''}`}>
+          {tier.highlighted && <div class="badge">Most popular</div>}
+          <header>
+            <h2>{tier.name}</h2>
+            <p class="tagline">{tier.tagline}</p>
+            <div class="price">
+              {'originalPrice' in tier && tier.originalPrice && (
+                <span class="price-strike">${tier.originalPrice}</span>
+              )}
+              <span class="price-amount">${tier.price}</span>
+              <span class="price-period">{tier.period}</span>
+            </div>
+            <p class="desc">{tier.desc}</p>
+          </header>
+          <ul class="features">
+            {tier.features.map((f) => (
+              <li>
+                <svg class="check" viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M3 8.5l3.5 3.5L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href={tier.href}
+            class={`tier-cta${tier.highlighted ? ' tier-cta--primary' : ''}`}
+            {...('external' in tier && tier.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {tier.cta}
+          </a>
+        </article>
+      ))}
+    </section>
+
+    <!-- What's included -->
+    <section class="included">
+      <h2>Every plan includes everything</h2>
+      <p class="included-lede">
+        We don't gate features by plan. The only differences are how long you can stay free
+        (3 months) and whether you run one space or many. Here's what's in every account:
+      </p>
+      <ul class="included-grid">
+        {includedEverywhere.map((item) => (
+          <li>
+            <svg class="check" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8.5l3.5 3.5L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+      <h2>Questions</h2>
+      <div class="faq-list">
+        {faq.map((item) => (
+          <details>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta">
+      <h2>Run your coworking space the easy way.</h2>
+      <p>3 months free. No card. Every feature.</p>
+      <a href="/signup" class="cta cta--big">Start Free Trial</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>© 2026 OhMyDesk. <a href="mailto:hello@ohmydesk.app">hello@ohmydesk.app</a></p>
+    </footer>
+  </main>
+</BaseLayout>
+
+<style is:global>
+  :root {
+    --bg: #121214;
+    --bg-card: #1a1a1e;
+    --bg-card-hover: #202024;
+    --border: #242428;
+    --border-bright: #2c2c32;
+    --green: #34d399;
+    --green-dim: #2bb583;
+    --green-faint: rgba(52, 211, 153, 0.08);
+    --green-glow: rgba(52, 211, 153, 0.15);
+    --text-primary: #e0e0e0;
+    --text-secondary: #999999;
+    --text-muted: #555555;
+    --strike: #f97066;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+  a { color: inherit; text-decoration: none; }
+  ul { list-style: none; padding: 0; margin: 0; }
+
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Top nav */
+  .topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.5px;
+  }
+  .topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .topnav-links a {
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+  }
+  .topnav-links a:hover { color: var(--green); }
+  .topnav-links a[aria-current="page"] { color: var(--text-primary); }
+  .topnav-links .login {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .topnav-links .login:hover { border-color: var(--green); color: var(--green); }
+  .topnav-links .cta {
+    padding: 8px 18px;
+    border: 1px solid var(--green);
+    background: var(--green-faint);
+    color: var(--green);
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .topnav-links .cta:hover { background: var(--green); color: var(--bg); }
+
+  /* Hero */
+  .hero {
+    padding: 96px 0 56px;
+    text-align: center;
+  }
+  .eyebrow {
+    display: inline-block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    padding: 4px 14px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0 0 24px;
+    letter-spacing: -1px;
+  }
+  .hero h1 .accent { color: var(--green); }
+  .hero .lede {
+    max-width: 620px;
+    margin: 0 auto;
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Tier cards */
+  .tiers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 56px 0 96px;
+  }
+  @media (max-width: 920px) {
+    .tiers { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+  }
+
+  .tier {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .tier:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-2px);
+  }
+  .tier--highlighted {
+    border-color: var(--green);
+    background: linear-gradient(180deg, var(--green-faint) 0%, var(--bg-card) 60%);
+    box-shadow: 0 0 0 1px var(--green), 0 8px 32px var(--green-glow);
+  }
+  .tier--highlighted:hover { border-color: var(--green); }
+
+  .badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: var(--bg);
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+  }
+
+  .tier h2 {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 0 0 6px;
+  }
+  .tier--highlighted h2 { color: var(--green); }
+
+  .tier .tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 20px;
+  }
+
+  .tier .price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .price-strike {
+    font-family: 'SF Mono', monospace;
+    font-size: 22px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--strike);
+  }
+  .price-amount {
+    font-family: 'SF Mono', monospace;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .tier--highlighted .price-amount { color: var(--green); }
+  .price-period {
+    font-family: 'SF Mono', monospace;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .tier .desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 24px;
+    min-height: 42px;
+  }
+
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex: 1;
+  }
+  .features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+  .check {
+    width: 16px;
+    height: 16px;
+    color: var(--green);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .tier-cta {
+    display: block;
+    text-align: center;
+    padding: 14px 24px;
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+  }
+  .tier-cta:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .tier-cta--primary {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--bg);
+  }
+  .tier-cta--primary:hover {
+    background: var(--green-dim);
+    border-color: var(--green-dim);
+    color: var(--bg);
+  }
+
+  /* Included section */
+  .included {
+    padding: 64px 0;
+    border-top: 1px solid var(--border);
+  }
+  .included h2 {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 16px;
+  }
+  .included-lede {
+    max-width: 620px;
+    margin: 0 auto 48px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 16px;
+  }
+  .included-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 32px;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  @media (max-width: 720px) {
+    .included-grid { grid-template-columns: 1fr; }
+  }
+  .included-grid li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+  }
+
+  /* FAQ */
+  .faq {
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .faq h2 {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 48px;
+  }
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .faq details {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    transition: border-color 0.2s ease;
+  }
+  .faq details:hover { border-color: var(--border-bright); }
+  .faq details[open] { border-color: rgba(52, 211, 153, 0.3); }
+  .faq summary {
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: '+';
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--green);
+    transition: transform 0.2s ease;
+  }
+  .faq details[open] summary::after {
+    content: '−';
+  }
+  .faq details p {
+    margin: 16px 0 0;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Final CTA */
+  .final-cta {
+    text-align: center;
+    padding: 96px 0 80px;
+    border-top: 1px solid var(--border);
+  }
+  .final-cta h2 {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 700;
+    margin: 0 0 12px;
+    line-height: 1.1;
+  }
+  .final-cta p {
+    color: var(--text-secondary);
+    font-size: 18px;
+    margin: 0 0 36px;
+  }
+  .cta--big {
+    display: inline-block;
+    padding: 18px 40px;
+    background: var(--green);
+    color: var(--bg);
+    border-radius: 10px;
+    font-family: 'SF Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+  }
+  .cta--big:hover {
+    background: var(--green-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--green-glow);
+  }
+
+  /* Footer */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer a { color: var(--text-secondary); }
+  footer a:hover { color: var(--green); }
+</style>

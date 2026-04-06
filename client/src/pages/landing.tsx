@@ -138,10 +138,13 @@ const steps = [
   { n: '03', title: 'Grow revenue', desc: 'Monitor occupancy, revenue trends, and waiting-list demand from one dashboard.' },
 ];
 
+// Keep this in sync with `tiers` in src/pages/pricing.astro — they're rendered
+// from two separate codebases (React landing + Astro pricing page) but should
+// always show the same numbers and copy.
 const pricingTiers = [
-  { name: 'Free', price: '0', period: '/mo', desc: 'Try OhMyDesk free for 3 months.', features: ['Up to 4 rooms', 'Up to 12 desks per room', 'Revenue tracking', 'Waiting list', '3-month trial'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
-  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Early bird — lock this rate during trial.', features: ['Unlimited rooms', 'Unlimited desks', 'Meeting rooms (hourly)', 'Member management', 'Flex day packages', 'Team members', 'Priority support', 'Custom branding'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
-  { name: 'Multi-Location', price: '50', period: '/mo', desc: 'For brands with multiple spaces.', features: ['Everything in Pro', 'Unlimited locations', 'Location switcher', 'Shared member directory', 'Cross-location booking', 'Unified billing'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true },
+  { name: 'Free Trial', price: '0', period: '/mo', desc: '3 months free, no card required. Every feature unlocked.', features: ['Every feature unlocked', 'Unlimited rooms & desks', 'Members & flex plans', 'Revenue & expenses', 'Public booking page', '3 months, no card'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
+  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Single space. Lock this rate during trial.', features: ['Everything in Free Trial', 'Ongoing subscription', 'Priority support', 'Custom branding', 'Early-bird price locked'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
+  { name: 'Multi-Location', price: '50', period: '/mo', desc: 'For brands with multiple spaces.', features: ['Everything in Pro', 'Unlimited locations', 'Shared member directory', 'Cross-location bookings', 'Unified billing'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true },
 ];
 
 const integrations = [
@@ -563,7 +566,7 @@ export default function LandingPage() {
                 { label: 'Product', href: '#product' },
                 { label: 'Demo', href: '#demo' },
                 { label: 'Features', href: '#features' },
-                { label: 'Pricing', href: '#pricing' },
+                { label: 'Pricing', href: '/pricing' },
               ].map(link => (
                 <a
                   key={link.href}
@@ -930,6 +933,26 @@ export default function LandingPage() {
           {pricingTiers.map((tier, i) => (
             <PricingCard key={tier.name} tier={tier} index={i} />
           ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <a
+            href="/pricing"
+            style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 13,
+              color: T.green,
+              textDecoration: 'none',
+              padding: '10px 20px',
+              border: `1px solid ${T.green}33`,
+              borderRadius: 6,
+              transition: 'all 0.2s ease',
+              display: 'inline-block',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.borderColor = T.green; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${T.green}33`; }}
+          >
+            See full pricing details &amp; FAQ →
+          </a>
         </div>
       </section>
 
