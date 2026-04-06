@@ -2,7 +2,23 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketingNav from '../components/MarketingNav.astro';
 import MarketingFooter from '../components/MarketingFooter.astro';
+import { Picture } from 'astro:assets';
 import '../styles/marketing.css';
+
+// Imported screenshots — Astro processes these at build time, generating
+// AVIF + WebP variants and responsive srcsets via sharp.
+import heroCalendar from '../assets/screenshots/hero-calendar.png';
+import bookingShot from '../assets/screenshots/booking-modal.png';
+import membersShot from '../assets/screenshots/members.png';
+import flexPlanShot from '../assets/screenshots/flex-plan.png';
+import meetingRoomShot from '../assets/screenshots/meeting-room.png';
+import publicBookingShot from '../assets/screenshots/public-booking-confirmation.png';
+import revenueShot from '../assets/screenshots/revenue.png';
+import expensesShot from '../assets/screenshots/expenses.png';
+import waitingListShot from '../assets/screenshots/waiting-list.png';
+import notificationsShot from '../assets/screenshots/notifications.png';
+import tgNotificationShot from '../assets/screenshots/tg-booking-notification.png';
+import multiLocationsShot from '../assets/screenshots/multi-locations.png';
 
 // Each feature is a section on this overview page. The `slug` becomes
 // the in-page anchor (#booking, #members, ...) and will also be the
@@ -21,7 +37,7 @@ const features = [
       'Today is auto-highlighted and scrolled into view',
       'Sub-second updates — no spinners between clicks',
     ],
-    images: [{ src: '/screenshots/booking-modal.png', alt: 'Desk booking modal showing date range, member, and pricing fields' }],
+    images: [{ src: bookingShot, alt: 'Desk booking modal showing date range, member, and pricing fields' }],
   },
   {
     slug: 'members',
@@ -36,7 +52,7 @@ const features = [
       'Soft delete preserves historical bookings even after a member leaves',
       'Member self-service booking link (no login required)',
     ],
-    images: [{ src: '/screenshots/members.png', alt: 'Members list with autocomplete and contact details' }],
+    images: [{ src: membersShot, alt: 'Members list with autocomplete and contact details' }],
   },
   {
     slug: 'flex-plans',
@@ -51,7 +67,7 @@ const features = [
       'Email reminders when balance is low or about to expire',
       'Disable mid-flight without losing any historical balance data',
     ],
-    images: [{ src: '/screenshots/flex-plan.png', alt: 'Flex day package configuration and member balance tracking' }],
+    images: [{ src: flexPlanShot, alt: 'Flex day package configuration and member balance tracking' }],
   },
   {
     slug: 'meeting-rooms',
@@ -66,7 +82,7 @@ const features = [
       'Revenue tracked separately from desks for clean reporting',
       'Visible to public booking page if you want walk-in revenue',
     ],
-    images: [{ src: '/screenshots/meeting-room.png', alt: 'Hourly meeting room reservation grid with conflict detection' }],
+    images: [{ src: meetingRoomShot, alt: 'Hourly meeting room reservation grid with conflict detection' }],
   },
   {
     slug: 'public-booking',
@@ -81,7 +97,7 @@ const features = [
       'Approve, decline, or auto-confirm based on your preference',
       'Free SEO surface — every coworking space gets its own indexable page',
     ],
-    images: [{ src: '/screenshots/public-booking-confirmation.png', alt: 'Public booking confirmation page that visitors see after submitting a request' }],
+    images: [{ src: publicBookingShot, alt: 'Public booking confirmation page that visitors see after submitting a request' }],
   },
   {
     slug: 'revenue',
@@ -96,7 +112,7 @@ const features = [
       'Prorated calculations for partial-period bookings',
       'Owner-only by default — staff and members never see numbers',
     ],
-    images: [{ src: '/screenshots/revenue.png', alt: 'Revenue dashboard showing confirmed and projected income breakdowns' }],
+    images: [{ src: revenueShot, alt: 'Revenue dashboard showing confirmed and projected income breakdowns' }],
   },
   {
     slug: 'expenses',
@@ -111,7 +127,7 @@ const features = [
       'Net revenue card on the dashboard combines income and outflow',
       '6 sensible defaults seeded for new workspaces',
     ],
-    images: [{ src: '/screenshots/expenses.png', alt: 'Expense tracking page with custom categories and recurring expenses' }],
+    images: [{ src: expensesShot, alt: 'Expense tracking page with custom categories and recurring expenses' }],
   },
   {
     slug: 'waiting-list',
@@ -126,7 +142,7 @@ const features = [
       'Mark contacted, converted, or lost so you have a paper trail',
       'Demand signal — see when you should consider expanding capacity',
     ],
-    images: [{ src: '/screenshots/waiting-list.png', alt: 'Waiting list with prospect contact info and preferred dates' }],
+    images: [{ src: waitingListShot, alt: 'Waiting list with prospect contact info and preferred dates' }],
   },
   {
     slug: 'notifications',
@@ -142,8 +158,8 @@ const features = [
       'WhatsApp and SMS coming soon',
     ],
     images: [
-      { src: '/screenshots/notifications.png', alt: 'In-app notification settings showing per-event toggles' },
-      { src: '/screenshots/tg-booking-notification.png', alt: 'Example Telegram notification when a new booking comes in' },
+      { src: notificationsShot, alt: 'In-app notification settings showing per-event toggles' },
+      { src: tgNotificationShot, alt: 'Example Telegram notification when a new booking comes in' },
     ],
   },
   {
@@ -159,7 +175,7 @@ const features = [
       'Unified billing — one invoice for all your spaces',
       'Per-location revenue and expense reports',
     ],
-    images: [{ src: '/screenshots/multi-locations.png', alt: 'Multi-location switcher showing several coworking spaces under one account' }],
+    images: [{ src: multiLocationsShot, alt: 'Multi-location switcher showing several coworking spaces under one account' }],
   },
 ];
 ---
@@ -182,12 +198,14 @@ const features = [
         from a generic calendar app.
       </p>
       <div class="hero-shot">
-        <img
-          src="/screenshots/hero-calendar.png"
+        <Picture
+          src={heroCalendar}
           alt="OhMyDesk calendar showing weekly desk availability across multiple rooms"
-          width="1600"
-          height="1000"
-          decoding="async"
+          formats={['avif', 'webp']}
+          widths={[640, 960, 1280, 1920]}
+          sizes="(max-width: 880px) 100vw, 980px"
+          loading="eager"
+          fetchpriority="high"
         />
       </div>
     </section>
@@ -223,7 +241,16 @@ const features = [
               <div class={`feature-shots${f.images.length > 1 ? ' feature-shots--two' : ''}`}>
                 {f.images.map((img) => (
                   <figure>
-                    <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+                    <Picture
+                      src={img.src}
+                      alt={img.alt}
+                      formats={['avif', 'webp']}
+                      widths={[480, 720, 1080, 1440]}
+                      sizes={f.images.length > 1
+                        ? '(max-width: 720px) 100vw, 340px'
+                        : '(max-width: 880px) 100vw, 720px'}
+                      loading="lazy"
+                    />
                   </figure>
                 ))}
               </div>
