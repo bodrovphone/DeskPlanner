@@ -4,7 +4,7 @@ This file provides context and guidance for Gemini when working with the DeskPla
 
 ## Project Overview
 
-DeskPlanner is a client-side React Single Page Application (SPA) designed for managing coworking desk bookings. It features a calendar interface for tracking desk availability, person assignments, and room bookings. The application supports data persistence via LocalStorage (for demos/offline) or MongoDB Atlas (for production) and is deployed as a static site on GitHub Pages.
+DeskPlanner is an Astro hybrid app: an SSG marketing shell (landing page) plus a React Single Page Application for the authenticated dashboard. The application uses Supabase for production data persistence and is deployed to Cloudflare Pages (auto-deploy from `main`).
 
 ## Technology Stack
 
@@ -64,7 +64,6 @@ The application uses a **Storage Abstraction Pattern** defined by the `IDataStor
 | `npm run preview` | Preview the production build locally. |
 | `npm run check` | Run TypeScript type checking. |
 | `npm run lint` | Run linting (TypeScript no-emit). |
-| `npm run deploy` | Build and deploy to GitHub Pages. |
 
 ### Environment Configuration
 

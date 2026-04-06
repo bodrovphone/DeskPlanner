@@ -74,20 +74,22 @@ npm run check
 
 # Lint (type check without emit)
 npm run lint
-
-# Deploy to GitHub Pages
-npm run deploy
 ```
+
+Deployment is automatic — Cloudflare Pages auto-builds and deploys on every push to `main` via the GitHub integration.
 
 ## Architecture & Key Design Patterns
 
 ### Tech Stack
-- **Frontend**: React 18 + TypeScript + Vite + TanStack Query + Wouter routing
+- **Marketing shell**: Astro 5 (SSG) at `src/pages/index.astro`, mounts the React landing as a `client:load` island
+- **App**: React 18 + TypeScript + react-router-dom SPA in `client/src/`, mounted via `src/pages/[...slug].astro` as a `client:only` island
+- **Build tool**: Vite (driven by Astro)
+- **State**: TanStack Query
 - **UI Components**: shadcn/ui (47 components in `/client/src/components/ui/`)
 - **Backend**: Supabase (Auth, Postgres with RLS, Edge Functions)
 - **Email**: Resend via Supabase Edge Functions
 - **Validation**: Zod schemas in `/shared/schema.ts`
-- **Deployment**: Static site on GitHub Pages, Supabase for backend
+- **Deployment**: Cloudflare Pages (auto-deploy on push to `main`)
 
 ### Core Architectural Decisions
 

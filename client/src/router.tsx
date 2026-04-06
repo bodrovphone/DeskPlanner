@@ -204,6 +204,10 @@ export const router = createBrowserRouter(
           element: <PublicBookingPage />,
         },
         // Slug-based routes
+        // IMPORTANT: when adding a new sub-path here (e.g. /:orgSlug/foo),
+        // also add a matching `/:org/foo /spa/ 200` line to public/_redirects.
+        // Cloudflare Pages otherwise serves the landing page for that URL in
+        // production. See memory/project_deployment.md for the gotcha.
         {
           path: '/:orgSlug',
           element: <ProtectedRoute />,

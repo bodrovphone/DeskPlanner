@@ -51,7 +51,7 @@ DeskPlanner provides an intuitive calendar interface for managing desk availabil
 | **Forms** | React Hook Form + Zod validation |
 | **Charts** | Recharts |
 | **Storage Options** | LocalStorage, MongoDB Atlas, Supabase |
-| **Deployment** | GitHub Pages |
+| **Deployment** | Cloudflare Pages (auto-deploy from `main`) |
 
 ## Getting Started
 
@@ -78,7 +78,7 @@ DeskPlanner provides an intuitive calendar interface for managing desk availabil
    npm run dev
    ```
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser
+4. Open [http://localhost:4321](http://localhost:4321) in your browser
 
 ### Available Scripts
 
@@ -89,7 +89,6 @@ DeskPlanner provides an intuitive calendar interface for managing desk availabil
 | `npm run preview` | Preview production build locally |
 | `npm run check` | Run TypeScript type checking |
 | `npm run test` | Run tests with Vitest |
-| `npm run deploy` | Build and deploy to GitHub Pages |
 
 ## Configuration
 
