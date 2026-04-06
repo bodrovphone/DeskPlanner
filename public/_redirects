@@ -1,4 +1,1 @@
-# Cloudflare Pages: static files take precedence over these rules.
-# So /pricing (Astro page) serves the static file, not the SPA.
-# Everything without a static file falls through to the SPA shell.
-/*  /spa/index.html  200
+/*    /spa/    200
