@@ -1022,6 +1022,9 @@ export default function LandingPage() {
       {/* ── DEMO REQUEST ── */}
       <DemoRequestSection open={demoOpen} onOpenChange={setDemoOpen} />
 
+      {/* ── FAQ ── */}
+      <FaqSection />
+
       {/* ── CTA ── */}
       <section style={{ borderTop: `1px solid ${T.border}`, position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at bottom center, ${T.greenFaint} 0%, transparent 60%)`, pointerEvents: 'none' }} />
@@ -1557,6 +1560,89 @@ function DemoRequestSection({ open, onOpenChange }: { open: boolean; onOpenChang
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+const landingFaq = [
+  {
+    q: 'What is OhMyDesk?',
+    a: 'OhMyDesk is coworking desk booking and management software. It gives coworking space operators a visual calendar to manage desk availability, track revenue, handle waiting lists, and accept public bookings — all from a single dashboard.',
+  },
+  {
+    q: 'How does the free trial work?',
+    a: 'Sign up with your email, create your space, and use every feature for 3 months at no cost. No credit card required and we will not auto-charge you. After 3 months you pick a paid plan or your account pauses until you are ready.',
+  },
+  {
+    q: 'Does OhMyDesk work for multi-location coworking spaces?',
+    a: 'Yes. The Multi-Location plan lets you manage unlimited locations from one account with a shared member directory, cross-location bookings, and per-location revenue reports.',
+  },
+  {
+    q: 'What notifications does OhMyDesk send?',
+    a: 'OhMyDesk sends Telegram and email notifications for new bookings, public booking requests, flex plan balance alerts, and booking confirmations. Admins get instant alerts; members get confirmations.',
+  },
+  {
+    q: 'How long does setup take?',
+    a: 'Most spaces are up and running in under 2 minutes. You add your rooms, define your desks, invite your team, and you are ready to start booking.',
+  },
+  {
+    q: 'Is OhMyDesk suitable for small coworking spaces?',
+    a: 'Yes. There is no minimum desk count or seat limit. OhMyDesk works equally well for a 5-desk boutique space and a 200-desk multi-floor operation.',
+  },
+];
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null);
+  const { ref, visible } = useReveal();
+  return (
+    <section ref={ref} style={{
+      borderTop: `1px solid ${T.border}`,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(32px)',
+      transition: 'all 0.7s cubic-bezier(.22,1,.36,1)',
+    }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '96px 24px' }}>
+        <p style={{ fontFamily: 'monospace', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.green, marginBottom: 16, textAlign: 'center' }}>FAQ</p>
+        <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: T.textPrimary, textAlign: 'center', marginBottom: 48, lineHeight: 1.15 }}>
+          Common questions
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {landingFaq.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                background: T.bgCard,
+                border: `1px solid ${open === i ? 'rgba(52,211,153,0.3)' : T.border}`,
+                borderRadius: 10,
+                overflow: 'hidden',
+                transition: 'border-color 0.2s ease',
+              }}
+            >
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '18px 22px',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  gap: 16,
+                }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary, lineHeight: 1.4 }}>{item.q}</span>
+                <span style={{ fontSize: 22, fontWeight: 300, color: T.green, flexShrink: 0, transition: 'transform 0.2s ease', transform: open === i ? 'rotate(45deg)' : 'rotate(0)' }}>+</span>
+              </button>
+              {open === i && (
+                <p style={{ margin: 0, padding: '0 22px 18px', fontSize: 14, color: T.textSecondary, lineHeight: 1.7 }}>{item.a}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

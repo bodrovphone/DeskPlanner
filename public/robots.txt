@@ -1,3 +1,4 @@
+# Standard crawlers
 User-agent: *
 Allow: /
 Disallow: /login
@@ -5,5 +6,27 @@ Disallow: /signup
 Disallow: /onboarding
 Disallow: /settings
 Disallow: /admin
+
+# AI crawlers — explicitly allowed so they can index and cite the site
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: claude-web
+Allow: /
+
+User-agent: Googlebot
+Allow: /
 
 Sitemap: https://ohmydesk.app/sitemap.xml

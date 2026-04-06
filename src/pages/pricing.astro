@@ -149,6 +149,18 @@ const productSchema = {
   defaultStructuredData={false}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(productSchema)} />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faq.map(item => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.a
+      }
+    }))
+  })} />
 
   <main>
     <MarketingNav />

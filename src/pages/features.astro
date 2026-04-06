@@ -28,6 +28,7 @@ const features = [
     slug: 'booking',
     eyebrow: 'Booking',
     title: 'Visual desk booking calendar',
+    quickAnswer: 'OhMyDesk shows every desk in every room as a color-coded weekly or monthly grid. Operators click a cell to book, drag to select a range, or ctrl-click for bulk updates — no dropdowns, no page reloads.',
     intro:
       'A weekly and monthly calendar grid showing every desk in every room at a glance. Click any cell to book, drag to select a range, ctrl-click to bulk update. Built for managers who need to see capacity at one look — not for end users hunting through dropdowns.',
     bullets: [
@@ -58,6 +59,7 @@ const features = [
     slug: 'flex-plans',
     eyebrow: 'Flex plans',
     title: 'Flex day packages with auto-balance tracking',
+    quickAnswer: 'Flex plans let you sell prepaid day-pass bundles (e.g. "10 days for €80"). Members self-book via a personal link and their balance decrements automatically — no admin involvement needed per booking.',
     intro:
       'Sell prepaid day packages (e.g. "10 days for €80") instead of forcing members onto monthly subscriptions. Each member gets a personal booking link, picks the days they want, and the system tracks their balance automatically. Perfect for hybrid workers.',
     bullets: [
@@ -88,6 +90,7 @@ const features = [
     slug: 'public-booking',
     eyebrow: 'Public booking',
     title: 'Public booking page for walk-ins and visitors',
+    quickAnswer: 'Each coworking space gets a shareable public booking URL. Visitors see live desk availability, submit their details, and the admin gets an instant Telegram notification to approve or decline — no login required from the visitor.',
     intro:
       'A no-login booking page anyone can use. Share the link in social media, on flyers, or on your own website. Visitors see real-time availability, fill in their info, and submit a booking — you get a Telegram notification immediately and can approve or decline.',
     bullets: [
@@ -103,6 +106,7 @@ const features = [
     slug: 'revenue',
     eyebrow: 'Revenue',
     title: 'Revenue tracking & projections',
+    quickAnswer: 'The revenue dashboard shows confirmed income (Assigned bookings) and projected income (Booked) side by side, broken down by room and currency. Only space owners can see it — staff and members never see financial data.',
     intro:
       'Confirmed and projected revenue side by side, broken down by room, by desk type, and across the whole portfolio. Currency-aware and prorated for partial-month bookings. Designed for owners who need to know "how is this month tracking?" at one glance.',
     bullets: [
@@ -226,6 +230,9 @@ const features = [
           <article id={f.slug} class="feature">
             <span class="feature-eyebrow">{f.eyebrow}</span>
             <h2>{f.title}</h2>
+            {'quickAnswer' in f && f.quickAnswer && (
+              <p class="feature-quick-answer">{f.quickAnswer}</p>
+            )}
             <p class="feature-intro">{f.intro}</p>
             <ul class="feature-bullets">
               {f.bullets.map((b) => (
@@ -420,6 +427,16 @@ const features = [
     margin: 0 0 18px;
     line-height: 1.2;
     letter-spacing: -0.5px;
+  }
+  .feature-quick-answer {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 0 0 20px;
+    padding: 14px 18px;
+    background: rgba(52, 211, 153, 0.06);
+    border-left: 3px solid var(--green);
+    border-radius: 0 6px 6px 0;
   }
   .feature-intro {
     font-size: 17px;

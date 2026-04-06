@@ -43,6 +43,25 @@ const {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
+    <!-- Organization schema — always present, helps AI systems attribute brand info -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "OhMyDesk",
+      "url": "https://ohmydesk.app",
+      "logo": "https://ohmydesk.app/favicon.svg",
+      "description": "Coworking desk booking and management software for space operators.",
+      "email": "hello@ohmydesk.app",
+      "sameAs": [
+        "https://www.linkedin.com/company/ohmydesk"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "hello@ohmydesk.app"
+      }
+    })} />
+
     {defaultStructuredData && (
       <script type="application/ld+json" set:html={JSON.stringify({
         "@context": "https://schema.org",

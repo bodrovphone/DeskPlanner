@@ -1,0 +1,37 @@
+# OhMyDesk
+
+> OhMyDesk is coworking desk booking and management software for space operators. It provides a visual calendar for desk availability, revenue tracking, waiting lists, meeting room scheduling, and member management. Runs in the browser — no install required.
+
+## Key pages
+- [Home](https://ohmydesk.app/)
+- [Features](https://ohmydesk.app/features)
+- [Pricing](https://ohmydesk.app/pricing)
+
+## Product
+- **Type**: B2B SaaS, web application
+- **Category**: Coworking space management software
+- **Pricing**: 3-month free trial (no credit card), then from $18/month (Pro plan)
+- **Setup**: Under 2 minutes
+- **Multi-location**: Supported on the Multi-Location plan ($50/month)
+
+## What it does
+OhMyDesk helps coworking space operators manage desk bookings through a visual weekly/monthly calendar. Key capabilities:
+
+- Assign desks to members or mark them available/booked
+- Track revenue and expenses per space
+- Manage flex day-pass plans for drop-in members
+- Accept public bookings from walk-in clients via a branded booking page
+- Send booking confirmations via Telegram and email
+- Manage waiting lists for fully-booked desks
+- Schedule meeting rooms by the hour
+- Operate multiple locations from a single account
+- Role-based access (owner, admin, member) — revenue visible to owners only
+
+## Pricing summary
+- **Free Trial**: $0/month for 3 months, every feature unlocked, no card required
+- **Pro**: $18/month (early-bird, was $29) — single location, all features
+- **Multi-Location**: $50/month — unlimited locations, shared member directory
+
+## Contact
+- Website: https://ohmydesk.app
+- Email: hello@ohmydesk.app

@@ -1,8 +1,64 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import LandingPage from '@/pages/landing';
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is OhMyDesk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "OhMyDesk is coworking desk booking and management software. It gives coworking space operators a visual calendar to manage desk availability, track revenue, handle waiting lists, and accept public bookings — all from a single dashboard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the free trial work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sign up with your email, create your space, and use every feature for 3 months at no cost. No credit card required and we will not auto-charge you. After 3 months you pick a paid plan or your account pauses until you are ready."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does OhMyDesk work for multi-location coworking spaces?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The Multi-Location plan lets you manage unlimited locations from one account with a shared member directory, cross-location bookings, and per-location revenue reports."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What notifications does OhMyDesk send?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "OhMyDesk sends Telegram and email notifications for new bookings, public booking requests, flex plan balance alerts, and booking confirmations. Admins get instant alerts; members get confirmations."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does setup take?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Most spaces are up and running in under 2 minutes. You add your rooms, define your desks, invite your team, and you are ready to start booking."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is OhMyDesk suitable for small coworking spaces?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. There is no minimum desk count or seat limit. OhMyDesk works equally well for a 5-desk boutique space and a 200-desk multi-floor operation."
+      }
+    }
+  ]
+};
 ---
 
 <BaseLayout>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   <LandingPage client:load />
 </BaseLayout>
