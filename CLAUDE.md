@@ -50,7 +50,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Core Principles
 - **Simplicity First**: Make every change as simple as possible. Minimal code impact
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards
-- **No Git Commands**: User explicitly manages git — never run git commands
 
 ---
 
