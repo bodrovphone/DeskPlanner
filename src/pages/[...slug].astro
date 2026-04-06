@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import App from '@/App';
+import '@/index.css';
+
+// Generate static HTML files for known SPA routes (login, signup, etc.)
+// plus a generic /spa/ fallback that _redirects points to for dynamic routes
+// like /:orgSlug/calendar.
+//
+// In dev, this catch-all also matches any unknown path so the SPA boots
+// (Cloudflare's _redirects file is production-only).
+export function getStaticPaths() {
+  return [
+    { params: { slug: 'spa' } },
+    { params: { slug: 'login' } },
+    { params: { slug: 'signup' } },
+    { params: { slug: 'onboarding' } },
+  ];
+}
+---
+
+<BaseLayout title="OhMyDesk">
+  <App client:only="react" />
+</BaseLayout>

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import {
   Calendar,
@@ -21,8 +20,8 @@ import {
   UserRoundSearch,
   Package,
 } from 'lucide-react';
-import logoLanding from '@/assets/logo-landing.svg';
-import logoLandingIcon from '@/assets/logo-landing-icon.svg';
+import logoLanding from '@/assets/logo-landing.svg?url';
+import logoLandingIcon from '@/assets/logo-landing-icon.svg?url';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 
 /* ─── palette tokens (scoped via inline styles) ─── */
@@ -110,8 +109,11 @@ function useTyping(text: string, speed = 55, startDelay = 600) {
 
 /* ─── narrow breakpoint hook ─── */
 function useNarrow(breakpoint = 768) {
-  const [narrow, setNarrow] = useState(() => window.innerWidth < breakpoint);
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  );
   useEffect(() => {
+    setNarrow(window.innerWidth < breakpoint);
     const onResize = () => setNarrow(window.innerWidth < breakpoint);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -602,7 +604,7 @@ export default function LandingPage() {
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link to="/login" style={{ textDecoration: 'none' }}>
+            <a href="/login" style={{ textDecoration: 'none' }}>
               <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
                 {...touchHoverProps(
                   e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
@@ -610,8 +612,8 @@ export default function LandingPage() {
                 )}
               onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
               >Log In</button>
-            </Link>
-            <Link to="/signup" style={{ textDecoration: 'none' }}>
+            </a>
+            <a href="/signup" style={{ textDecoration: 'none' }}>
               <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
                 {...touchHoverProps(
                   e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
@@ -619,7 +621,7 @@ export default function LandingPage() {
                 )}
                 onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
               >Sign Up Free</button>
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
@@ -686,7 +688,7 @@ export default function LandingPage() {
             justifyContent: 'center',
             marginTop: 40,
           }}>
-            <Link to="/signup" style={{ textDecoration: 'none' }}>
+            <a href="/signup" style={{ textDecoration: 'none' }}>
               <button style={{
                 fontFamily: '"SF Mono", "Fira Code", monospace',
                 fontSize: 14,
@@ -712,8 +714,8 @@ export default function LandingPage() {
               >
                 Start Free <ArrowRight size={16} />
               </button>
-            </Link>
-            <Link to="/login" style={{ textDecoration: 'none' }}>
+            </a>
+            <a href="/login" style={{ textDecoration: 'none' }}>
               <button style={{
                 fontFamily: '"SF Mono", "Fira Code", monospace',
                 fontSize: 14,
@@ -735,7 +737,7 @@ export default function LandingPage() {
               >
                 Log In
               </button>
-            </Link>
+            </a>
             <button style={{
               fontFamily: '"SF Mono", "Fira Code", monospace',
               fontSize: 14,
@@ -1268,7 +1270,7 @@ function PricingCard({ tier, index }: { tier: typeof pricingTiers[0]; index: num
           return isExternal ? (
             <a href={tier.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>{btn}</a>
           ) : (
-            <Link to={tier.href} style={{ textDecoration: 'none', display: 'block' }}>{btn}</Link>
+            <a href={tier.href} style={{ textDecoration: 'none', display: 'block' }}>{btn}</a>
           );
         })()}
       </div>
@@ -1536,7 +1538,7 @@ function CtaSection() {
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
         Join hundreds of coworking operators who manage their desks with OhMyDesk. Start your free trial today.
       </p>
-      <Link to="/signup" style={{ textDecoration: 'none' }}>
+      <a href="/signup" style={{ textDecoration: 'none' }}>
         <button style={{
           fontFamily: '"SF Mono", "Fira Code", monospace',
           fontSize: 15,
@@ -1562,7 +1564,7 @@ function CtaSection() {
         >
           Get Started Free <ArrowRight size={16} />
         </button>
-      </Link>
+      </a>
     </div>
   );
 }

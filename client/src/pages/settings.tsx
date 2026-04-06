@@ -16,9 +16,9 @@ import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, Chevr
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Organization } from '@shared/schema';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
-import telegramIcon from '@/assets/telegram.svg';
-import viberIcon from '@/assets/viber.svg';
-import whatsappIcon from '@/assets/whatsapp.svg';
+import telegramIcon from '@/assets/telegram.svg?url';
+import viberIcon from '@/assets/viber.svg?url';
+import whatsappIcon from '@/assets/whatsapp.svg?url';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
 

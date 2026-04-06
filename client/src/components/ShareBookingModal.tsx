@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { DeskBooking } from '@shared/schema';
 import { useShareBooking } from '@/hooks/use-share-booking';
 import { Share2, Copy, Check, Loader2 } from 'lucide-react';
-import telegramIcon from '@/assets/telegram.svg';
-import whatsappIcon from '@/assets/whatsapp.svg';
-import viberIcon from '@/assets/viber.svg';
+import telegramIcon from '@/assets/telegram.svg?url';
+import whatsappIcon from '@/assets/whatsapp.svg?url';
+import viberIcon from '@/assets/viber.svg?url';
 
 
 interface ShareBookingModalProps {

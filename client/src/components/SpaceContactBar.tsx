@@ -1,7 +1,7 @@
 import { Phone, Mail } from 'lucide-react';
-import telegramIcon from '@/assets/telegram.svg';
-import viberIcon from '@/assets/viber.svg';
-import whatsappIcon from '@/assets/whatsapp.svg';
+import telegramIcon from '@/assets/telegram.svg?url';
+import viberIcon from '@/assets/viber.svg?url';
+import whatsappIcon from '@/assets/whatsapp.svg?url';
 
 interface SpaceContactBarProps {
   phone: string | null | undefined;

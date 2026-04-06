@@ -111,7 +111,7 @@ export function calculateRevenueByStatus(
     if (processedBookings.has(bookingKey)) continue;
     processedBookings.add(bookingKey);
 
-    const { proratedPrice } = calculateProratedRevenue(booking, periodStart, periodEnd);
+    const { proratedPrice } = calculateProratedRevenue(booking as { startDate: string; endDate: string; price?: number }, periodStart, periodEnd);
 
     if (booking.status === 'assigned') {
       confirmedRevenue += proratedPrice;

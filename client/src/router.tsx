@@ -4,7 +4,6 @@ import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationCo
 import { DataStoreProvider } from '@/contexts/DataStoreContext';
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import LandingPage from '@/pages/landing';
 import DeskCalendar from '@/pages/desk-calendar';
 import OnboardingPage from '@/pages/onboarding';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -138,31 +137,12 @@ function PublicOnlyRoute() {
   return <Outlet />;
 }
 
-function LandingRoute() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  if (user) {
-    return <Navigate to="/app" replace />;
-  }
-
-  return <LandingPage />;
-}
-
-const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
 export const router = createBrowserRouter(
   [
     {
       element: <AuthLayout />,
       children: [
-        {
-          path: '/',
-          element: <LandingRoute />,
-        },
         {
           element: <PublicOnlyRoute />,
           children: [
@@ -299,5 +279,4 @@ export const router = createBrowserRouter(
       ],
     },
   ],
-  { basename }
 );

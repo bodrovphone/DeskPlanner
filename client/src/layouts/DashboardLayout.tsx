@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin, LayoutGrid, Bell, Package, Globe, Receipt } from 'lucide-react';
-import logoCompact from '@/assets/logo-compact.svg';
+import logoCompact from '@/assets/logo-compact.svg?url';
 import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
 import { isAdmin } from '@/lib/admin';

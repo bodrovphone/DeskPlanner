@@ -1,16 +1,28 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'OhMyDesk - Coworking Desk Booking & Management Software',
+  description = 'Coworking desk booking and management software. Visual calendar, revenue tracking, waiting lists, and meeting room scheduling. Free trial, set up in under 2 minutes.',
+} = Astro.props;
+---
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>OhMyDesk - Coworking Desk Booking & Management Software</title>
-    <meta name="description" content="Coworking desk booking and management software. Visual calendar, revenue tracking, waiting lists, and meeting room scheduling. Free trial, set up in under 2 minutes." />
+    <title>{title}</title>
+    <meta name="description" content={description} />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://ohmydesk.app/" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="OhMyDesk - Coworking Desk Booking & Management Software" />
-    <meta property="og:description" content="Visual calendar, revenue tracking, waiting lists, and meeting room scheduling for coworking spaces. Free trial." />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://ohmydesk.app/" />
     <meta property="og:image" content="https://ohmydesk.app/og-image.png" />
@@ -20,13 +32,12 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="OhMyDesk - Coworking Desk Booking & Management Software" />
-    <meta name="twitter:description" content="Visual calendar, revenue tracking, waiting lists, and meeting room scheduling for coworking spaces. Free trial." />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="https://ohmydesk.app/og-image.png" />
 
     <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
+    <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "OhMyDesk",
@@ -54,29 +65,14 @@
         "url": "https://ohmydesk.app",
         "email": "hello@ohmydesk.app"
       }
-    }
-    </script>
+    })} />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <script defer src="https://ohmydesk-analytics.bodrovphone.workers.dev/s.js" data-website-id="1f5154a8-b100-4034-8bf9-ed3bf8399f9a"></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script>
-      // GitHub Pages SPA routing: handle redirect from 404.html
-      (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) {
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-          );
-        }
-      }(window.location))
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
+    <slot />
   </body>
 </html>

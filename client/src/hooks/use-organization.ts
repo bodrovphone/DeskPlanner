@@ -428,9 +428,17 @@ export function useSetRoomDeskCount() {
   });
 }
 
+const RESERVED_SLUGS = new Set([
+  'pricing', 'features', 'blog', 'about', 'login', 'signup', 'onboarding',
+  'share', 'book', 'admin', 'api', 'app', 'spa', 'help', 'support',
+  'terms', 'privacy', 'contact', 'docs', 'status', 'settings',
+]);
+
 export function useCheckSlugAvailable() {
   return useMutation({
     mutationFn: async (slug: string): Promise<boolean> => {
+      if (RESERVED_SLUGS.has(slug)) return false;
+
       const { data, error } = await supabaseClient
         .from('organizations')
         .select('id')
