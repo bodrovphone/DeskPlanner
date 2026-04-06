@@ -102,8 +102,8 @@ test.describe('Onboarding — Step 1: Rooms & Desks', () => {
 
   test('working days toggles are visible', async ({ page }) => {
     // Day toggle buttons are rendered for Mon–Sun
-    await expect(page.getByText('Mon')).toBeVisible();
-    await expect(page.getByText('Fri')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mon', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Fri', exact: true })).toBeVisible();
   });
 
   test('Back returns to Space Info', async ({ page }) => {
