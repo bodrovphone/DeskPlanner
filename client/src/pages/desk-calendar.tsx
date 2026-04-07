@@ -29,7 +29,7 @@ import { DEFAULT_WORKING_DAYS, isNonWorkingDay } from '@/lib/workingDays';
 const MOBILE_BREAKPOINT = 1024;
 
 export default function DeskCalendar() {
-  const { legacyDesks, currentOrg } = useOrganization();
+  const { legacyDesks, currentOrg, rooms: orgRooms } = useOrganization();
   const desks = legacyDesks.length > 0 ? legacyDesks : DEFAULT_DESKS;
   const workingDays = currentOrg?.workingDays ?? DEFAULT_WORKING_DAYS;
 
@@ -47,6 +47,7 @@ export default function DeskCalendar() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'floor-plan'>('week');
   const [mapDate, setMapDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [mapRoomId, setMapRoomId] = useState('all');
   const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
     rooms.length >= 4 ? 'single' : 'all'
   );
@@ -237,10 +238,13 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             setSelectedRoom={setSelectedRoom}
             mapDate={mapDate}
             setMapDate={setMapDate}
+            mapRooms={orgRooms}
+            mapRoomId={mapRoomId}
+            setMapRoomId={setMapRoomId}
           />
 
           {viewMode === 'floor-plan' ? (
-            <FloorPlanCalendarView selectedDate={mapDate} onDeskClick={handleDeskClick} />
+            <FloorPlanCalendarView selectedDate={mapDate} selectedRoomId={mapRoomId} onDeskClick={handleDeskClick} />
           ) : (
             <DeskGrid
               ref={tableRef}

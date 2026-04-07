@@ -42,9 +42,12 @@ interface CalendarNavigationProps {
   rooms: RoomInfo[];
   selectedRoom: number | null;
   setSelectedRoom: (room: number) => void;
-  // floor-plan mode date controls
+  // floor-plan mode controls
   mapDate?: string;
   setMapDate?: (date: string) => void;
+  mapRooms?: { id?: string; name?: string }[];
+  mapRoomId?: string;
+  setMapRoomId?: (id: string) => void;
 }
 
 export default function CalendarNavigation({
@@ -64,6 +67,9 @@ export default function CalendarNavigation({
   setSelectedRoom,
   mapDate,
   setMapDate,
+  mapRooms,
+  mapRoomId,
+  setMapRoomId,
 }: CalendarNavigationProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
@@ -119,6 +125,20 @@ export default function CalendarNavigation({
                 <Button variant="ghost" size="sm" className="text-gray-500" onClick={() => setMapDate(todayStr())}>
                   Today
                 </Button>
+
+                {mapRooms && mapRooms.length > 1 && mapRoomId !== undefined && setMapRoomId && (
+                  <Select value={mapRoomId} onValueChange={setMapRoomId}>
+                    <SelectTrigger className="w-[140px] h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All rooms</SelectItem>
+                      {mapRooms.map((r) => r.id && r.name ? (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ) : null)}
+                    </SelectContent>
+                  </Select>
+                )}
               </>
             ) : (
               <>

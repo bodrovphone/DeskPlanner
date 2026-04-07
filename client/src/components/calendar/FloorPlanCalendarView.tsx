@@ -15,29 +15,39 @@ const STATUS_COLORS = {
   assigned:  { fill: '#dbeafe', stroke: '#3b82f6' },
 } as const;
 
-const PADDING = 48; // padding around content when computing scale
+const PADDING = 48;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface FloorPlanCalendarViewProps {
   selectedDate: string;
+  selectedRoomId: string; // 'all' or a room UUID
   onDeskClick: (deskId: string, date: string, event: React.MouseEvent, booking: DeskBooking | null) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: FloorPlanCalendarViewProps) {
+export default function FloorPlanCalendarView({ selectedDate, selectedRoomId, onDeskClick }: FloorPlanCalendarViewProps) {
   const { rooms, desks } = useOrganization();
   const { loadRoomLayout } = useFloorPlan();
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const [positions, setPositions] = useState<DeskPosition[]>([]);
-  const [objects, setObjects] = useState<FloorPlanObject[]>([]);
+  const [allPositions, setAllPositions] = useState<DeskPosition[]>([]);
+  const [allObjects, setAllObjects] = useState<FloorPlanObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [contentSize, setContentSize] = useState({ w: 0, h: 0 });
 
   const { data: bookings = {} } = useBookings(selectedDate, selectedDate);
+
+  // Filter by selected room
+  const positions = selectedRoomId === 'all'
+    ? allPositions
+    : allPositions.filter((p) => p.roomId === selectedRoomId);
+  const objects = selectedRoomId === 'all'
+    ? allObjects
+    : allObjects.filter((o) => o.roomId === selectedRoomId);
 
   // Load all rooms' layout on mount / when rooms change
   const loadAll = useCallback(async () => {
@@ -45,8 +55,8 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
     setLoading(true);
     try {
       const results = await Promise.all(rooms.map((r) => loadRoomLayout(r.id)));
-      setPositions(results.flatMap((r) => r.positions));
-      setObjects(results.flatMap((r) => r.objects));
+      setAllPositions(results.flatMap((r) => r.positions));
+      setAllObjects(results.flatMap((r) => r.objects));
     } finally {
       setLoading(false);
     }
@@ -54,8 +64,8 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Compute scale to fit all content in the canvas
-  const computeScale = useCallback(() => {
+  // Compute scale + center offset to fit content in canvas
+  const computeLayout = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || (positions.length === 0 && objects.length === 0)) return;
 
@@ -69,24 +79,27 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
     setContentSize({ w: contentW, h: contentH });
 
     const { width, height } = canvas.getBoundingClientRect();
-    setScale(Math.min(width / contentW, height / contentH, 1));
+    const s = Math.min(width / contentW, height / contentH, 1);
+    setScale(s);
+    setOffset({
+      x: Math.max((width - contentW * s) / 2, 0),
+      y: Math.max((height - contentH * s) / 2, 0),
+    });
   }, [positions, objects]);
 
   useEffect(() => {
-    if (!loading) computeScale();
-  }, [loading, computeScale]);
+    if (!loading) computeLayout();
+  }, [loading, computeLayout]);
 
-  // Recompute on window resize
   useEffect(() => {
-    window.addEventListener('resize', computeScale);
-    return () => window.removeEventListener('resize', computeScale);
-  }, [computeScale]);
+    window.addEventListener('resize', computeLayout);
+    return () => window.removeEventListener('resize', computeLayout);
+  }, [computeLayout]);
 
   const isEmpty = !loading && positions.length === 0 && objects.length === 0;
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Canvas — fills remaining viewport height */}
       <div
         ref={canvasRef}
         className="relative rounded-lg border bg-gray-50 overflow-hidden"
@@ -114,20 +127,18 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
           </div>
         )}
 
-        {/* Scaled content wrapper */}
         {!loading && !isEmpty && (
           <div
             style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
+              top: offset.y,
+              left: offset.x,
               width: contentSize.w,
               height: contentSize.h,
               transformOrigin: '0 0',
               transform: `scale(${scale})`,
             }}
           >
-            {/* Shape tiles — non-interactive */}
             {objects.map((obj) => {
               const cfg = SHAPES[obj.shape];
               if (!cfg) return null;
@@ -137,23 +148,17 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
                   key={obj.id}
                   style={{
                     position: 'absolute',
-                    left: obj.x,
-                    top: obj.y,
-                    width: obj.w,
-                    height: obj.h,
-                    borderRadius,
-                    overflow: 'hidden',
+                    left: obj.x, top: obj.y,
+                    width: obj.w, height: obj.h,
+                    borderRadius, overflow: 'hidden',
                   }}
                 >
                   <div
                     style={{
                       position: 'absolute',
-                      left: '50%',
-                      top: '50%',
-                      width: cfg.w,
-                      height: cfg.h,
-                      marginLeft: -cfg.w / 2,
-                      marginTop: -cfg.h / 2,
+                      left: '50%', top: '50%',
+                      width: cfg.w, height: cfg.h,
+                      marginLeft: -cfg.w / 2, marginTop: -cfg.h / 2,
                       transform: `rotate(${obj.rotation}deg)`,
                       transformOrigin: 'center center',
                     }}
@@ -164,7 +169,6 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
               );
             })}
 
-            {/* Desk tiles — clickable, status-coloured */}
             {positions.map((pos) => {
               const orgDesk = desks.find((d) => d.id === pos.deskId);
               if (!orgDesk) return null;
@@ -182,14 +186,10 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
                   title={orgDesk.label}
                   style={{
                     position: 'absolute',
-                    left: pos.x,
-                    top: pos.y,
-                    width: pos.w,
-                    height: pos.h,
+                    left: pos.x, top: pos.y,
+                    width: pos.w, height: pos.h,
                     cursor: 'pointer',
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    outline: 'none',
+                    borderRadius: 10, overflow: 'hidden', outline: 'none',
                   }}
                   className="hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-shadow"
                   onClick={(e) => onDeskClick(orgDesk.deskId, selectedDate, e, booking)}
@@ -200,12 +200,7 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
                     }
                   }}
                 >
-                  <DeskSymbol
-                    label={orgDesk.label}
-                    rotation={pos.rotation}
-                    fill={fill}
-                    stroke={stroke}
-                  />
+                  <DeskSymbol label={orgDesk.label} rotation={pos.rotation} fill={fill} stroke={stroke} />
                 </div>
               );
             })}
@@ -213,7 +208,6 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
         )}
       </div>
 
-      {/* Legend */}
       <div className="pt-1">
         <StatusLegend />
       </div>
