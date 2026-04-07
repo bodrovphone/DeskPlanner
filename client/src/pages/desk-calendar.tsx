@@ -206,14 +206,12 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
         />
       ) : (
         <>
-          {viewMode !== 'floor-plan' && (
-            <CalendarHeader
-              onSetAvailability={() => setIsRangeModalOpen(true)}
-              onExport={handleExport}
-              statusCounts={statusCounts}
-              totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
-            />
-          )}
+          <CalendarHeader
+            onSetAvailability={() => setIsRangeModalOpen(true)}
+            onExport={handleExport}
+            statusCounts={statusCounts}
+            totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
+          />
 
           <CalendarNavigation
             viewMode={viewMode}
