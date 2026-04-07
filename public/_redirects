@@ -32,4 +32,5 @@
 /:org/team            /spa/  200
 /:org/notifications   /spa/  200
 /:org/integrations    /spa/  200
-/:org/admin           /spa/  200
+/:org/admin                /spa/  200
+/:org/floor-plan-editor    /spa/  200

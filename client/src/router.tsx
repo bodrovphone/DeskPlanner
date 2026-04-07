@@ -18,6 +18,7 @@ import MeetingRoomsPage from '@/pages/meeting-rooms';
 import MembersPage from '@/pages/members';
 import MemberBookingPage from '@/pages/member-booking';
 import ExpensesPage from '@/pages/expenses';
+import FloorPlanEditorPage from '@/pages/floor-plan-editor';
 
 const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -273,6 +274,10 @@ export const router = createBrowserRouter(
                     {
                       path: 'admin',
                       element: <AdminPage />,
+                    },
+                    {
+                      path: 'floor-plan-editor',
+                      element: <FloorPlanEditorPage />,
                     },
                   ],
                 },

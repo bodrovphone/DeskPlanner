@@ -428,6 +428,50 @@ export function useSetRoomDeskCount() {
   });
 }
 
+export function useMergeRooms() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      keepRoomId,
+      removeRoomId,
+      orgId,
+    }: {
+      keepRoomId: string;
+      removeRoomId: string;
+      orgId: string;
+    }) => {
+      // 1. Move all desks from the removed room into the kept room
+      const { error: deskError } = await supabaseClient
+        .from('desks')
+        .update({ room_id: keepRoomId })
+        .eq('room_id', removeRoomId)
+        .eq('organization_id', orgId);
+
+      if (deskError) throw deskError;
+
+      // 2. Delete floor plan data for the removed room (desk_positions + floor_plan_objects)
+      await Promise.all([
+        supabaseClient.from('desk_positions').delete().eq('room_id', removeRoomId).eq('organization_id', orgId),
+        supabaseClient.from('floor_plan_objects').delete().eq('room_id', removeRoomId).eq('organization_id', orgId),
+      ]);
+
+      // 3. Delete the room itself
+      const { error: roomError } = await supabaseClient
+        .from('rooms')
+        .delete()
+        .eq('id', removeRoomId);
+
+      if (roomError) throw roomError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    },
+  });
+}
+
 const RESERVED_SLUGS = new Set([
   'pricing', 'features', 'blog', 'about', 'login', 'signup', 'onboarding',
   'share', 'book', 'admin', 'api', 'app', 'spa', 'help', 'support',

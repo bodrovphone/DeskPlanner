@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount } from '@/hooks/use-organization';
+import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount, useMergeRooms } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
 import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, Users, Shield, UserMinus, Loader2, AlertTriangle } from 'lucide-react';
@@ -217,8 +217,12 @@ function RoomsSettingsCard() {
   const renameDesk = useRenameDesk();
   const addRoom = useAddRoom();
   const setRoomDeskCount = useSetRoomDeskCount();
+  const mergeRooms = useMergeRooms();
 
   const [addingRoom, setAddingRoom] = useState(false);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeKeepId, setMergeKeepId] = useState<string>('');
+  const [mergingRooms, setMergingRooms] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomDesks, setNewRoomDesks] = useState(4);
   const newRoomInputRef = useRef<HTMLInputElement>(null);
@@ -279,6 +283,28 @@ function RoomsSettingsCard() {
 
   const handleRemovePendingRoom = (index: number) => {
     setPendingNewRooms((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMergeRooms = async () => {
+    if (!currentOrg || !mergeKeepId || rooms.length !== 2) return;
+    const removeRoom = rooms.find((r) => r.id !== mergeKeepId);
+    if (!removeRoom) return;
+    setMergingRooms(true);
+    mergeRooms.mutate(
+      { keepRoomId: mergeKeepId, removeRoomId: removeRoom.id, orgId: currentOrg.id },
+      {
+        onSuccess: () => {
+          toast({ title: 'Rooms merged', description: `"${removeRoom.name}" was merged into the selected room.` });
+          setMergeDialogOpen(false);
+          setMergeKeepId('');
+          setMergingRooms(false);
+        },
+        onError: () => {
+          toast({ title: 'Merge failed', description: 'Could not merge rooms. Try again.', variant: 'destructive' });
+          setMergingRooms(false);
+        },
+      }
+    );
   };
 
   const handleSaveRooms = async () => {
@@ -475,6 +501,17 @@ function RoomsSettingsCard() {
           {rooms.length === 0 && pendingNewRooms.length === 0 && !addingRoom && (
             <p className="text-sm text-gray-500">No rooms configured yet.</p>
           )}
+
+          {rooms.length === 2 && !addingRoom && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-amber-700 border-amber-300 hover:bg-amber-50"
+              onClick={() => { setMergeKeepId(rooms[0].id); setMergeDialogOpen(true); }}
+            >
+              Merge Rooms into One
+            </Button>
+          )}
         </div>
         <div className="mt-4 pt-4 border-t">
           <Button onClick={handleSaveRooms} disabled={!hasRoomChanges || savingRooms}>
@@ -483,6 +520,53 @@ function RoomsSettingsCard() {
           </Button>
         </div>
       </CardContent>
+
+      <AlertDialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Merge Rooms</AlertDialogTitle>
+            <AlertDialogDescription>
+              All desks from the removed room will move into the kept room. The removed room and its floor plan layout will be permanently deleted. Existing bookings are preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2 space-y-2">
+            <p className="text-sm font-medium text-gray-700">Keep this room:</p>
+            <div className="flex gap-2">
+              {rooms.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setMergeKeepId(r.id)}
+                  className={`flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
+                    mergeKeepId === r.id
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {r.name}
+                  <span className="block text-xs font-normal opacity-60 mt-0.5">
+                    {desks.filter((d) => d.roomId === r.id).length} desks
+                  </span>
+                </button>
+              ))}
+            </div>
+            {mergeKeepId && (
+              <p className="text-xs text-gray-500 pt-1">
+                "{rooms.find((r) => r.id !== mergeKeepId)?.name}" will be deleted.
+              </p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={mergingRooms}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleMergeRooms(); }}
+              disabled={!mergeKeepId || mergingRooms}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {mergingRooms ? 'Merging…' : 'Merge Rooms'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

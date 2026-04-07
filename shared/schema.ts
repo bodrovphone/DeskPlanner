@@ -276,6 +276,31 @@ export interface PublicAvailability {
   bookedSlots: { deskId: string; date: string }[];
 }
 
+// Floor plan types
+export type DeskPosition = {
+  id: string;
+  organizationId: string;
+  roomId: string;
+  deskId: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation: number;
+};
+
+export type FloorPlanObject = {
+  id: string;
+  organizationId: string;
+  roomId: string;
+  shape: 'pillar' | 'table' | 'couch' | 'door' | 'window' | 'wc' | 'kitchen' | 'wall';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation: number;
+};
+
 export const publicBookingRequestSchema = z.object({
   orgSlug: z.string(),
   deskId: z.string(),

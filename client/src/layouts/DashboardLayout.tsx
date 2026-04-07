@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin, LayoutGrid, Bell, Package, Globe, Receipt } from 'lucide-react';
+import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin, LayoutGrid, Bell, Package, Globe, Receipt, Pencil } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg?url';
 import TrialBanner from '@/components/TrialBanner';
 import { useState } from 'react';
@@ -59,6 +59,7 @@ function getNavGroups(slug: string, user?: User | null, hasMeetingRooms?: boolea
         { to: `${base}/team`, label: 'Team', shortLabel: 'Team', icon: Users },
         { to: `${base}/notifications`, label: 'Notifications', shortLabel: 'Alerts', icon: Bell },
         { to: `${base}/integrations`, label: 'Integrations', shortLabel: 'Integr.', icon: Globe },
+        ...(isOwner ? [{ to: `${base}/floor-plan-editor`, label: 'Floor Plan ✦', shortLabel: 'Map', icon: Pencil }] : []),
         ...(isAdmin(user) ? [{ to: `${base}/admin`, label: 'Admin', shortLabel: 'Admin', icon: Shield }] : []),
       ],
     },
