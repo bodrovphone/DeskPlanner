@@ -84,7 +84,7 @@ export default function CalendarNavigation({
 
   function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   function todayStr() {
