@@ -234,6 +234,8 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             rooms={rooms}
             selectedRoom={selectedRoom}
             setSelectedRoom={setSelectedRoom}
+            onSetAvailability={() => setIsRangeModalOpen(true)}
+            onExport={handleExport}
           />
 
           {viewMode === 'floor-plan' ? (

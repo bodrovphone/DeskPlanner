@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, PlusCircle, Map } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, Map, CalendarRange, Download } from 'lucide-react';
 
 function formatNextDate(dateStr: string): string {
   const today = new Date();
@@ -39,6 +39,8 @@ interface CalendarNavigationProps {
   rooms: RoomInfo[];
   selectedRoom: number | null;
   setSelectedRoom: (room: number) => void;
+  onSetAvailability: () => void;
+  onExport: () => void;
 }
 
 export default function CalendarNavigation({
@@ -56,13 +58,26 @@ export default function CalendarNavigation({
   rooms,
   selectedRoom,
   setSelectedRoom,
+  onSetAvailability,
+  onExport,
 }: CalendarNavigationProps) {
   return (
     <Card className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {viewMode !== 'floor-plan' && (
+            {viewMode === 'floor-plan' ? (
+              <>
+                <Button variant="outline" size="sm" onClick={onSetAvailability}>
+                  <CalendarRange className="h-4 w-4 mr-2" />
+                  Availability
+                </Button>
+                <Button variant="outline" size="sm" onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </>
+            ) : (
               <>
                 <Button variant="outline" size="icon" onClick={onPrev}>
                   <ChevronLeft className="h-4 w-4" />
