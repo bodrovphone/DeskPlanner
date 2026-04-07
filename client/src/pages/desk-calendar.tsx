@@ -239,6 +239,7 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             setSelectedRoom={setSelectedRoom}
             mapDate={mapDate}
             setMapDate={setMapDate}
+            mapWorkingDays={workingDays}
             mapRooms={currentOrg?.floorPlanCombined ? [] : orgRooms}
             mapRoomId={mapRoomId}
             setMapRoomId={setMapRoomId}

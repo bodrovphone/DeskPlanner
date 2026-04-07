@@ -45,6 +45,7 @@ interface CalendarNavigationProps {
   // floor-plan mode controls
   mapDate?: string;
   setMapDate?: (date: string) => void;
+  mapWorkingDays?: number[];
   mapRooms?: { id?: string; name?: string }[];
   mapRoomId?: string;
   setMapRoomId?: (id: string) => void;
@@ -67,19 +68,28 @@ export default function CalendarNavigation({
   setSelectedRoom,
   mapDate,
   setMapDate,
+  mapWorkingDays,
   mapRooms,
   mapRoomId,
   setMapRoomId,
 }: CalendarNavigationProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
-  function addDays(dateStr: string, n: number) {
+  function localDateStr(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function stepDate(dateStr: string, dir: 1 | -1) {
+    const working = mapWorkingDays && mapWorkingDays.length > 0 ? mapWorkingDays : null;
     const d = new Date(dateStr + 'T00:00:00');
-    d.setDate(d.getDate() + n);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    do {
+      d.setDate(d.getDate() + dir);
+      if (!working) break;
+      // JS getDay(): 0=Sun,1=Mon...6=Sat → ISO: Mon=1...Sun=7
+      const isoDay = d.getDay() === 0 ? 7 : d.getDay();
+      if (working.includes(isoDay)) break;
+    } while (true);
+    return localDateStr(d);
   }
 
   function formatDate(dateStr: string) {
@@ -88,11 +98,7 @@ export default function CalendarNavigation({
   }
 
   function todayStr() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return localDateStr(new Date());
   }
   return (
     <Card className="mb-4">
@@ -101,10 +107,10 @@ export default function CalendarNavigation({
           <div className="flex items-center gap-2">
             {viewMode === 'floor-plan' && mapDate && setMapDate ? (
               <>
-                <Button variant="outline" size="icon" onClick={() => setMapDate(addDays(mapDate, -1))}>
+                <Button variant="outline" size="icon" onClick={() => setMapDate(stepDate(mapDate, -1))}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setMapDate(addDays(mapDate, 1))}>
+                <Button variant="outline" size="icon" onClick={() => setMapDate(stepDate(mapDate, 1))}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
 
