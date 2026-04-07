@@ -692,7 +692,7 @@ export default function FloorPlanEditor() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved floor plan changes. They will be auto-saved in a few seconds — or you can leave now and lose them.
+              You have unsaved floor plan changes. Save them now, or leave and lose them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -704,6 +704,23 @@ export default function FloorPlanEditor() {
               onClick={() => blocker.proceed?.()}
             >
               Leave without saving
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={async () => {
+                const roomList = [...dirtyRoomsRef.current];
+                setSaveStatus('saving');
+                try {
+                  await Promise.all(roomList.map((r) => saveRoom(r, objectsRef.current)));
+                  setDirtyRooms(new Set());
+                  setSaveStatus('saved');
+                  blocker.proceed?.();
+                } catch {
+                  setSaveStatus('error');
+                  blocker.reset?.();
+                }
+              }}
+            >
+              Save &amp; leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
