@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import StatusLegend from '@/components/calendar/StatusLegend';
-import { Map, CalendarRange, Download } from 'lucide-react';
+import { CalendarRange, Download } from 'lucide-react';
 
 interface StatusCounts {
   available: number;
@@ -9,7 +9,6 @@ interface StatusCounts {
 }
 
 interface CalendarHeaderProps {
-  onFloorPlan: () => void;
   onSetAvailability: () => void;
   onExport: () => void;
   statusCounts?: StatusCounts;
@@ -17,7 +16,6 @@ interface CalendarHeaderProps {
 }
 
 export default function CalendarHeader({
-  onFloorPlan,
   onSetAvailability,
   onExport,
   statusCounts,
@@ -26,14 +24,6 @@ export default function CalendarHeader({
   return (
     <div className="flex items-center justify-between gap-4 mb-4">
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onFloorPlan}
-        >
-          <Map className="h-4 w-4 mr-2" />
-          Floor Plan
-        </Button>
         <Button
           variant="outline"
           size="sm"

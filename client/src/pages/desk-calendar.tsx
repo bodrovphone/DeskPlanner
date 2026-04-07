@@ -4,8 +4,8 @@ import BookingModal from '@/components/BookingModal';
 import ShareBookingModal from '@/components/ShareBookingModal';
 import PauseBookingModal from '@/components/PauseBookingModal';
 import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
-import FloorPlanModal from '@/components/FloorPlanModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
+import FloorPlanCalendarView from '@/components/calendar/FloorPlanCalendarView';
 import CalendarNavigation from '@/components/calendar/CalendarNavigation';
 import DeskGrid from '@/components/calendar/DeskGrid';
 import MobileCalendar from '@/components/calendar/MobileCalendar';
@@ -45,7 +45,7 @@ export default function DeskCalendar() {
   }, [desks]);
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month' | 'floor-plan'>('week');
   const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
     rooms.length >= 4 ? 'single' : 'all'
   );
@@ -83,7 +83,6 @@ export default function DeskCalendar() {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
-  const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false);
 const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -199,20 +198,20 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
           onQuickBook={handleQuickBook}
           quickBookDisabled={nextAvailableDates.length === 0}
           quickBookLoading={nextDatesLoading}
-          onFloorPlan={() => setIsFloorPlanModalOpen(true)}
           onSetAvailability={() => setIsRangeModalOpen(true)}
           onExport={handleExport}
           workingDays={workingDays}
         />
       ) : (
         <>
-          <CalendarHeader
-            onFloorPlan={() => setIsFloorPlanModalOpen(true)}
-            onSetAvailability={() => setIsRangeModalOpen(true)}
-            onExport={handleExport}
-            statusCounts={statusCounts}
-            totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
-          />
+          {viewMode !== 'floor-plan' && (
+            <CalendarHeader
+              onSetAvailability={() => setIsRangeModalOpen(true)}
+              onExport={handleExport}
+              statusCounts={statusCounts}
+              totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
+            />
+          )}
 
           <CalendarNavigation
             viewMode={viewMode}
@@ -237,14 +236,18 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             setSelectedRoom={setSelectedRoom}
           />
 
-          <DeskGrid
-            ref={tableRef}
-            desks={filteredDesks}
-            currentDates={currentDates}
-            bookings={bookings}
-            onDeskClick={handleDeskClick}
-            workingDays={workingDays}
-          />
+          {viewMode === 'floor-plan' ? (
+            <FloorPlanCalendarView onDeskClick={handleDeskClick} />
+          ) : (
+            <DeskGrid
+              ref={tableRef}
+              desks={filteredDesks}
+              currentDates={currentDates}
+              bookings={bookings}
+              onDeskClick={handleDeskClick}
+              workingDays={workingDays}
+            />
+          )}
         </>
       )}
 
@@ -343,11 +346,6 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
         onClose={() => setIsRangeModalOpen(false)}
         desks={desks}
         onApply={handleBulkAvailability}
-      />
-
-      <FloorPlanModal
-        isOpen={isFloorPlanModalOpen}
-        onClose={() => setIsFloorPlanModalOpen(false)}
       />
 
     </div>

@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, Map } from 'lucide-react';
 
 function formatNextDate(dateStr: string): string {
   const today = new Date();
@@ -25,8 +25,8 @@ interface RoomInfo {
 }
 
 interface CalendarNavigationProps {
-  viewMode: 'week' | 'month';
-  setViewMode: (mode: 'week' | 'month') => void;
+  viewMode: 'week' | 'month' | 'floor-plan';
+  setViewMode: (mode: 'week' | 'month' | 'floor-plan') => void;
   rangeString: string;
   onPrev: () => void;
   onNext: () => void;
@@ -62,17 +62,21 @@ export default function CalendarNavigation({
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={onPrev}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={onNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <span className="text-base font-medium text-gray-900 ml-2">
-              {rangeString}
-            </span>
+            {viewMode !== 'floor-plan' && (
+              <>
+                <Button variant="outline" size="icon" onClick={onPrev}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={onNext}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <span className="text-base font-medium text-gray-900 ml-2">
+                  {rangeString}
+                </span>
+              </>
+            )}
 
-            {rooms.length > 1 && (
+            {viewMode !== 'floor-plan' && rooms.length > 1 && (
               <>
                 {rooms.length < 4 && (
                   <div className="flex rounded-md border border-gray-200 ml-4">
@@ -122,7 +126,7 @@ export default function CalendarNavigation({
                 variant={viewMode === 'week' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('week')}
-                className={`rounded-r-none ${viewMode === 'week' ? 'bg-blue-100 text-blue-700' : ''}`}
+                className={`rounded-none rounded-l-md border-r ${viewMode === 'week' ? 'bg-blue-100 text-blue-700' : ''}`}
               >
                 Week
               </Button>
@@ -130,9 +134,18 @@ export default function CalendarNavigation({
                 variant={viewMode === 'month' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('month')}
-                className={`rounded-l-none ${viewMode === 'month' ? 'bg-blue-100 text-blue-700' : ''}`}
+                className={`rounded-none border-r ${viewMode === 'month' ? 'bg-blue-100 text-blue-700' : ''}`}
               >
                 Month
+              </Button>
+              <Button
+                variant={viewMode === 'floor-plan' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('floor-plan')}
+                className={`rounded-none rounded-r-md ${viewMode === 'floor-plan' ? 'bg-blue-100 text-blue-700' : ''}`}
+              >
+                <Map className="h-3.5 w-3.5 mr-1" />
+                Map
               </Button>
             </div>
 

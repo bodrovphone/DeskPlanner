@@ -8,7 +8,6 @@ import { DeskBooking, Desk } from '@shared/schema';
 import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 import {
   PlusCircle,
-  Map,
   CalendarRange,
   Download,
   ChevronLeft,
@@ -22,7 +21,6 @@ interface MobileCalendarProps {
   onQuickBook: () => void;
   quickBookDisabled: boolean;
   quickBookLoading: boolean;
-  onFloorPlan: () => void;
   onSetAvailability: () => void;
   onExport: () => void;
   workingDays?: number[];
@@ -42,7 +40,6 @@ export default function MobileCalendar({
   onQuickBook,
   quickBookDisabled,
   quickBookLoading,
-  onFloorPlan,
   onSetAvailability,
   onExport,
   workingDays = DEFAULT_WORKING_DAYS,
@@ -94,15 +91,6 @@ export default function MobileCalendar({
           {quickBookLoading ? 'Loading...' : 'Book'}
         </Button>
         <div className="flex-1" />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onFloorPlan}
-          className="h-10 w-10 touch-manipulation"
-          title="Floor Plan"
-        >
-          <Map className="h-4 w-4" />
-        </Button>
         <Button
           variant="outline"
           size="icon"
