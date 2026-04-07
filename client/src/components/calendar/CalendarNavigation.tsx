@@ -76,7 +76,10 @@ export default function CalendarNavigation({
   function addDays(dateStr: string, n: number) {
     const d = new Date(dateStr + 'T00:00:00');
     d.setDate(d.getDate() + n);
-    return d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   function formatDate(dateStr: string) {
@@ -85,7 +88,11 @@ export default function CalendarNavigation({
   }
 
   function todayStr() {
-    return new Date().toISOString().split('T')[0];
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
   return (
     <Card className="mb-4">
