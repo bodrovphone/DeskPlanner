@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Map } from 'lucide-react';
-import StatusLegend from '@/components/calendar/StatusLegend';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useFloorPlan } from '@/hooks/use-floor-plan';
 import { useBookings } from '@/hooks/use-bookings';
@@ -208,9 +207,6 @@ export default function FloorPlanCalendarView({ selectedDate, selectedRoomId, on
         )}
       </div>
 
-      <div className="pt-1">
-        <StatusLegend />
-      </div>
     </div>
   );
 }
