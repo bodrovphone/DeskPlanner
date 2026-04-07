@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { supabaseClient } from '@/lib/supabaseClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Trash2, RotateCcw, RotateCw, Loader2, Check } from 'lucide-react';
 import type { OrgDesk } from '@shared/schema';
 import type { DeskPosition, FloorPlanObject } from '@shared/schema';
@@ -213,6 +215,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
 export default function FloorPlanEditor() {
   const { rooms, desks, currentOrg } = useOrganization();
   const { loadRoomLayout, saveRoomLayout } = useFloorPlan();
+  const queryClient = useQueryClient();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id ?? '');
@@ -221,8 +224,9 @@ export default function FloorPlanEditor() {
   const [loadedRooms, setLoadedRooms] = useState<Set<string>>(new Set());
   const [dirtyRooms, setDirtyRooms] = useState<Set<string>>(new Set());
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const [combinedMode, setCombinedMode] = useState(false);
+  const [combinedMode, setCombinedMode] = useState(() => currentOrg?.floorPlanCombined ?? false);
   const [combineDialogOpen, setCombineDialogOpen] = useState(false);
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
 
   const visibleObjects = combinedMode
     ? objects
@@ -234,42 +238,47 @@ export default function FloorPlanEditor() {
   const hasDirtyRooms = dirtyRooms.size > 0;
 
   // ── Load room data on first visit ──
+  // In combined mode, load all rooms; in split mode, load the selected room.
   useEffect(() => {
-    if (!selectedRoomId || loadedRooms.has(selectedRoomId)) return;
+    const roomsToLoad = combinedMode
+      ? rooms.filter((r) => !loadedRooms.has(r.id))
+      : rooms.filter((r) => r.id === selectedRoomId && !loadedRooms.has(r.id));
 
-    loadRoomLayout(selectedRoomId).then(({ positions, objects: shapes }) => {
-      setLoadedRooms((prev) => new Set([...prev, selectedRoomId]));
+    if (roomsToLoad.length === 0) return;
 
-      const deskObjs: CanvasObject[] = positions.map((p) => {
-        const desk = desks.find((d) => d.id === p.deskId);
-        return {
-          id: uid(),
-          type: 'desk',
-          label: desk?.label ?? p.deskId,
-          deskId: p.deskId,
-          roomId: p.roomId,
-          x: p.x, y: p.y, w: p.w, h: p.h,
-          rotation: p.rotation,
-        };
+    Promise.all(roomsToLoad.map((room) =>
+      loadRoomLayout(room.id).then(({ positions, objects: shapes }) => ({ room, positions, shapes }))
+    )).then((results) => {
+      setLoadedRooms((prev) => new Set([...prev, ...results.map((r) => r.room.id)]));
+      setObjects((prev) => {
+        let next = prev;
+        for (const { room, positions, shapes } of results) {
+          const deskObjs: CanvasObject[] = positions.map((p) => {
+            const desk = desks.find((d) => d.id === p.deskId);
+            return {
+              id: uid(), type: 'desk',
+              label: desk?.label ?? p.deskId,
+              deskId: p.deskId, roomId: p.roomId,
+              x: p.x, y: p.y, w: p.w, h: p.h,
+              rotation: p.rotation,
+            };
+          });
+          const shapeObjs: CanvasObject[] = shapes.map((s) => ({
+            id: uid(), type: 'shape', shape: s.shape,
+            label: SHAPES[s.shape].label, roomId: s.roomId,
+            x: s.x, y: s.y, w: s.w, h: s.h, rotation: s.rotation,
+          }));
+          next = [
+            ...next.filter((o) => o.roomId !== room.id),
+            ...deskObjs,
+            ...shapeObjs,
+          ];
+        }
+        return next;
       });
-
-      const shapeObjs: CanvasObject[] = shapes.map((s) => ({
-        id: uid(),
-        type: 'shape',
-        shape: s.shape,
-        label: SHAPES[s.shape].label,
-        roomId: s.roomId,
-        x: s.x, y: s.y, w: s.w, h: s.h,
-        rotation: s.rotation,
-      }));
-
-      setObjects((prev) => [
-        ...prev.filter((o) => o.roomId !== selectedRoomId),
-        ...deskObjs,
-        ...shapeObjs,
-      ]);
     });
-  }, [selectedRoomId, loadedRooms, loadRoomLayout, desks]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoomId, combinedMode, rooms.length]);
 
   // ── Save a single room ──
   const saveRoom = useCallback(async (roomId: string, allObjects: CanvasObject[]) => {
@@ -328,6 +337,16 @@ export default function FloorPlanEditor() {
     setSaveStatus('idle');
   }
 
+  // ── Persist floor_plan_combined preference ──
+  async function saveFloorPlanCombined(value: boolean) {
+    if (!currentOrg) return;
+    await supabaseClient
+      .from('organizations')
+      .update({ floor_plan_combined: value })
+      .eq('id', currentOrg.id);
+    queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+  }
+
   // ── Enter combined mode: load all unloaded rooms first ──
   async function enterCombinedMode() {
     const unloaded = rooms.filter((r) => !loadedRooms.has(r.id));
@@ -345,6 +364,15 @@ export default function FloorPlanEditor() {
     }
     setCombinedMode(true);
     setCombineDialogOpen(false);
+    await saveFloorPlanCombined(true);
+  }
+
+  // ── Exit combined mode ──
+  async function exitCombinedMode() {
+    setCombinedMode(false);
+    setSplitDialogOpen(false);
+    setSelectedId(null);
+    await saveFloorPlanCombined(false);
   }
 
   // ── Canvas helpers ──
@@ -436,7 +464,7 @@ export default function FloorPlanEditor() {
               size="sm"
               variant="outline"
               className="text-blue-600 border-blue-300 hover:bg-blue-50 text-xs"
-              onClick={() => { setCombinedMode(false); setSelectedId(null); }}
+              onClick={() => setSplitDialogOpen(true)}
             >
               Split view
             </Button>
@@ -634,6 +662,25 @@ export default function FloorPlanEditor() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => enterCombinedMode()}>
               Combine
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Split view confirmation dialog */}
+      <AlertDialog open={splitDialogOpen} onOpenChange={setSplitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch to split view?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The floor plan will go back to showing one room at a time.
+              Your layout is already saved — nothing will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => exitCombinedMode()}>
+              Split view
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

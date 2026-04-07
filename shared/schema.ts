@@ -101,6 +101,7 @@ export const organizationSchema = z.object({
   flexPlanDays: z.number().nullable().optional(),
   flexPlanPrice: z.number().nullable().optional(),
   groupId: z.string().nullable().optional(),
+  floorPlanCombined: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

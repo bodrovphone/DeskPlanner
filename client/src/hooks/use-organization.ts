@@ -33,6 +33,7 @@ function mapOrg(row: Record<string, unknown>): Organization {
     flexPlanDays: (row.flex_plan_days as number) ?? null,
     flexPlanPrice: (row.flex_plan_price as number) ?? null,
     groupId: (row.group_id as string) ?? null,
+    floorPlanCombined: (row.floor_plan_combined as boolean) ?? false,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
