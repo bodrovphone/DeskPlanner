@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Map } from 'lucide-react';
 import StatusLegend from '@/components/calendar/StatusLegend';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -15,6 +15,8 @@ const STATUS_COLORS = {
   assigned:  { fill: '#dbeafe', stroke: '#3b82f6' },
 } as const;
 
+const PADDING = 48; // padding around content when computing scale
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface FloorPlanCalendarViewProps {
@@ -27,10 +29,13 @@ interface FloorPlanCalendarViewProps {
 export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: FloorPlanCalendarViewProps) {
   const { rooms, desks } = useOrganization();
   const { loadRoomLayout } = useFloorPlan();
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const [positions, setPositions] = useState<DeskPosition[]>([]);
   const [objects, setObjects] = useState<FloorPlanObject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scale, setScale] = useState(1);
+  const [contentSize, setContentSize] = useState({ w: 0, h: 0 });
 
   const { data: bookings = {} } = useBookings(selectedDate, selectedDate);
 
@@ -49,20 +54,49 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // Compute scale to fit all content in the canvas
+  const computeScale = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || (positions.length === 0 && objects.length === 0)) return;
+
+    const allItems = [
+      ...positions.map((p) => ({ x: p.x, y: p.y, w: p.w, h: p.h })),
+      ...objects.map((o) => ({ x: o.x, y: o.y, w: o.w, h: o.h })),
+    ];
+
+    const contentW = Math.max(...allItems.map((i) => i.x + i.w)) + PADDING;
+    const contentH = Math.max(...allItems.map((i) => i.y + i.h)) + PADDING;
+    setContentSize({ w: contentW, h: contentH });
+
+    const { width, height } = canvas.getBoundingClientRect();
+    setScale(Math.min(width / contentW, height / contentH, 1));
+  }, [positions, objects]);
+
+  useEffect(() => {
+    if (!loading) computeScale();
+  }, [loading, computeScale]);
+
+  // Recompute on window resize
+  useEffect(() => {
+    window.addEventListener('resize', computeScale);
+    return () => window.removeEventListener('resize', computeScale);
+  }, [computeScale]);
+
   const isEmpty = !loading && positions.length === 0 && objects.length === 0;
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Canvas */}
+      {/* Canvas — fills remaining viewport height */}
       <div
-        className="relative rounded-lg border bg-gray-50 overflow-auto"
+        ref={canvasRef}
+        className="relative rounded-lg border bg-gray-50 overflow-hidden"
         style={{
-          minHeight: 520,
+          height: 'calc(100vh - 195px)',
           backgroundImage: `
             linear-gradient(to right, #e5e7eb 1px, transparent 1px),
             linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
           `,
-          backgroundSize: '32px 32px',
+          backgroundSize: `${32 * scale}px ${32 * scale}px`,
         }}
       >
         {loading && (
@@ -80,88 +114,103 @@ export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: Flo
           </div>
         )}
 
-        {/* Shape tiles — non-interactive */}
-        {objects.map((obj) => {
-          const cfg = SHAPES[obj.shape];
-          if (!cfg) return null;
-          const borderRadius = obj.shape === 'door' ? getDoorRadius(obj.rotation) : cfg.radius;
-          return (
-            <div
-              key={obj.id}
-              style={{
-                position: 'absolute',
-                left: obj.x,
-                top: obj.y,
-                width: obj.w,
-                height: obj.h,
-                borderRadius,
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  width: cfg.w,
-                  height: cfg.h,
-                  marginLeft: -cfg.w / 2,
-                  marginTop: -cfg.h / 2,
-                  transform: `rotate(${obj.rotation}deg)`,
-                  transformOrigin: 'center center',
-                }}
-              >
-                <ShapeSymbol shape={obj.shape} fill={cfg.fill} stroke={cfg.stroke} />
-              </div>
-            </div>
-          );
-        })}
+        {/* Scaled content wrapper */}
+        {!loading && !isEmpty && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: contentSize.w,
+              height: contentSize.h,
+              transformOrigin: '0 0',
+              transform: `scale(${scale})`,
+            }}
+          >
+            {/* Shape tiles — non-interactive */}
+            {objects.map((obj) => {
+              const cfg = SHAPES[obj.shape];
+              if (!cfg) return null;
+              const borderRadius = obj.shape === 'door' ? getDoorRadius(obj.rotation) : cfg.radius;
+              return (
+                <div
+                  key={obj.id}
+                  style={{
+                    position: 'absolute',
+                    left: obj.x,
+                    top: obj.y,
+                    width: obj.w,
+                    height: obj.h,
+                    borderRadius,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      width: cfg.w,
+                      height: cfg.h,
+                      marginLeft: -cfg.w / 2,
+                      marginTop: -cfg.h / 2,
+                      transform: `rotate(${obj.rotation}deg)`,
+                      transformOrigin: 'center center',
+                    }}
+                  >
+                    <ShapeSymbol shape={obj.shape} fill={cfg.fill} stroke={cfg.stroke} />
+                  </div>
+                </div>
+              );
+            })}
 
-        {/* Desk tiles — clickable, status-coloured */}
-        {positions.map((pos) => {
-          const orgDesk = desks.find((d) => d.id === pos.deskId);
-          if (!orgDesk) return null;
+            {/* Desk tiles — clickable, status-coloured */}
+            {positions.map((pos) => {
+              const orgDesk = desks.find((d) => d.id === pos.deskId);
+              if (!orgDesk) return null;
 
-          const bookingKey = `${orgDesk.deskId}-${selectedDate}`;
-          const booking = bookings[bookingKey] ?? null;
-          const status = (booking?.status as keyof typeof STATUS_COLORS | undefined) ?? 'available';
-          const { fill, stroke } = STATUS_COLORS[status];
+              const bookingKey = `${orgDesk.deskId}-${selectedDate}`;
+              const booking = bookings[bookingKey] ?? null;
+              const status = (booking?.status as keyof typeof STATUS_COLORS | undefined) ?? 'available';
+              const { fill, stroke } = STATUS_COLORS[status];
 
-          return (
-            <div
-              key={pos.id}
-              role="button"
-              tabIndex={0}
-              title={orgDesk.label}
-              style={{
-                position: 'absolute',
-                left: pos.x,
-                top: pos.y,
-                width: pos.w,
-                height: pos.h,
-                cursor: 'pointer',
-                borderRadius: 10,
-                overflow: 'hidden',
-                outline: 'none',
-              }}
-              className="hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-shadow"
-              onClick={(e) => onDeskClick(orgDesk.deskId, selectedDate, e, booking)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onDeskClick(orgDesk.deskId, selectedDate, e as unknown as React.MouseEvent, booking);
-                }
-              }}
-            >
-              <DeskSymbol
-                label={orgDesk.label}
-                rotation={pos.rotation}
-                fill={fill}
-                stroke={stroke}
-              />
-            </div>
-          );
-        })}
+              return (
+                <div
+                  key={pos.id}
+                  role="button"
+                  tabIndex={0}
+                  title={orgDesk.label}
+                  style={{
+                    position: 'absolute',
+                    left: pos.x,
+                    top: pos.y,
+                    width: pos.w,
+                    height: pos.h,
+                    cursor: 'pointer',
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    outline: 'none',
+                  }}
+                  className="hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-shadow"
+                  onClick={(e) => onDeskClick(orgDesk.deskId, selectedDate, e, booking)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onDeskClick(orgDesk.deskId, selectedDate, e as unknown as React.MouseEvent, booking);
+                    }
+                  }}
+                >
+                  <DeskSymbol
+                    label={orgDesk.label}
+                    rotation={pos.rotation}
+                    fill={fill}
+                    stroke={stroke}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Legend */}
