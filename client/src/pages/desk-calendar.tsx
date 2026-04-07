@@ -46,6 +46,7 @@ export default function DeskCalendar() {
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'floor-plan'>('week');
+  const [mapDate, setMapDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
     rooms.length >= 4 ? 'single' : 'all'
   );
@@ -234,12 +235,12 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             rooms={rooms}
             selectedRoom={selectedRoom}
             setSelectedRoom={setSelectedRoom}
-            onSetAvailability={() => setIsRangeModalOpen(true)}
-            onExport={handleExport}
+            mapDate={mapDate}
+            setMapDate={setMapDate}
           />
 
           {viewMode === 'floor-plan' ? (
-            <FloorPlanCalendarView onDeskClick={handleDeskClick} />
+            <FloorPlanCalendarView selectedDate={mapDate} onDeskClick={handleDeskClick} />
           ) : (
             <DeskGrid
               ref={tableRef}

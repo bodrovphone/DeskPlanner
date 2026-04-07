@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, CalendarIcon, Loader2, Map } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { Loader2, Map } from 'lucide-react';
 import StatusLegend from '@/components/calendar/StatusLegend';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useFloorPlan } from '@/hooks/use-floor-plan';
@@ -18,40 +15,22 @@ const STATUS_COLORS = {
   assigned:  { fill: '#dbeafe', stroke: '#3b82f6' },
 } as const;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface FloorPlanCalendarViewProps {
+  selectedDate: string;
   onDeskClick: (deskId: string, date: string, event: React.MouseEvent, booking: DeskBooking | null) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function FloorPlanCalendarView({ onDeskClick }: FloorPlanCalendarViewProps) {
+export default function FloorPlanCalendarView({ selectedDate, onDeskClick }: FloorPlanCalendarViewProps) {
   const { rooms, desks } = useOrganization();
   const { loadRoomLayout } = useFloorPlan();
 
-  const [selectedDate, setSelectedDate] = useState(todayStr());
   const [positions, setPositions] = useState<DeskPosition[]>([]);
   const [objects, setObjects] = useState<FloorPlanObject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const { data: bookings = {} } = useBookings(selectedDate, selectedDate);
 
@@ -74,46 +53,6 @@ export default function FloorPlanCalendarView({ onDeskClick }: FloorPlanCalendar
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Date navigation toolbar */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => setSelectedDate((d) => addDays(d, -1))}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => setSelectedDate((d) => addDays(d, 1))}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-
-        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="min-w-[160px] justify-start">
-              <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
-              {formatDate(selectedDate)}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={new Date(selectedDate + 'T00:00:00')}
-              onSelect={(d) => {
-                if (d) {
-                  setSelectedDate(d.toISOString().split('T')[0]);
-                  setDatePickerOpen(false);
-                }
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-gray-500"
-          onClick={() => setSelectedDate(todayStr())}
-        >
-          Today
-        </Button>
-      </div>
-
       {/* Canvas */}
       <div
         className="relative rounded-lg border bg-gray-50 overflow-auto"

@@ -7,7 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, PlusCircle, Map, CalendarRange, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, Map, CalendarIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 function formatNextDate(dateStr: string): string {
   const today = new Date();
@@ -39,8 +42,9 @@ interface CalendarNavigationProps {
   rooms: RoomInfo[];
   selectedRoom: number | null;
   setSelectedRoom: (room: number) => void;
-  onSetAvailability: () => void;
-  onExport: () => void;
+  // floor-plan mode date controls
+  mapDate?: string;
+  setMapDate?: (date: string) => void;
 }
 
 export default function CalendarNavigation({
@@ -58,23 +62,62 @@ export default function CalendarNavigation({
   rooms,
   selectedRoom,
   setSelectedRoom,
-  onSetAvailability,
-  onExport,
+  mapDate,
+  setMapDate,
 }: CalendarNavigationProps) {
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  function addDays(dateStr: string, n: number) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+  }
+
+  function formatDate(dateStr: string) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
   return (
     <Card className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {viewMode === 'floor-plan' ? (
+            {viewMode === 'floor-plan' && mapDate && setMapDate ? (
               <>
-                <Button variant="outline" size="sm" onClick={onSetAvailability}>
-                  <CalendarRange className="h-4 w-4 mr-2" />
-                  Availability
+                <Button variant="outline" size="icon" onClick={() => setMapDate(addDays(mapDate, -1))}>
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={onExport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
+                <Button variant="outline" size="icon" onClick={() => setMapDate(addDays(mapDate, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="min-w-[160px] justify-start">
+                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
+                      {formatDate(mapDate)}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={new Date(mapDate + 'T00:00:00')}
+                      onSelect={(d) => {
+                        if (d) {
+                          setMapDate(d.toISOString().split('T')[0]);
+                          setDatePickerOpen(false);
+                        }
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Button variant="ghost" size="sm" className="text-gray-500" onClick={() => setMapDate(todayStr())}>
+                  Today
                 </Button>
               </>
             ) : (
