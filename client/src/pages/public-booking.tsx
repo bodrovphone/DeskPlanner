@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { PublicAvailability } from '@shared/schema';
 import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { Loader2, CalendarCheck, ChevronLeft, Check, MapPin, CalendarDays } from 'lucide-react';
 import { SpaceContactBar } from '@/components/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
+import { FloorPlanReadOnly } from '@/components/FloorPlanReadOnly';
 
 const SCARCITY_THRESHOLD = 3;
 
@@ -27,6 +29,7 @@ export default function PublicBookingPage() {
   const [assignedDeskLabel, setAssignedDeskLabel] = useState('');
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
+  const [floorPlan, setFloorPlan] = useState<FloorPlanData | null>(null);
 
   useEffect(() => {
     if (!orgSlug) return;
@@ -102,6 +105,16 @@ export default function PublicBookingPage() {
               <div className="mt-5 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
                 <MapPin className="h-4 w-4" />
                 {assignedDeskLabel}
+              </div>
+            )}
+            {floorPlan && (
+              <div className="mt-4">
+                <FloorPlanReadOnly
+                  positions={floorPlan.positions}
+                  objects={floorPlan.objects}
+                  highlightDeskId={floorPlan.highlightDeskId}
+                  highlightLabel={assignedDeskLabel}
+                />
               </div>
             )}
             <SpaceContactBar
@@ -218,6 +231,10 @@ export default function PublicBookingPage() {
 
       setAssignedDeskLabel(desk.label);
       setSubmitted(true);
+
+      loadPublicFloorPlan(org.id, desk.deskId, availability.rooms)
+        .then((data) => { if (data) setFloorPlan(data); })
+        .catch(() => {});
     } catch (err) {
       console.error('Public booking error:', err);
       setError('Failed to submit booking. Please try again.');

@@ -5,7 +5,7 @@ import type { DeskPosition, FloorPlanObject } from '@shared/schema';
 
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
-function mapDeskPosition(row: Record<string, unknown>): DeskPosition {
+export function mapDeskPosition(row: Record<string, unknown>): DeskPosition {
   return {
     id: row.id as string,
     organizationId: row.organization_id as string,
@@ -19,7 +19,7 @@ function mapDeskPosition(row: Record<string, unknown>): DeskPosition {
   };
 }
 
-function mapFloorPlanObject(row: Record<string, unknown>): FloorPlanObject {
+export function mapFloorPlanObject(row: Record<string, unknown>): FloorPlanObject {
   return {
     id: row.id as string,
     organizationId: row.organization_id as string,
@@ -30,6 +30,45 @@ function mapFloorPlanObject(row: Record<string, unknown>): FloorPlanObject {
     w: row.w as number,
     h: row.h as number,
     rotation: row.rotation as number,
+  };
+}
+
+// ─── Public floor plan loader (no auth required) ─────────────────────────────
+
+export interface FloorPlanData {
+  positions: DeskPosition[];
+  objects: FloorPlanObject[];
+  highlightDeskId: string | null;
+}
+
+/** Loads floor plan data for the confirmation page. Uses anon key — no auth needed. */
+export async function loadPublicFloorPlan(
+  orgId: string,
+  legacyDeskId: string,
+  rooms: { id: string; desks: { deskId: string }[] }[],
+): Promise<FloorPlanData | null> {
+  const room = rooms.find((r) => r.desks.some((d) => d.deskId === legacyDeskId));
+  if (!room) return null;
+
+  const [{ data: deskRow }, { data: orgRow }] = await Promise.all([
+    supabaseClient.from('desks').select('id').eq('organization_id', orgId).eq('desk_id', legacyDeskId).single(),
+    supabaseClient.from('organizations').select('floor_plan_combined').eq('id', orgId).single(),
+  ]);
+
+  const roomIds = (orgRow?.floor_plan_combined ?? false) ? rooms.map((r) => r.id) : [room.id];
+
+  const [{ data: posRows }, { data: objRows }] = await Promise.all([
+    supabaseClient.from('desk_positions').select('*').eq('organization_id', orgId).in('room_id', roomIds),
+    supabaseClient.from('floor_plan_objects').select('*').eq('organization_id', orgId).in('room_id', roomIds),
+  ]);
+
+  const positions = (posRows ?? []).map(mapDeskPosition);
+  if (positions.length === 0) return null;
+
+  return {
+    positions,
+    objects: (objRows ?? []).map(mapFloorPlanObject),
+    highlightDeskId: deskRow?.id ?? null,
   };
 }
 

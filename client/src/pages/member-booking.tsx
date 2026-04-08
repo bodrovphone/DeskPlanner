@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { PublicAvailability, Client } from '@shared/schema';
 import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { Loader2, CalendarCheck, Check, MapPin, CalendarDays, Package } from 'lucide-react';
 import { SpaceContactBar } from '@/components/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
+import { FloorPlanReadOnly } from '@/components/FloorPlanReadOnly';
 
 /**
  * Member self-service booking page.
@@ -32,6 +34,7 @@ export default function MemberBookingPage() {
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [updatedBalance, setUpdatedBalance] = useState<{ remaining: number; total: number } | null>(null);
+  const [floorPlan, setFloorPlan] = useState<FloorPlanData | null>(null);
   const [flexConfig, setFlexConfig] = useState<{ days: number; price: number } | null>(null);
   const [upcomingBookings, setUpcomingBookings] = useState<{ date: string; deskLabel: string }[]>([]);
 
@@ -168,6 +171,16 @@ export default function MemberBookingPage() {
                 {assignedDeskLabel}
               </div>
             )}
+            {floorPlan && (
+              <div className="mt-4">
+                <FloorPlanReadOnly
+                  positions={floorPlan.positions}
+                  objects={floorPlan.objects}
+                  highlightDeskId={floorPlan.highlightDeskId}
+                  highlightLabel={assignedDeskLabel}
+                />
+              </div>
+            )}
             {member.flexActive && (
               <div className="mt-4 inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-lg text-sm font-medium">
                 <Package className="h-4 w-4" />
@@ -181,6 +194,7 @@ export default function MemberBookingPage() {
                   setSelectedDate(null);
                   setError('');
                   setAssignedDeskLabel('');
+                  setFloorPlan(null);
                   // Update member state with new balance
                   setMember(prev => prev ? {
                     ...prev,
@@ -299,6 +313,10 @@ export default function MemberBookingPage() {
 
       setAssignedDeskLabel(desk.label);
       setSubmitted(true);
+
+      loadPublicFloorPlan(org.id, desk.deskId, availability.rooms)
+        .then((data) => { if (data) setFloorPlan(data); })
+        .catch(() => {});
 
       // Fire-and-forget Telegram notification to space manager
       supabaseClient.functions.invoke('notify-public-booking', {
