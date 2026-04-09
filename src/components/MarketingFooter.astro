@@ -1,5 +1,6 @@
 ---
 // Shared footer for marketing pages.
+import { features } from '../data/features.ts';
 const year = new Date().getFullYear();
 ---
 
@@ -16,6 +17,12 @@ const year = new Date().getFullYear();
         <a href="/pricing">Pricing</a>
         <a href="/signup">Start Free</a>
         <a href="/login">Log in</a>
+      </div>
+      <div>
+        <h4>Features</h4>
+        {features.map(f => (
+          <a href={`/features/${f.slug}`}>{f.eyebrow}</a>
+        ))}
       </div>
       <div>
         <h4>Contact</h4>
@@ -60,7 +67,7 @@ const year = new Date().getFullYear();
   }
   .footer-links {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 32px;
   }
   .footer-links h4 {
