@@ -19,6 +19,8 @@ import waitingListShot from '../assets/screenshots/waiting-list.png';
 import notificationsShot from '../assets/screenshots/notifications.png';
 import tgNotificationShot from '../assets/screenshots/tg-booking-notification.png';
 import multiLocationsShot from '../assets/screenshots/multi-locations.png';
+import floorPlanShot from '../assets/screenshots/floor-plan-editor.png';
+import mapViewShot from '../assets/screenshots/map-view.png';
 
 // Each feature is a section on this overview page. The `slug` becomes
 // the in-page anchor (#booking, #members, ...) and will also be the
@@ -85,6 +87,38 @@ const features = [
       'Visible to public booking page if you want walk-in revenue',
     ],
     images: [{ src: meetingRoomShot, alt: 'Hourly meeting room reservation grid with conflict detection' }],
+  },
+  {
+    slug: 'floor-plan',
+    eyebrow: 'Floor plan',
+    title: 'Interactive floor plan editor',
+    quickAnswer: 'Draw your actual space inside OhMyDesk — drag desks, tables, couches, walls, and doors onto a canvas that matches your real layout. No external tools, no image uploads. The plan auto-saves every 10 seconds and powers the Map calendar view.',
+    intro:
+      'A drag-and-drop canvas where you recreate your real space: every desk, table, couch, wall, door, window, and room feature. Run multiple rooms on a single shared canvas if your space is open-plan. Once built, the floor plan becomes a live booking surface — not just a static image.',
+    bullets: [
+      'Drag-and-drop placement: desks, tables, couches, walls, doors, windows, WC, kitchen, pillars',
+      'Rotate any object to match your real floor layout',
+      'Combine multiple rooms into one shared canvas for open-plan spaces',
+      'Auto-saves every 10 seconds — no manual save needed',
+      'Powers the Map calendar view for date-based desk availability',
+    ],
+    images: [{ src: floorPlanShot, alt: 'Floor plan editor canvas with desks and furniture placed on an interactive grid' }],
+  },
+  {
+    slug: 'map-view',
+    eyebrow: 'Map view',
+    title: 'Map calendar view — see your space, not a spreadsheet',
+    quickAnswer: 'Switch to Map view in the calendar and see your actual floor plan with every desk colour-coded by its booking status for the selected date. Click any desk to open the booking modal directly from the map.',
+    intro:
+      'A third calendar mode alongside Week and Month. Instead of rows and columns, you see your real floor plan with desks lit up by status: green for available, orange for booked, blue for assigned. Pick any date, click any desk, make or edit a booking — without ever leaving the map.',
+    bullets: [
+      'Real floor plan rendered live — not a static image',
+      'Colour-coded desk status: green (available), orange (booked), blue (assigned)',
+      'Click any desk to open the booking modal directly',
+      'Date navigation skips weekends and non-working days automatically',
+      'Works across all rooms on a combined canvas',
+    ],
+    images: [{ src: mapViewShot, alt: 'Map calendar view showing floor plan with desks colour-coded by booking status' }],
   },
   {
     slug: 'public-booking',

@@ -1,6 +1,6 @@
 # OhMyDesk — Feature List
 
-**52 features** across desk booking, meeting rooms, members, flex plans, revenue tracking, analytics, notifications, team management, and workspace management.
+**55 features** across desk booking, meeting rooms, members, flex plans, revenue tracking, analytics, notifications, team management, and workspace management.
 
 > **Roadmap & upcoming features** are managed in [Linear (Deskplanner team)](https://linear.app/deskplanner). The `docs/roadmap/` folder contains detailed specs for each feature but Linear is the source of truth for priorities, status, and dependencies.
 
@@ -59,14 +59,16 @@
 ## Workspace Management
 39. **Multi-room setup** — up to 10 rooms (Free: 4 rooms, Pro: 10 rooms), unlimited desks per room
 40. **Custom room & desk names** — rename everything inline
-41. **Floor plan upload** — upload your space layout (JPEG, PNG, WebP, GIF)
-42. **Waiting list** — track people waiting for a desk with contact info and preferences
+41. **Interactive floor plan editor** — drag-and-drop canvas to place desks and furniture (tables, couches, walls, doors, windows, WC, kitchen, pillars); rotate items; combine multiple rooms into one canvas; auto-saves every 10 seconds
+42. **Map calendar view** — third calendar mode ("Map") shows the real floor plan with desks colour-coded by booking status (available / booked / assigned) for any selected date; click a desk to open the booking modal; skips non-working days when navigating
+43. **Floor plan on booking confirmation** — after a visitor or flex member books a desk, the confirmation page shows the real floor plan with their assigned desk highlighted in orange and all other desks greyed out; works on mobile; graceful fallback to text label if no floor plan is configured
+44. **Waiting list** — track people waiting for a desk with contact info and preferences
 
 ## Notifications
-43. **Telegram notifications** — daily alerts for bookings starting and assignments ending tomorrow; instant alerts on new public bookings
-44. **Email notifications** — welcome email on signup; daily digest (bookings starting / assignments ending tomorrow); instant alert on new public bookings; lifecycle nudges (7-day inactivity, 30-day goodbye); configurable per-org in Settings; powered by Resend via Supabase Edge Functions
-45. **WhatsApp notifications** — _(coming soon)_
-46. **SMS notifications** — _(coming soon)_
+45. **Telegram notifications** — daily alerts for bookings starting and assignments ending tomorrow; instant alerts on new public bookings
+46. **Email notifications** — welcome email on signup; daily digest (bookings starting / assignments ending tomorrow); instant alert on new public bookings; lifecycle nudges (7-day inactivity, 30-day goodbye); configurable per-org in Settings; powered by Resend via Supabase Edge Functions
+47. **WhatsApp notifications** — _(coming soon)_
+48. **SMS notifications** — _(coming soon)_
 
 ## Analytics (Umami)
 47. **Visitor analytics** — pageviews, geography, referral sources, bounce rate via Umami Cloud
