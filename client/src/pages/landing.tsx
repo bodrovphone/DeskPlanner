@@ -19,6 +19,7 @@ import {
   MapPin,
   UserRoundSearch,
   Package,
+  Headphones,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg?url';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg?url';
@@ -1048,6 +1049,24 @@ export default function LandingPage() {
               onClick={() => trackEvent(EVENTS.FOOTER_LINKEDIN)}
             >
               <Linkedin size={18} />
+            </a>
+            <a
+              href="/podcast"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: T.textMuted,
+                textDecoration: 'none',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = T.green; }}
+              onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; }}
+              onClick={() => trackEvent(EVENTS.FOOTER_PODCAST)}
+            >
+              <Headphones size={15} /> Podcast
             </a>
             <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted }}>
               &copy; {new Date().getFullYear()} OhMyDesk. All rights reserved.

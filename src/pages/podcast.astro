@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const podcastSchema = {
+  "@context": "https://schema.org",
+  "@type": "PodcastEpisode",
+  "name": "Put Your Coworking Space on Autopilot",
+  "description": "A candid conversation about running a coworking space — from spreadsheet chaos and double bookings to automated desk management, revenue tracking, and member self-service with OhMyDesk.",
+  "url": "https://ohmydesk.app/podcast",
+  "datePublished": "2026-04-10",
+  "author": {
+    "@type": "Organization",
+    "name": "OhMyDesk",
+    "url": "https://ohmydesk.app"
+  },
+  "associatedMedia": {
+    "@type": "AudioObject",
+    "contentUrl": "https://ohmydesk.app/podcast/Put_your_coworking_space_on_autopilot.m4a",
+    "encodingFormat": "audio/mp4"
+  },
+  "partOfSeries": {
+    "@type": "PodcastSeries",
+    "name": "OhMyDesk Podcast",
+    "url": "https://ohmydesk.app/podcast"
+  }
+};
+---
+
+<BaseLayout
+  title="Podcast — Put Your Coworking Space on Autopilot | OhMyDesk"
+  description="Listen to our podcast episode on how coworking space operators can automate desk bookings, revenue tracking, and member management."
+  canonical="https://ohmydesk.app/podcast"
+  defaultStructuredData={false}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(podcastSchema)} />
+
+  <div style="background:#121214;min-height:100vh;font-family:'Inter',system-ui,sans-serif;color:#e0e0e0;">
+
+    <!-- Nav -->
+    <nav style="border-bottom:1px solid #242428;padding:0 24px;">
+      <div style="max-width:1120px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;">
+        <a href="/" style="text-decoration:none;">
+          <img src="/favicon.svg" alt="OhMyDesk" style="height:28px;" />
+        </a>
+        <a href="/" style="font-family:monospace;font-size:13px;color:#777;text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid #242428;transition:all 0.2s ease;"
+          onmouseover="this.style.color='#34d399';this.style.borderColor='rgba(52,211,153,0.3)'"
+          onmouseout="this.style.color='#777';this.style.borderColor='#242428'"
+        >← Back to site</a>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main style="max-width:680px;margin:0 auto;padding:80px 24px;">
+
+      <!-- Tag -->
+      <p style="font-family:monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#34d399;margin-bottom:16px;">
+        Episode 01
+      </p>
+
+      <!-- Title -->
+      <h1 style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;color:#e0e0e0;margin:0 0 20px;">
+        Put Your Coworking Space<br/>on Autopilot
+      </h1>
+
+      <!-- Description -->
+      <p style="font-size:16px;color:#777;line-height:1.7;margin:0 0 48px;max-width:520px;">
+        A candid conversation about running a coworking space — the chaos of spreadsheets,
+        double bookings, and missing revenue data, and how automated coworking space management
+        changes the picture. Covers desk booking, flex plans, member self-service, and revenue tracking.
+        Generated with NotebookLM.
+      </p>
+
+      <!-- Player card -->
+      <div style="background:#1a1a1e;border:1px solid #2c2c32;border-radius:12px;padding:32px;margin-bottom:48px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+          <div style="width:48px;height:48px;border-radius:10px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:600;color:#e0e0e0;margin-bottom:4px;">Put Your Coworking Space on Autopilot</div>
+            <div style="font-family:monospace;font-size:12px;color:#555;">OhMyDesk Podcast · Episode 01</div>
+          </div>
+        </div>
+
+        <audio
+          id="podcast-player"
+          controls
+          style="width:100%;height:44px;accent-color:#34d399;border-radius:8px;"
+          preload="metadata"
+        >
+          <source src="/podcast/Put_your_coworking_space_on_autopilot.m4a" type="audio/mp4" />
+          Your browser does not support the audio element.
+        </audio>
+      </div>
+
+      <!-- Share nudge -->
+      <p style="font-family:monospace;font-size:12px;color:#555;text-align:center;">
+        Found this useful? Share it with a fellow coworking operator.
+      </p>
+
+    </main>
+
+    <!-- Footer -->
+    <footer style="border-top:1px solid #242428;padding:32px 24px;margin-top:40px;">
+      <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <a href="/" style="font-family:monospace;font-size:12px;color:#555;text-decoration:none;transition:color 0.2s ease;"
+          onmouseover="this.style.color='#34d399'"
+          onmouseout="this.style.color='#555'"
+        >ohmydesk.app</a>
+        <span style="font-family:monospace;font-size:12px;color:#555;">&copy; {new Date().getFullYear()} OhMyDesk</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Analytics: fire play/pause events via Umami -->
+  <script>
+    const player = document.getElementById('podcast-player') as HTMLAudioElement | null;
+    if (player) {
+      let playTracked = false;
+      player.addEventListener('play', () => {
+        window.umami?.track(playTracked ? 'podcast-resume' : 'podcast-play');
+        playTracked = true;
+      });
+      player.addEventListener('pause', () => {
+        if (!player.ended) window.umami?.track('podcast-pause');
+      });
+      player.addEventListener('ended', () => {
+        window.umami?.track('podcast-completed');
+      });
+    }
+  </script>
+
+</BaseLayout>

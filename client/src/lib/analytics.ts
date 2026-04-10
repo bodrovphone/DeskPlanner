@@ -60,4 +60,9 @@ export const EVENTS = {
 
   // Footer
   FOOTER_LINKEDIN: 'footer-linkedin-click',
+  FOOTER_PODCAST: 'footer-podcast-click',
+
+  // Podcast page
+  PODCAST_PLAY: 'podcast-play',
+  PODCAST_PAUSE: 'podcast-pause',
 } as const;
