@@ -20,6 +20,7 @@ import {
   UserRoundSearch,
   Package,
   Headphones,
+  CreditCard,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg?url';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg?url';
@@ -125,6 +126,7 @@ function useNarrow(breakpoint = 768) {
 /* ─── data ─── */
 const features = [
   { icon: Calendar, title: 'Visual Calendar', desc: 'Weekly and monthly views for every desk. See availability at a glance across all your rooms.' },
+  { icon: CreditCard, title: 'Stripe Checkout Payments', desc: 'Visitors pay for day passes online before their booking is confirmed. Connect your own Stripe account — funds go directly to you, OhMyDesk takes nothing.' },
   { icon: BarChart3, title: 'Revenue Tracking', desc: 'Track confirmed and projected revenue per desk, per room, and across your entire portfolio.' },
   { icon: Users, title: 'Waiting List', desc: 'Built-in demand queue. When desks fill up, prospects join the list automatically.' },
   { icon: DoorOpen, title: 'Meeting Rooms', desc: 'Hourly booking grid for conference rooms. Set rates, avoid conflicts, track room revenue separately.' },
@@ -143,15 +145,15 @@ const steps = [
 // from two separate codebases (React landing + Astro pricing page) but should
 // always show the same numbers and copy.
 const pricingTiers = [
-  { name: 'Free Trial', price: '0', period: '/mo', desc: '3 months free, no card required. Every feature unlocked.', features: ['Every feature unlocked', 'Unlimited rooms & desks', 'Members & flex plans', 'Revenue & expenses', 'Public booking page', '3 months, no card'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
+  { name: 'Free Trial', price: '0', period: '/mo', desc: '3 months free, no card required. Every feature unlocked.', features: ['Every feature unlocked', 'Unlimited rooms & desks', 'Members & flex plans', 'Revenue & expenses', 'Public booking + Stripe payments', '3 months, no card'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
   { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Single space. Lock this rate during trial.', features: ['Everything in Free Trial', 'Ongoing subscription', 'Priority support', 'Custom branding', 'Early-bird price locked'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
   { name: 'Multi-Location', price: '50', period: '/mo', desc: 'For brands with multiple spaces.', features: ['Everything in Pro', 'Unlimited locations', 'Shared member directory', 'Cross-location bookings', 'Unified billing'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true },
 ];
 
 const integrations = [
-  { name: 'Telegram', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z' },
+  { name: 'Telegram', live: true, icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z' },
+  { name: 'Stripe', live: true, icon: 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z' },
   { name: 'Slack', icon: 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.315A2.528 2.528 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z' },
-  { name: 'Stripe', icon: 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z' },
   { name: 'Shopify', icon: 'M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.74a.376.376 0 00-.331-.312c-.137-.013-2.798-.064-2.798-.064s-1.872-1.814-2.075-2.016a.637.637 0 00-.382-.186l-1.1 23.879zm-2.532-17.394c0-.18.012-.371.037-.554.193-1.008.848-1.508 1.404-1.508.064 0 .126.006.185.018-.277-.573-.775-.977-1.405-.977-.046 0-.091.002-.137.006C11.464 3.672 10.326 5.4 9.835 7.7l2.97-.915v-.2zm2.157-2.641c.057 0 .113.006.168.017-.502-.622-1.178-1.086-1.889-1.338.375.941.582 2.15.63 3.418l2.46-.758c-.126-.668-.587-1.339-1.369-1.339zm-.37 9.465s-1.04-.557-2.311-.557c-1.872 0-1.963 1.176-1.963 1.472 0 1.619 4.213 2.24 4.213 6.031 0 2.983-1.895 4.903-4.449 4.903-3.064 0-4.63-1.907-4.63-1.907l.82-2.711s1.61 1.381 2.971 1.381c.889 0 1.248-.699 1.248-1.21 0-2.117-3.456-2.211-3.456-5.68 0-2.921 2.094-5.749 6.329-5.749 1.631 0 2.436.467 2.436.467l-1.208 3.56z' },
   { name: 'Google Calendar', icon: 'M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM0 5.684v12.632h5.684V5.684H0zM5.684 0v5.684h12.632V0H5.684zM18.316 0v5.684H24V0h-5.684zM0 0v5.684h5.684V0H0zM0 18.316V24h5.684v-5.684H0zM18.316 18.316V24H24v-5.684h-5.684z' },
   { name: 'Zapier', icon: 'M15.535 8.465l3.292-3.293a.75.75 0 000-1.06l-.94-.94a.75.75 0 00-1.06 0L13.535 6.465 10.242 3.172a.75.75 0 00-1.06 0l-.94.94a.75.75 0 000 1.06l3.293 3.293-3.293 3.293a.75.75 0 000 1.06l.94.94a.75.75 0 001.06 0l3.293-3.293 3.292 3.293a.75.75 0 001.06 0l.94-.94a.75.75 0 000-1.06l-3.292-3.293zM12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 1.5a6 6 0 110-12 6 6 0 010 12z' },
@@ -1007,10 +1009,13 @@ export default function LandingPage() {
                   cursor: 'default',
                 }}
               >
-                <svg viewBox="0 0 24 24" width={18} height={18} fill={hovered ? T.green : T.textMuted} style={{ flexShrink: 0, transition: 'fill 0.2s ease' }}>
+                <svg viewBox="0 0 24 24" width={18} height={18} fill={item.live ? T.green : hovered ? T.green : T.textMuted} style={{ flexShrink: 0, transition: 'fill 0.2s ease' }}>
                   <path d={item.icon} />
                 </svg>
-                <span style={{ fontFamily: 'monospace', fontSize: 13, color: hovered ? T.textPrimary : T.textSecondary, transition: 'color 0.2s ease', whiteSpace: 'nowrap' }}>{item.name}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 13, color: item.live || hovered ? T.textPrimary : T.textSecondary, transition: 'color 0.2s ease', whiteSpace: 'nowrap' }}>{item.name}</span>
+                {item.live && (
+                  <span style={{ fontFamily: 'monospace', fontSize: 9, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', color: T.green, border: `1px solid ${T.green}44`, background: T.greenFaint, borderRadius: 4, padding: '2px 5px', flexShrink: 0 }}>live</span>
+                )}
               </div>
             );
           })}
@@ -1607,6 +1612,10 @@ const landingFaq = [
   {
     q: 'Is OhMyDesk suitable for small coworking spaces?',
     a: 'Yes. There is no minimum desk count or seat limit. OhMyDesk works equally well for a 5-desk boutique space and a 200-desk multi-floor operation.',
+  },
+  {
+    q: 'Can visitors pay for bookings online?',
+    a: 'Yes. Connect your own Stripe account in Settings → Integrations and flip on "Charge visitors on public booking page". Visitors pay through Stripe Checkout before their booking is confirmed. Funds go directly to your Stripe account — OhMyDesk never touches the money and takes no transaction fees. Works with test-mode keys for trialing the flow before going live.',
   },
 ];
 

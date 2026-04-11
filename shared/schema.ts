@@ -25,6 +25,9 @@ export const deskBookingSchema = z.object({
   visitorNotes: z.string().optional(),
   clientId: z.string().optional(),
   isFlex: z.boolean().optional(),
+  paymentStatus: z.enum(['pending', 'paid', 'refunded', 'failed']).nullable().optional(),
+  stripeCheckoutSessionId: z.string().nullable().optional(),
+  stripePaymentIntentId: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 
@@ -102,6 +105,8 @@ export const organizationSchema = z.object({
   flexPlanPrice: z.number().nullable().optional(),
   groupId: z.string().nullable().optional(),
   floorPlanCombined: z.boolean().default(false),
+  stripePublishableKey: z.string().nullable().optional(),
+  stripePublicBookingPayments: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -272,6 +277,8 @@ export interface PublicAvailability {
     contactTelegram: string | null;
     contactViberEnabled: boolean;
     contactWhatsappEnabled: boolean;
+    defaultPricePerDay: number;
+    stripePublicBookingPayments: boolean;
   };
   rooms: PublicAvailabilityRoom[];
   bookedSlots: { deskId: string; date: string }[];

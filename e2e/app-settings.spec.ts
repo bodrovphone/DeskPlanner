@@ -25,7 +25,7 @@ const SETTINGS_ROOMS_URL = '/e2e-testspace/rooms';
 const SETTINGS_NOTIFICATIONS_URL = '/e2e-testspace/notifications';
 const SETTINGS_INTEGRATIONS_URL = '/e2e-testspace/integrations';
 
-test.describe('Settings — page load', () => {
+test.describe('Settings — page load', { tag: ['@smoke'] }, () => {
   test('all settings sub-pages load without errors', async ({ page }) => {
     // Settings is split into separate routes — verify each loads
     for (const [url, heading] of [
@@ -249,5 +249,29 @@ test.describe('Settings — public booking card', () => {
       await saveBtn.click();
       await expect(page.getByText('Saved', { exact: true })).toBeVisible({ timeout: 10_000 });
     }
+  });
+});
+
+test.describe('Settings — Stripe integration card', () => {
+  test('Stripe card is visible and not "Coming soon"', async ({ page }) => {
+    await page.goto(SETTINGS_INTEGRATIONS_URL);
+    await page.waitForLoadState('networkidle');
+
+    const stripeCard = page.getByTestId('stripe-integration-card');
+    await expect(stripeCard).toBeVisible({ timeout: 10_000 });
+    await expect(stripeCard).not.toContainText('Coming soon');
+    // The card should show "Stripe" title text
+    await expect(stripeCard.getByText('Stripe')).toBeVisible();
+  });
+
+  test('Stripe card shows key input fields for admin', async ({ page }) => {
+    await page.goto(SETTINGS_INTEGRATIONS_URL);
+    await page.waitForLoadState('networkidle');
+
+    const stripeCard = page.getByTestId('stripe-integration-card');
+    // Should show Secret Key and Publishable Key inputs when not connected
+    await expect(stripeCard.getByLabel('Secret Key')).toBeVisible({ timeout: 10_000 });
+    await expect(stripeCard.getByLabel('Publishable Key')).toBeVisible();
+    await expect(stripeCard.getByRole('button', { name: 'Connect' })).toBeVisible();
   });
 });

@@ -50,7 +50,7 @@ test.describe('Public Booking — page load', () => {
     }
   });
 
-  test('org name and "Book a desk" subtitle visible in header', async ({ page }) => {
+  test('org name and "Book a desk" subtitle visible in header', { tag: ['@smoke'] }, async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('Book a desk')).toBeVisible();
   });
@@ -203,7 +203,7 @@ test.describe('Public Booking — form validation', () => {
 // ── Successful booking ────────────────────────────────────────────────────────
 
 test.describe('Public Booking — successful booking', () => {
-  test('fills form and sees confirmation screen', async ({ page }) => {
+  test('fills form and sees confirmation screen', { tag: ['@smoke'] }, async ({ page }) => {
     await page.goto(PUBLIC_URL);
     await page.waitForLoadState('networkidle');
 
@@ -244,6 +244,39 @@ test.describe('Public Booking — successful booking', () => {
     // Success screen
     await expect(page.getByRole('heading', { name: "You're booked!" })).toBeVisible({
       timeout: 15_000,
+    });
+  });
+});
+
+// ── Payment URL params ──────────────────────────────────────────────────────
+
+test.describe('Public Booking — payment return params', () => {
+  test('?payment=cancelled shows cancellation banner and form is accessible', async ({ page }) => {
+    await page.goto(`${PUBLIC_URL}?payment=cancelled`);
+    await page.waitForLoadState('networkidle');
+
+    const notAvailable = await page.getByText('Not available').isVisible().catch(() => false);
+    if (notAvailable) {
+      test.skip(true, 'Public booking not enabled on e2e-testspace');
+      return;
+    }
+
+    await expect(page.getByText('Payment was cancelled')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('When do you want to come?')).toBeVisible();
+  });
+
+  test('?payment=success shows confirmation screen', async ({ page }) => {
+    await page.goto(`${PUBLIC_URL}?payment=success`);
+    await page.waitForLoadState('networkidle');
+
+    const notAvailable = await page.getByText('Not available').isVisible().catch(() => false);
+    if (notAvailable) {
+      test.skip(true, 'Public booking not enabled on e2e-testspace');
+      return;
+    }
+
+    await expect(page.getByRole('heading', { name: "You're booked!" })).toBeVisible({
+      timeout: 10_000,
     });
   });
 });

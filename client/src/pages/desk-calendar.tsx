@@ -178,7 +178,7 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
   const statusCounts = useMemo(() => {
-    const counts = { available: 0, booked: 0, assigned: 0 };
+    const counts = { available: 0, booked: 0, assigned: 0, stripePaid: 0 };
     for (const desk of filteredDesks) {
       for (const day of currentDates) {
         if (isNonWorkingDay(day.dateString, workingDays)) continue;
@@ -188,6 +188,7 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
         if (status === 'booked' && booking?.personName) counts.booked++;
         else if (status === 'assigned' && booking?.personName) counts.assigned++;
         else counts.available++;
+        if (booking?.paymentStatus === 'paid') counts.stripePaid++;
       }
     }
     return counts;
@@ -213,6 +214,7 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
             onSetAvailability={() => setIsRangeModalOpen(true)}
             onExport={handleExport}
             statusCounts={statusCounts}
+            stripePaidCount={statusCounts.stripePaid}
             totalDeskDays={statusCounts.available + statusCounts.booked + statusCounts.assigned}
           />
 

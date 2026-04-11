@@ -34,7 +34,7 @@ test.describe('Login page', () => {
     });
   });
 
-  test('successful login redirects to calendar', async ({ page }) => {
+  test('successful login redirects to calendar', { tag: ['@smoke'] }, async ({ page }) => {
     const email = process.env.E2E_TEST_EMAIL;
     const password = process.env.E2E_TEST_PASSWORD;
 

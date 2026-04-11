@@ -90,6 +90,7 @@ export default function DeskCell({ booking, date, onClick, isNonWorkingDay, isWe
             borderLeft: '16px solid transparent',
             borderTop: '16px solid #f59e0b',
           }}
+          title="Flex plan booking"
         />
       ) : daysUntilEnd !== null ? (
         <div
@@ -100,8 +101,19 @@ export default function DeskCell({ booking, date, onClick, isNonWorkingDay, isWe
               daysUntilEnd === 0 ? '#ef4444' : daysUntilEnd === 1 ? '#f87171' : '#fca5a5'
             }`,
           }}
+          title={daysUntilEnd === 0 ? 'Ends today' : daysUntilEnd === 1 ? 'Ends tomorrow' : `Ends in ${daysUntilEnd} days`}
         />
       ) : null}
+      {booking?.paymentStatus === 'paid' && (
+        <div
+          className="absolute top-0 left-0 w-0 h-0 pointer-events-none"
+          style={{
+            borderRight: '16px solid transparent',
+            borderTop: '16px solid #635BFF',
+          }}
+          title="Paid via Stripe"
+        />
+      )}
       <StatusIcon className={cn('h-4 w-4', config.iconColor)} />
 
       {hasBooking ? (

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { PublicAvailability } from '@shared/schema';
 import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -30,6 +30,8 @@ export default function PublicBookingPage() {
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [floorPlan, setFloorPlan] = useState<FloorPlanData | null>(null);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (!orgSlug) return;
@@ -42,6 +44,18 @@ export default function PublicBookingPage() {
       setLoading(false);
     });
   }, [orgSlug]);
+
+  // Handle payment return URL params
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      setSubmitted(true);
+      setSearchParams({}, { replace: true });
+    } else if (payment === 'cancelled') {
+      setPaymentCancelled(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // All hooks must be above early returns
   const { availabilityMap, maxDate } = useMemo(() => {
@@ -99,7 +113,10 @@ export default function PublicBookingPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">You're booked!</h1>
             <p className="text-gray-500 mt-3">
-              Your desk at <span className="font-medium">{availability.org.name}</span> is reserved. We're looking forward to seeing you at the space!
+              {assignedDeskLabel
+                ? <>Your desk at <span className="font-medium">{availability.org.name}</span> is reserved. We're looking forward to seeing you at the space!</>
+                : <>Your payment was successful and your desk at <span className="font-medium">{availability.org.name}</span> is reserved. Check your email for details!</>
+              }
             </p>
             {assignedDeskLabel && (
               <div className="mt-5 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
@@ -210,8 +227,35 @@ export default function PublicBookingPage() {
 
     setSubmitting(true);
     setError('');
+    setPaymentCancelled(false);
 
     try {
+      if (availability.org.stripePublicBookingPayments) {
+        // Paid path — redirect to Stripe Checkout
+        const { data, error: fnError } = await supabaseClient.functions.invoke('stripe-checkout', {
+          body: {
+            orgSlug,
+            date: selectedDate,
+            visitorName: visitorName.trim(),
+            visitorPhone: visitorPhone.trim(),
+            visitorNotes: visitorNotes.trim() || undefined,
+            origin: window.location.origin,
+          },
+        });
+        if (data?.error === 'no_desks_available') {
+          setError('Sorry, all desks are now taken for this date. Please pick another.');
+          setSelectedDate(null);
+          return;
+        }
+        if (fnError || !data?.checkoutUrl) {
+          setError('Payment setup failed. Please try again.');
+          return;
+        }
+        window.location.href = data.checkoutUrl;
+        return; // Don't setSubmitting(false) — we're navigating away
+      }
+
+      // Free path — existing behavior
       const desk = getRandomAvailableDesk(selectedDate);
       if (!desk) {
         setError('Sorry, all desks just got booked for this date. Please pick another.');
@@ -453,6 +497,13 @@ export default function PublicBookingPage() {
                     By submitting, you agree that your contact details will be shared with the space manager for booking purposes.
                   </p>
 
+                  {paymentCancelled && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start justify-between">
+                      <p className="text-sm text-amber-700">Payment was cancelled. You can try again below.</p>
+                      <button onClick={() => setPaymentCancelled(false)} className="text-amber-400 hover:text-amber-600 ml-2 shrink-0">&times;</button>
+                    </div>
+                  )}
+
                   {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                       <p className="text-sm text-red-700">{error}</p>
@@ -467,8 +518,10 @@ export default function PublicBookingPage() {
                     {submitting ? (
                       <span className="flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Booking...
+                        {availability.org.stripePublicBookingPayments ? 'Redirecting to payment...' : 'Booking...'}
                       </span>
+                    ) : availability.org.stripePublicBookingPayments ? (
+                      `Pay ${formatCurrency(availability.org.defaultPricePerDay, availability.org.currency)} & Book`
                     ) : (
                       'Book Desk'
                     )}
@@ -483,6 +536,10 @@ export default function PublicBookingPage() {
       </div>
     </div>
   );
+}
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).format(amount);
 }
 
 function Footer() {

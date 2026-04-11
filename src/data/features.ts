@@ -136,6 +136,24 @@ export const features: Feature[] = [
     images: [{ src: publicBookingShot, alt: 'Public booking confirmation page that visitors see after submitting a request' }],
   },
   {
+    slug: 'stripe-payments',
+    eyebrow: 'Payments',
+    title: 'Stripe Checkout payments for public bookings',
+    quickAnswer: 'Let visitors pay for day passes online before their booking is confirmed. Each space connects their own Stripe account — funds go directly to them and OhMyDesk takes no cut.',
+    intro:
+      'Enable paid public bookings in two minutes. Each coworking space connects their own Stripe account from Settings → Integrations (just paste your API keys — no complicated Stripe Connect onboarding). Flip the "Charge visitors" toggle and the public booking page instantly switches from "Book Desk" to "Pay €X & Book". Visitors go through Stripe Hosted Checkout, payment confirms the booking automatically, and the funds land directly in your Stripe account.',
+    bullets: [
+      'Connect your own Stripe account — OhMyDesk never touches the money',
+      'Per-feature toggle: turn paid bookings on or off without disconnecting Stripe',
+      'Hosted Stripe Checkout — no card data ever touches OhMyDesk',
+      'Booking auto-confirmed via webhook after successful payment',
+      'Cancellation handled gracefully: visitors can retry after abandoning checkout',
+      'Paid bookings show a Stripe-coloured indigo marker on the calendar',
+      'Multi-currency support — visitors pay in whatever currency your space is set to',
+    ],
+    images: [{ src: publicBookingShot, alt: 'Public booking page with Pay and Book button powered by Stripe Checkout' }],
+  },
+  {
     slug: 'revenue',
     eyebrow: 'Revenue',
     title: 'Revenue tracking & projections',

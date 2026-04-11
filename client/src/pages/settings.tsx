@@ -1821,16 +1821,258 @@ function ComingSoonCard({ name, description, svgPath }: { name: string; descript
   );
 }
 
+const STRIPE_SVG_PATH = 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z';
+
+function StripeIntegrationCard({ org, isAdmin }: { org: Organization; isAdmin: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [secretKey, setSecretKey] = useState('');
+  const [publishableKey, setPublishableKey] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [togglingPayments, setTogglingPayments] = useState(false);
+
+  const isConnected = !!org.stripePublishableKey;
+  const showForm = !isConnected || editing;
+
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-webhook`;
+
+  const handleConnect = async () => {
+    if (!secretKey.trim() || !publishableKey.trim()) {
+      toast({ title: 'Missing keys', description: 'Please enter both Stripe keys.', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('stripe-config', {
+        body: { orgId: org.id, secretKey: secretKey.trim(), publishableKey: publishableKey.trim() },
+      });
+
+      // Supabase's functions.invoke sets `error` (not `data`) on non-2xx responses.
+      // Read the actual response body from error.context.
+      let errorBody: { error?: string; message?: string } | null = null;
+      if (error && 'context' in error && error.context instanceof Response) {
+        try {
+          errorBody = await error.context.clone().json();
+        } catch {
+          // ignore parse failure
+        }
+      }
+
+      if (error || data?.error) {
+        const code = errorBody?.error ?? data?.error;
+        const message = errorBody?.message ?? data?.message;
+        console.error('stripe-config error:', { code, message, error });
+        const msg = code === 'invalid_key'
+          ? (message || 'Invalid Stripe key. Please check and try again.')
+          : (message || `Failed to save Stripe configuration${code ? ` (${code})` : ''}.`);
+        toast({ title: 'Error', description: msg, variant: 'destructive' });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Stripe connected', description: 'Your Stripe account is now linked.' });
+      setSecretKey('');
+      setPublishableKey('');
+      setEditing(false);
+    } catch (err) {
+      console.error('stripe-config exception:', err);
+      toast({ title: 'Error', description: 'Failed to save Stripe configuration.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setSaving(true);
+    try {
+      await supabaseClient.functions.invoke('stripe-config', {
+        body: { orgId: org.id, action: 'disconnect' },
+      });
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Disconnected', description: 'Stripe has been removed.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to disconnect Stripe.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTogglePayments = async (enabled: boolean) => {
+    setTogglingPayments(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({ stripe_public_booking_payments: enabled })
+        .eq('id', org.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({
+        title: enabled ? 'Payments enabled' : 'Payments disabled',
+        description: enabled
+          ? 'Visitors will now pay before their booking is confirmed.'
+          : 'Public bookings will be free again.',
+      });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update setting.', variant: 'destructive' });
+    } finally {
+      setTogglingPayments(false);
+    }
+  };
+
+  const handleCopyWebhook = async () => {
+    await navigator.clipboard.writeText(webhookUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Card className="flex flex-col" data-testid="stripe-integration-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-indigo-600">
+                <path d={STRIPE_SVG_PATH} />
+              </svg>
+            </div>
+            <CardTitle className="text-base">Stripe</CardTitle>
+          </div>
+          {isConnected && (
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-green-600 border border-green-200 bg-green-50 rounded-full px-2 py-0.5">
+              Connected
+            </span>
+          )}
+        </div>
+        <CardDescription>
+          Collect desk booking payments online from visitors.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1 space-y-4">
+        {!isAdmin ? (
+          <p className="text-sm text-gray-500">
+            Ask a space owner or admin to configure Stripe.
+          </p>
+        ) : (
+          <>
+            {/* Connection section */}
+            {showForm ? (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="stripe-secret-key" className="text-sm">Secret Key</Label>
+                  <Input
+                    id="stripe-secret-key"
+                    type="password"
+                    placeholder="sk_live_... or sk_test_..."
+                    value={secretKey}
+                    onChange={(e) => setSecretKey(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="stripe-publishable-key" className="text-sm">Publishable Key</Label>
+                  <Input
+                    id="stripe-publishable-key"
+                    type="password"
+                    placeholder="pk_live_... or pk_test_..."
+                    value={publishableKey}
+                    onChange={(e) => setPublishableKey(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleConnect} disabled={saving}>
+                    {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Connecting...</> : 'Connect'}
+                  </Button>
+                  {editing && (
+                    <Button variant="outline" onClick={() => { setEditing(false); setSecretKey(''); setPublishableKey(''); }}>
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-500">
+                  Key: <span className="font-mono text-xs">{org.stripePublishableKey?.slice(0, 7)}...{org.stripePublishableKey?.slice(-4)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                    <Pencil className="mr-2 h-3 w-3" />
+                    Edit keys
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" disabled={saving}>
+                        <Unplug className="mr-2 h-3 w-3" />
+                        Disconnect
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Disconnect Stripe?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove your Stripe keys and disable payment collection on the public booking page.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDisconnect} className="bg-red-600 hover:bg-red-700 text-white">
+                          Disconnect
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            )}
+
+            {/* Webhook setup instructions (visible when connected) */}
+            {isConnected && !editing && (
+              <>
+                <div className="border-t pt-4 space-y-2">
+                  <Label className="text-sm text-gray-500">Webhook URL</Label>
+                  <div className="flex gap-2">
+                    <Input value={webhookUrl} readOnly className="text-xs bg-gray-50 font-mono" />
+                    <Button variant="outline" size="sm" onClick={handleCopyWebhook} className="shrink-0">
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Add this in Stripe Dashboard &rarr; Developers &rarr; Webhooks. Select event: <span className="font-mono">checkout.session.completed</span>
+                  </p>
+                </div>
+
+                {/* Features section */}
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="stripe-public-payments"
+                      checked={org.stripePublicBookingPayments}
+                      onCheckedChange={handleTogglePayments}
+                      disabled={togglingPayments}
+                      className="data-[state=unchecked]:bg-gray-300"
+                    />
+                    <div>
+                      <Label htmlFor="stripe-public-payments" className="text-sm font-medium">Charge visitors on public booking page</Label>
+                      <p className="text-xs text-gray-500">Visitors will pay your day pass rate before their booking is confirmed.</p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 const COMING_SOON_INTEGRATIONS = [
   {
     name: 'Slack',
     description: 'Get booking notifications and daily summaries delivered straight to your Slack channel.',
     svgPath: 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.315A2.528 2.528 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z',
-  },
-  {
-    name: 'Stripe',
-    description: 'Collect desk booking payments online. Send invoices and track revenue automatically.',
-    svgPath: 'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z',
   },
   {
     name: 'Google Calendar',
@@ -1854,6 +2096,7 @@ export function SettingsIntegrationsPage() {
           enabled={currentOrg.publicBookingEnabled}
           maxDaysAhead={currentOrg.publicBookingMaxDaysAhead}
         />
+        <StripeIntegrationCard org={currentOrg} isAdmin={isAdmin} />
         {COMING_SOON_INTEGRATIONS.map((item) => (
           <ComingSoonCard key={item.name} {...item} />
         ))}

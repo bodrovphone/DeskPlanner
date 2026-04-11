@@ -23,7 +23,7 @@ async function switchToWeekView(page: import('@playwright/test').Page) {
   await page.waitForTimeout(300);
 }
 
-test.describe('Calendar — page load', () => {
+test.describe('Calendar — page load', { tag: ['@smoke'] }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(CALENDAR_URL);
     await page.waitForLoadState('networkidle');
@@ -134,7 +134,7 @@ test.describe('Calendar — booking dialog', () => {
   });
 });
 
-test.describe('Calendar — create booking', () => {
+test.describe('Calendar — create booking', { tag: ['@smoke'] }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(CALENDAR_URL);
     await page.waitForLoadState('networkidle');

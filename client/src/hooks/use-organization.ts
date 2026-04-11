@@ -34,6 +34,8 @@ function mapOrg(row: Record<string, unknown>): Organization {
     flexPlanPrice: (row.flex_plan_price as number) ?? null,
     groupId: (row.group_id as string) ?? null,
     floorPlanCombined: (row.floor_plan_combined as boolean) ?? false,
+    stripePublishableKey: (row.stripe_publishable_key as string) ?? null,
+    stripePublicBookingPayments: (row.stripe_public_booking_payments as boolean) ?? false,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

@@ -681,6 +681,9 @@ export class SupabaseDataStore implements IDataStore {
       shareToken: row.share_token || undefined,
       clientId: row.client_id ? String(row.client_id) : undefined,
       isFlex: row.is_flex || false,
+      paymentStatus: row.payment_status ?? null,
+      stripeCheckoutSessionId: row.stripe_checkout_session_id ?? null,
+      stripePaymentIntentId: row.stripe_payment_intent_id ?? null,
       createdAt: row.created_at,
     };
   }

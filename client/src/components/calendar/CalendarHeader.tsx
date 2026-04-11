@@ -12,6 +12,7 @@ interface CalendarHeaderProps {
   onSetAvailability: () => void;
   onExport: () => void;
   statusCounts?: StatusCounts;
+  stripePaidCount?: number;
   totalDeskDays?: number;
 }
 
@@ -19,6 +20,7 @@ export default function CalendarHeader({
   onSetAvailability,
   onExport,
   statusCounts,
+  stripePaidCount,
   totalDeskDays,
 }: CalendarHeaderProps) {
   return (
@@ -41,7 +43,7 @@ export default function CalendarHeader({
           Export
         </Button>
       </div>
-      <StatusLegend counts={statusCounts} totalDeskDays={totalDeskDays} />
+      <StatusLegend counts={statusCounts} totalDeskDays={totalDeskDays} stripePaidCount={stripePaidCount} />
     </div>
   );
 }
