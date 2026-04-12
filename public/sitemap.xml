@@ -6,77 +6,77 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/pricing</loc>
+    <loc>https://ohmydesk.app/pricing/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features</loc>
+    <loc>https://ohmydesk.app/features/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/booking</loc>
+    <loc>https://ohmydesk.app/features/booking/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/members</loc>
+    <loc>https://ohmydesk.app/features/members/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/flex-plans</loc>
+    <loc>https://ohmydesk.app/features/flex-plans/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/meeting-rooms</loc>
+    <loc>https://ohmydesk.app/features/meeting-rooms/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/floor-plan</loc>
+    <loc>https://ohmydesk.app/features/floor-plan/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/map-view</loc>
+    <loc>https://ohmydesk.app/features/map-view/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/public-booking</loc>
+    <loc>https://ohmydesk.app/features/public-booking/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/revenue</loc>
+    <loc>https://ohmydesk.app/features/revenue/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/expenses</loc>
+    <loc>https://ohmydesk.app/features/expenses/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/waiting-list</loc>
+    <loc>https://ohmydesk.app/features/waiting-list/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/notifications</loc>
+    <loc>https://ohmydesk.app/features/notifications/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/features/multi-location</loc>
+    <loc>https://ohmydesk.app/features/multi-location/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ohmydesk.app/podcast</loc>
+    <loc>https://ohmydesk.app/podcast/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

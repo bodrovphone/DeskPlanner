@@ -11,6 +11,7 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
 import { getMonthRange, getMonthRangeString } from '@/lib/dateUtils';
+import { buildCategoryUsageMap } from '@/lib/expenseStats';
 import { Expense } from '@shared/schema';
 import ExpenseModal from '@/components/ExpenseModal';
 import RecurringExpenseModal from '@/components/RecurringExpenseModal';
@@ -82,6 +83,13 @@ export default function ExpensesPage() {
   const catById = useMemo(
     () => Object.fromEntries(categories.map(c => [c.id, c])),
     [categories]
+  );
+
+  // Precompute category usage counts in O(n) instead of filtering the
+  // expenses array inside categories.map() below, which was O(n × m) per render.
+  const categoryUsageMap = useMemo(
+    () => buildCategoryUsageMap(expenses),
+    [expenses]
   );
 
   const currencySymbol = currentOrg?.currency
@@ -303,7 +311,7 @@ export default function ExpensesPage() {
           <div className="border rounded-lg bg-white divide-y">
             {categories.map((cat) => {
               const { Icon: CatIcon, color } = getCategoryIcon(cat.name);
-              const usageCount = expenses.filter(e => e.categoryId === cat.id).length;
+              const usageCount = categoryUsageMap.get(cat.id) ?? 0;
               const isEditing = editingCategoryId === cat.id;
               return (
                 <div

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import viberIcon from '@/assets/viber.svg?url';
 import whatsappIcon from '@/assets/whatsapp.svg?url';
 import { activeCurrencies, currencyLabels } from '@/lib/settings';
 import { DAY_LABELS } from '@/lib/workingDays';
+import { groupDesksByRoom } from '@/lib/deskGrouping';
 
 function InlineEdit({
   value,
@@ -219,6 +220,9 @@ function RoomsSettingsCard() {
   const setRoomDeskCount = useSetRoomDeskCount();
   const mergeRooms = useMergeRooms();
 
+  // Precompute desks-per-room in O(n) instead of filtering inside rooms.map() which was O(rooms × desks).
+  const desksByRoom = useMemo(() => groupDesksByRoom(desks), [desks]);
+
   const [addingRoom, setAddingRoom] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [mergeKeepId, setMergeKeepId] = useState<string>('');
@@ -265,7 +269,7 @@ function RoomsSettingsCard() {
   };
 
   const handleDraftDeskCountChange = (roomId: string, targetCount: number) => {
-    const roomDesks = desks.filter((d) => d.roomId === roomId);
+    const roomDesks = desksByRoom.get(roomId) ?? [];
     if (targetCount === roomDesks.length) {
       setDraftDeskCounts((prev) => { const next = { ...prev }; delete next[roomId]; return next; });
     } else {
@@ -334,7 +338,7 @@ function RoomsSettingsCard() {
       // Desk count changes
       for (const [roomId, targetCount] of Object.entries(draftDeskCounts)) {
         const room = rooms.find((r) => r.id === roomId);
-        const roomDesks = desks.filter((d) => d.roomId === roomId);
+        const roomDesks = desksByRoom.get(roomId) ?? [];
         if (room) {
           promises.push(
             new Promise((resolve, reject) =>
@@ -399,7 +403,7 @@ function RoomsSettingsCard() {
       <CardContent className="flex flex-col flex-1">
         <div className="space-y-3 flex-1">
           {rooms.map((room) => {
-            const roomDesks = desks.filter((d) => d.roomId === room.id);
+            const roomDesks = desksByRoom.get(room.id) ?? [];
             const displayDeskCount = draftDeskCounts[room.id] ?? roomDesks.length;
             return (
               <div key={room.id} className="bg-gray-50 rounded-lg p-4">
@@ -544,7 +548,7 @@ function RoomsSettingsCard() {
                 >
                   {r.name}
                   <span className="block text-xs font-normal opacity-60 mt-0.5">
-                    {desks.filter((d) => d.roomId === r.id).length} desks
+                    {(desksByRoom.get(r.id) ?? []).length} desks
                   </span>
                 </button>
               ))}

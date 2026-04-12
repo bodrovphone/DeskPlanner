@@ -5,6 +5,7 @@ import path from 'path';
 
 export default defineConfig({
   output: 'static',
+  trailingSlash: 'always',
   build: {
     // Cloudflare Pages does not serve files/directories prefixed with `_`
     // (it treats them as build config). Default Astro output `_astro/` is

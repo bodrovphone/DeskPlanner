@@ -311,6 +311,13 @@ export default function PublicBookingPage() {
           </div>
 
           <div className="p-6">
+            {paymentCancelled && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start justify-between mb-4">
+                <p className="text-sm text-amber-700">Payment was cancelled. You can try again below.</p>
+                <button onClick={() => setPaymentCancelled(false)} className="text-amber-400 hover:text-amber-600 ml-2 shrink-0">&times;</button>
+              </div>
+            )}
+
             {/* Step 1: Date selection */}
             {!selectedDate && (
               <div>
@@ -496,13 +503,6 @@ export default function PublicBookingPage() {
                   <p className="text-xs text-gray-400">
                     By submitting, you agree that your contact details will be shared with the space manager for booking purposes.
                   </p>
-
-                  {paymentCancelled && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start justify-between">
-                      <p className="text-sm text-amber-700">Payment was cancelled. You can try again below.</p>
-                      <button onClick={() => setPaymentCancelled(false)} className="text-amber-400 hover:text-amber-600 ml-2 shrink-0">&times;</button>
-                    </div>
-                  )}
 
                   {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
