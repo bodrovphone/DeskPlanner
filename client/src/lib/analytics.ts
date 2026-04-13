@@ -51,6 +51,7 @@ export const EVENTS = {
   // Hero
   HERO_START_FREE: 'hero-start-free-click',
   HERO_LOGIN: 'hero-login-click',
+  HERO_WATCH_DEMO: 'hero-watch-demo-click',
 
   // Pricing
   PRICING_CTA: 'pricing-cta-click',

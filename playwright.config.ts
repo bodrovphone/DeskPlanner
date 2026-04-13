@@ -33,6 +33,10 @@ export default defineConfig({
       name: 'public-booking',
       testMatch: 'public-booking.spec.ts',
     },
+    {
+      name: 'member-booking',
+      testMatch: 'member-booking.spec.ts',
+    },
 
     // Auth setup — logs in and saves session state
     {

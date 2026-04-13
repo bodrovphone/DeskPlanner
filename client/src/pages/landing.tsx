@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Calendar,
   BarChart3,
@@ -21,9 +21,17 @@ import {
   Package,
   Headphones,
   CreditCard,
+  Menu,
+  X as XIcon,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg?url';
 import logoLandingIcon from '@/assets/logo-landing-icon.svg?url';
+import logoCodeburg from '@/assets/logos/android-chrome-512x512.png?url';
+import logoDesk4Day from '@/assets/logos/desk4Day.jpeg?url';
+import logoBuilderHouse from '@/assets/logos/builder_house.jpg?url';
+import logoDunav from '@/assets/logos/dunav.png?url';
+import logoSwitch from '@/assets/logos/switch.png?url';
+import logoQuest from '@/assets/logos/Quest_White.webp?url';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 
 /* ─── palette tokens (scoped via inline styles) ─── */
@@ -58,6 +66,7 @@ const KEYFRAMES = `
 @keyframes typing{from{width:0}to{width:100%}}
 @keyframes slideRight{from{width:0}to{width:100%}}
 @keyframes numberRoll{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 `;
 
 /* ─── touch hover helper ─── */
@@ -136,9 +145,55 @@ const features = [
 ];
 
 const steps = [
-  { n: '01', title: 'Create your space', desc: 'Sign up and define your rooms, desks, and pricing in under two minutes.' },
-  { n: '02', title: 'Manage bookings', desc: 'Drag, click, or bulk-select to assign desks. Track availability in real time.' },
-  { n: '03', title: 'Grow revenue', desc: 'Monitor occupancy, revenue trends, and waiting-list demand from one dashboard.' },
+  { n: '01', title: 'Set up your space', desc: 'Sign up, name your rooms, add desks. Under two minutes.' },
+  { n: '02', title: 'Start booking desks', desc: 'Click, drag, or bulk-select. See every desk and room on one calendar.' },
+  { n: '03', title: 'Track your revenue', desc: 'Bookings, payments, and occupancy — all in one dashboard.' },
+];
+
+const trustedLogos = [
+  { src: logoCodeburg, alt: 'Codeburg', height: 56 },
+  { src: logoDesk4Day, alt: 'Desk4Day', height: 52 },
+  { src: logoBuilderHouse, alt: 'Builder House', height: 52 },
+  { src: logoDunav, alt: 'Dunav', height: 52 },
+  { src: logoSwitch, alt: 'Switch', height: 52 },
+  { src: logoQuest, alt: 'Quest', height: 52 },
+];
+
+const painSolutions = [
+  {
+    icon: MessageCircle,
+    pain: 'Bookings live in your inbox',
+    painDesc: 'WhatsApp messages, emails, walk-ins. You\'re the human API between members and your spreadsheet.',
+    solution: 'One visual calendar',
+    solutionDesc: 'Every desk, every room, every booking — one screen. Click to book, drag to select, ctrl-click for bulk updates.',
+  },
+  {
+    icon: BarChart3,
+    pain: 'You can\'t see your own floor',
+    painDesc: 'Who\'s in today? Which desks are free next week? You don\'t know without opening three tabs.',
+    solution: 'Live interactive floor plan',
+    solutionDesc: 'Drag-and-drop editor mirrors your real layout. Desks color-coded by status in real time.',
+  },
+  {
+    icon: CreditCard,
+    pain: 'Money slips through the cracks',
+    painDesc: 'Unpaid day passes, forgotten invoices, no-shows you only notice at month end.',
+    solution: 'Stripe payments + revenue dashboard',
+    solutionDesc: 'Visitors pay before booking is confirmed. Revenue, expenses, and profit tracked automatically.',
+  },
+  {
+    icon: Users,
+    pain: 'Members wait on you',
+    painDesc: 'Every booking goes through you. You\'re the bottleneck between your member and an empty desk.',
+    solution: 'Public booking link',
+    solutionDesc: 'Share one URL. Members and visitors pick a date and book themselves — 24/7, no login needed.',
+  },
+];
+
+const roadmap = [
+  { phase: 'LIVE', items: ['Visual desk calendar', 'Interactive floor plan & map view', 'Stripe checkout payments', 'Flex day packages', 'Public booking page', 'Telegram & email alerts', 'Meeting room hourly grid', 'Multi-location support', 'Revenue & expense tracking'] },
+  { phase: 'COMING SOON', items: ['Google Calendar & Outlook sync', 'Embeddable booking widget', 'Automated invoices', 'Holiday & closure dates', 'Visitor booking confirmation emails'] },
+  { phase: 'ON THE HORIZON', items: ['Smart lock integration', 'White-label member portal', 'Public API', 'Visitor check-in & host alerts'] },
 ];
 
 // Keep this in sync with `tiers` in src/pages/pricing.astro — they're rendered
@@ -507,9 +562,10 @@ function FauxRevenue() {
 /* ─── main page ─── */
 
 export default function LandingPage() {
-  const heroTyping = useTyping('Coworking desk management for operators who ship.', 45, 800);
+  const heroTyping = useTyping('Your desks, bookings, and revenue in one place.', 45, 800);
   const [navScrolled, setNavScrolled] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useNarrow(768);
 
   useEffect(() => {
@@ -610,30 +666,116 @@ export default function LandingPage() {
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/login" style={{ textDecoration: 'none' }}>
-              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
-                {...touchHoverProps(
-                  e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
-                  e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
-                )}
-              onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
-              >Log In</button>
-            </a>
-            <a href="/signup" style={{ textDecoration: 'none' }}>
-              <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
-                {...touchHoverProps(
-                  e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
-                  e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; },
-                )}
-                onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
-              >Sign Up Free</button>
-            </a>
+            {isMobile ? (
+              <button
+                onClick={() => setMobileMenuOpen(o => !o)}
+                style={{ background: 'transparent', border: 'none', color: T.textSecondary, cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {mobileMenuOpen ? <XIcon size={22} /> : <Menu size={22} />}
+              </button>
+            ) : (
+              <>
+                <a href="/login" style={{ textDecoration: 'none' }}>
+                  <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
+                    {...touchHoverProps(
+                      e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
+                      e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
+                    )}
+                    onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
+                  >Log In</button>
+                </a>
+                <a href="/signup" style={{ textDecoration: 'none' }}>
+                  <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
+                    {...touchHoverProps(
+                      e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
+                      e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; },
+                    )}
+                    onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
+                  >Sign Up Free</button>
+                </a>
+              </>
+            )}
           </div>
         </div>
+
+        {/* ── MOBILE MENU DRAWER ── */}
+        {isMobile && mobileMenuOpen && (
+          <div style={{
+            background: 'rgba(10,10,10,0.96)',
+            backdropFilter: 'blur(16px)',
+            borderTop: `1px solid ${T.border}`,
+            padding: '16px 24px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            animation: 'fadeIn 0.2s ease',
+          }}>
+            {[
+              { label: 'Product', href: '#product' },
+              { label: 'Demo', href: '#demo' },
+              { label: 'Features', href: '/features' },
+              { label: 'Pricing', href: '/pricing' },
+            ].map(link => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 15,
+                  color: T.textSecondary,
+                  textDecoration: 'none',
+                  padding: '12px 8px',
+                  borderRadius: 6,
+                  transition: 'all 0.2s ease',
+                }}
+                {...touchHoverProps(
+                  e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; },
+                  e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; },
+                )}
+              >
+                {link.label}
+              </a>
+            ))}
+            <button
+              onClick={() => { setDemoOpen(true); setMobileMenuOpen(false); }}
+              style={{
+                fontFamily: 'monospace',
+                fontSize: 15,
+                color: T.textSecondary,
+                background: 'transparent',
+                border: 'none',
+                padding: '12px 8px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s ease',
+              }}
+              {...touchHoverProps(
+                e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; },
+                e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; },
+              )}
+            >
+              Contact
+            </button>
+            <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 8, paddingTop: 12, display: 'flex', gap: 12 }}>
+              <a href="/login" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
+                <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
+                >Log In</button>
+              </a>
+              <a href="/signup" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
+                <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
+                  onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
+                >Sign Up Free</button>
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ paddingTop: 144, paddingBottom: 100, position: 'relative' }}>
+      <section style={{ paddingTop: isMobile ? 96 : 144, paddingBottom: 48, position: 'relative' }}>
         {/* radial glow */}
         <div style={{ position: 'absolute', top: -200, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: `radial-gradient(ellipse at center, ${T.greenFaint} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
@@ -645,25 +787,25 @@ export default function LandingPage() {
               border: `1px solid ${T.green}33`, padding: '5px 14px', borderRadius: 20, marginBottom: 28,
               background: T.greenFaint,
             }}>
-              <Zap size={12} /> Now in public beta
+              <Zap size={12} /> The OS for coworking spaces
             </span>
           </div>
 
           <h1 style={{
-            fontSize: 'clamp(36px, 6vw, 68px)',
+            fontSize: 'clamp(36px, 5vw, 52px)',
             fontWeight: 800,
-            lineHeight: 1.05,
+            lineHeight: 1.1,
             letterSpacing: '-0.03em',
             color: T.textPrimary,
             margin: '20px 0 0',
-            minHeight: 'clamp(80px, 12vw, 150px)',
+            minHeight: isMobile ? 160 : 120,
           }}>
             <span style={{ fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace' }}>
               {heroTyping.displayed}
               <span style={{
                 display: 'inline-block',
                 width: 3,
-                height: 'clamp(36px, 5.5vw, 62px)',
+                height: 'clamp(36px, 4.5vw, 48px)',
                 background: T.green,
                 marginLeft: 2,
                 verticalAlign: 'text-bottom',
@@ -675,19 +817,19 @@ export default function LandingPage() {
 
           <p style={{
             animation: 'fadeInUp 0.8s ease both',
-            animationDelay: '2.4s',
+            animationDelay: '2.8s',
             fontSize: 'clamp(16px, 2vw, 19px)',
             color: T.textSecondary,
             lineHeight: 1.65,
-            maxWidth: 520,
+            maxWidth: 560,
             margin: '28px auto 0',
           }}>
-            Coworking desk booking software with a visual calendar, meeting room scheduling, revenue tracking, and waiting lists -- everything your space needs in one fast, focused tool.
+            OhMyDesk gives independent coworking spaces a simple booking system their members actually use — set up in one afternoon, no IT needed.
           </p>
 
           <div style={{
             animation: 'fadeInUp 0.8s ease both',
-            animationDelay: '2.8s',
+            animationDelay: '3.2s',
             display: 'flex',
             flexWrap: 'wrap',
             gap: 14,
@@ -721,29 +863,33 @@ export default function LandingPage() {
                 Start Free <ArrowRight size={16} />
               </button>
             </a>
-            <a href="/login" style={{ textDecoration: 'none' }}>
-              <button style={{
-                fontFamily: '"SF Mono", "Fira Code", monospace',
-                fontSize: 14,
-                fontWeight: 500,
-                padding: '14px 32px',
-                borderRadius: 8,
-                border: `1px solid ${T.borderBright}`,
-                background: 'transparent',
-                color: T.textSecondary,
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-                minHeight: 48,
+            <button style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 14,
+              fontWeight: 500,
+              padding: '14px 32px',
+              borderRadius: 8,
+              border: `1px solid ${T.borderBright}`,
+              background: 'transparent',
+              color: T.textSecondary,
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              minHeight: 48,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+              {...touchHoverProps(
+                e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.textPrimary; },
+                e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; },
+              )}
+              onClick={() => {
+                trackEvent(EVENTS.HERO_WATCH_DEMO);
+                document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' });
               }}
-                {...touchHoverProps(
-                  e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.textPrimary; },
-                  e => { e.currentTarget.style.borderColor = T.borderBright; e.currentTarget.style.color = T.textSecondary; },
-                )}
-                onClick={() => trackEvent(EVENTS.HERO_LOGIN)}
-              >
-                Log In
-              </button>
-            </a>
+            >
+              Watch 4-min walkthrough
+            </button>
             <button style={{
               fontFamily: '"SF Mono", "Fira Code", monospace',
               fontSize: 14,
@@ -769,40 +915,35 @@ export default function LandingPage() {
               <MessageCircle size={16} /> Book a Call
             </button>
           </div>
+
+          <p style={{
+            animation: 'fadeIn 1s ease both',
+            animationDelay: '3.8s',
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: T.textMuted,
+            marginTop: 32,
+            letterSpacing: 0.5,
+          }}>
+            3 months free &middot; no credit card &middot; set up in one afternoon
+          </p>
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF ── */}
-      <section style={{ borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: '48px 0', background: T.bgCard }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 2 }}>Built for coworking operators</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 32, textAlign: 'center' }}>
-            {[
-              { value: '2,400+', label: 'Desks managed' },
-              { value: '340+', label: 'Active spaces' },
-              { value: '99.9%', label: 'Uptime' },
-              { value: '<2min', label: 'Setup time' },
-            ].map((s) => (
-              <div key={s.label}>
-                <div style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 28, fontWeight: 700, color: T.green }}>{s.value}</div>
-                <div style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted, marginTop: 4 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── TRUSTED BY (LOGO CAROUSEL) ── */}
+      <TrustedBySection />
+
+      {/* ── PROBLEM → SOLUTION ── */}
+      <PainSolutionSection />
 
       {/* ── APP SHOWCASE ── */}
-      <section id="product" style={{ ...sectionStyle(100), scrollMarginTop: 120 }}>
+      <section id="product" style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}`, scrollMarginTop: 120 }}>
         <SectionHeading
           tag="Product"
           title="Your entire coworking space, one screen."
           sub="A desk booking calendar that shows every desk, every booking, and every open slot. No spreadsheets. No guesswork."
         />
         <div style={{ position: 'relative' }}>
-          {/* glow behind the calendar */}
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '110%', height: '110%', background: `radial-gradient(ellipse at center, ${T.greenFaint} 0%, transparent 60%)`, pointerEvents: 'none', zIndex: 0 }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <FauxCalendar />
@@ -834,6 +975,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
+        <SectionHeading
+          tag="Get started"
+          title="Set up in one afternoon. Seriously."
+          sub="No IT, no integrations, no contract."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, position: 'relative', maxWidth: 900, margin: '0 auto' }}>
+          {steps.map((s, i) => (
+            <StepCard key={s.n} step={s} index={i} isLast={i === steps.length - 1} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── METRICS ── */}
+      <MetricsStrip />
+
+      {/* ── ROADMAP ── */}
+      <RoadmapSection />
+
       {/* ── PUBLIC BOOKING SPOTLIGHT ── */}
       <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
         <SectionHeading
@@ -851,7 +1012,7 @@ export default function LandingPage() {
           title="Desk booking features for every operator."
           sub="Simple, focused coworking management tools that replace your spreadsheets and sticky notes."
         />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 20 }}>
           {features.map((f, i) => {
             const Icon = f.icon;
             return <FeatureCard key={f.title} icon={Icon} title={f.title} desc={f.desc} index={i} />;
@@ -859,7 +1020,7 @@ export default function LandingPage() {
         </div>
         <div style={{ textAlign: 'center', marginTop: 40 }}>
           <a
-            href="/features"
+            href="/features/"
             style={{
               fontFamily: '"SF Mono", "Fira Code", monospace',
               fontSize: 13,
@@ -900,7 +1061,6 @@ export default function LandingPage() {
           sub="Get notified about upcoming bookings and ending assignments -- right where you already work."
         />
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 24, maxWidth: 900, margin: '0 auto' }}>
-          {/* Telegram - live */}
           <NotificationChannelCard
             icon={Send}
             name="Telegram"
@@ -915,33 +1075,18 @@ export default function LandingPage() {
             live
             index={1}
           />
-          {/* WhatsApp - coming soon */}
           <NotificationChannelCard
             icon={MessageCircle}
             name="WhatsApp"
             desc="Get updates in the messenger your team already uses. Perfect for on-the-go operators."
             index={2}
           />
-          {/* SMS - coming soon */}
           <NotificationChannelCard
             icon={Smartphone}
             name="SMS"
             desc="Critical alerts via text message. For operators who need guaranteed delivery."
             index={3}
           />
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section style={{ ...sectionStyle(100), borderTop: `1px solid ${T.border}` }}>
-        <SectionHeading
-          tag="Process"
-          title="Desk booking setup in minutes."
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, position: 'relative', maxWidth: 900, margin: '0 auto' }}>
-          {steps.map((s, i) => (
-            <StepCard key={s.n} step={s} index={i} isLast={i === steps.length - 1} />
-          ))}
         </div>
       </section>
 
@@ -1032,7 +1177,7 @@ export default function LandingPage() {
       <FaqSection />
 
       {/* ── CTA ── */}
-      <section style={{ borderTop: `1px solid ${T.border}`, position: 'relative' }}>
+      <section id="cta" style={{ borderTop: `1px solid ${T.border}`, position: 'relative', scrollMarginTop: 80 }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at bottom center, ${T.greenFaint} 0%, transparent 60%)`, pointerEvents: 'none' }} />
         <CtaSection />
       </section>
@@ -1690,10 +1835,10 @@ function CtaSection() {
       zIndex: 1,
     }}>
       <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, color: T.textPrimary, lineHeight: 1.2, marginBottom: 16 }}>
-        Ready to simplify your coworking desk management?
+        Your space deserves better than a spreadsheet.
       </h2>
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-        Join hundreds of coworking operators who manage their desks with OhMyDesk. Start your free trial today.
+        Join coworking spaces across Eastern Europe already running on OhMyDesk. Free for 3 months, no credit card.
       </p>
       <a href="/signup" style={{ textDecoration: 'none' }}>
         <button style={{
@@ -1723,5 +1868,231 @@ function CtaSection() {
         </button>
       </a>
     </div>
+  );
+}
+
+/* ─── trusted by (logo carousel) ─── */
+
+const allLogos = [...trustedLogos, ...trustedLogos, ...trustedLogos, ...trustedLogos];
+
+function TrustedBySection() {
+  const { ref, visible } = useReveal();
+  return (
+    <section ref={ref} style={{
+      borderTop: `1px solid ${T.border}`,
+      borderBottom: `1px solid ${T.border}`,
+      padding: '20px 0',
+      background: T.bgCard,
+      overflow: 'hidden',
+      opacity: visible ? 1 : 0,
+      transition: 'opacity 0.7s ease',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <span style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 2 }}>
+          Trusted by independent coworking spaces
+        </span>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 64,
+          animation: 'marquee 60s linear infinite',
+          width: 'max-content',
+          paddingLeft: 32,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
+        onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; }}
+      >
+        {allLogos.map((logo, i) => (
+          <img
+            key={`${logo.alt}-${i}`}
+            src={logo.src}
+            alt={logo.alt}
+            style={{
+              height: 44,
+              width: 'auto',
+              objectFit: 'contain',
+              opacity: 0.85,
+              transition: 'all 0.3s ease',
+              flexShrink: 0,
+            }}
+            {...touchHoverProps(
+              e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scale(1.05)'; },
+              e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'scale(1)'; },
+            )}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── problem → solution pairs ─── */
+
+function PainSolutionSection() {
+  const { ref, visible } = useReveal();
+  const isMobile = useNarrow(768);
+  return (
+    <section ref={ref} style={{ maxWidth: 1120, margin: '0 auto', padding: '48px 24px 100px' }}>
+      <SectionHeading tag="Sound familiar?" title="Spreadsheets, WhatsApp, and guesswork." sub="Most coworking spaces under 50 desks run on a mix of tools that weren't built for this. It works — until it doesn't." />
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 32,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(32px)',
+        transition: 'all 0.7s cubic-bezier(.22,1,.36,1)',
+      }}>
+        {painSolutions.map((ps) => {
+          const Icon = ps.icon;
+          return (
+            <div key={ps.pain} style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: 0,
+              borderRadius: 12,
+              overflow: 'hidden',
+              border: `1px solid ${T.border}`,
+            }}>
+              <div style={{
+                background: T.bgCard,
+                padding: isMobile ? 24 : 32,
+                borderBottom: isMobile ? `1px solid ${T.border}` : 'none',
+                borderRight: isMobile ? 'none' : `1px solid ${T.border}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: T.orangeFaint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={16} color={T.orange} />
+                  </div>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: T.orange, margin: 0, fontFamily: '"SF Mono", "Fira Code", monospace' }}>{ps.pain}</h3>
+                </div>
+                <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 }}>{ps.painDesc}</p>
+              </div>
+              <div style={{
+                background: T.bg,
+                padding: isMobile ? 24 : 32,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: T.greenFaint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Check size={16} color={T.green} />
+                  </div>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: T.green, margin: 0, fontFamily: '"SF Mono", "Fira Code", monospace' }}>{ps.solution}</h3>
+                </div>
+                <p style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 }}>{ps.solutionDesc}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ─── metrics strip ─── */
+
+const metrics = [
+  { value: '< 2 min', label: 'to set up your first room' },
+  { value: '5–50 desks', label: 'sweet spot' },
+  { value: '15+', label: 'spaces onboarded' },
+  { value: '$18/mo', label: 'after free trial' },
+];
+
+function MetricsStrip() {
+  const { ref, visible } = useReveal();
+  return (
+    <section ref={ref} style={{
+      borderTop: `1px solid ${T.border}`,
+      borderBottom: `1px solid ${T.border}`,
+      padding: '48px 0',
+      background: T.bgCard,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(16px)',
+      transition: 'all 0.7s cubic-bezier(.22,1,.36,1)',
+    }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 2 }}>Built for coworking operators</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 32, textAlign: 'center' }}>
+          {metrics.map((m) => (
+            <div key={m.label}>
+              <div style={{ fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 28, fontWeight: 700, color: T.green }}>{m.value}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 12, color: T.textMuted, marginTop: 4 }}>{m.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── roadmap section ─── */
+
+const phaseStyles: Record<string, { borderColor: string; badgeBg: string; badgeColor: string }> = {
+  LIVE: { borderColor: T.green, badgeBg: T.green, badgeColor: T.bg },
+  'COMING SOON': { borderColor: T.green, badgeBg: 'transparent', badgeColor: T.green },
+  'ON THE HORIZON': { borderColor: T.borderBright, badgeBg: 'transparent', badgeColor: T.textMuted },
+};
+
+function RoadmapSection() {
+  const { ref, visible } = useReveal();
+  const isMobile = useNarrow(768);
+  return (
+    <section ref={ref} style={{ maxWidth: 1120, margin: '0 auto', padding: '100px 24px' }}>
+      <SectionHeading tag="Roadmap" title="Shipping fast. Every week." />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+        gap: 20,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(32px)',
+        transition: 'all 0.7s cubic-bezier(.22,1,.36,1)',
+      }}>
+        {roadmap.map((r) => {
+          const s = phaseStyles[r.phase];
+          return (
+            <div key={r.phase} style={{
+              background: T.bgCard,
+              border: `1px solid ${s.borderColor}33`,
+              borderRadius: 12,
+              padding: 28,
+            }}>
+              <span style={{
+                display: 'inline-block',
+                fontFamily: '"SF Mono", "Fira Code", monospace',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 2,
+                padding: '4px 12px',
+                borderRadius: 4,
+                border: `1px solid ${s.borderColor}`,
+                background: s.badgeBg,
+                color: s.badgeColor,
+                marginBottom: 20,
+              }}>
+                {r.phase}
+              </span>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                {r.items.map((item) => (
+                  <li key={item} style={{
+                    fontSize: 14,
+                    color: T.textSecondary,
+                    lineHeight: 1.6,
+                    padding: '6px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
+                    <Check size={14} color={r.phase === 'LIVE' ? T.green : T.textMuted} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

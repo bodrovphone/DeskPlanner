@@ -342,6 +342,10 @@ export function useBookingActions(
       dateRange.map(date => dataStore.deleteBooking(deskId, date))
     );
 
+    if (booking.isFlex && booking.clientId && dataStore.restoreFlexDays) {
+      await dataStore.restoreFlexDays(booking.clientId, dateRange.length);
+    }
+
     invalidateBookingQueries(queryClient);
 
     toast({

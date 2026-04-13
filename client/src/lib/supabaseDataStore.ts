@@ -1090,6 +1090,21 @@ export class SupabaseDataStore implements IDataStore {
     return refreshed;
   }
 
+  async restoreFlexDays(clientId: string, days: number): Promise<Client> {
+    const numericId = parseInt(clientId, 10);
+
+    const { error } = await this.client.rpc('decrement_flex_used_days', {
+      p_client_id: numericId,
+      p_days: days,
+    });
+
+    if (error) throw error;
+
+    const refreshed = await this.getClientById(clientId);
+    if (!refreshed) throw new Error('Client not found after restore');
+    return refreshed;
+  }
+
   private mapClientFromDatabase(row: any): Client {
     return {
       id: String(row.id),
