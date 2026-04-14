@@ -1,0 +1,360 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MarketingNav from '../../components/MarketingNav.astro';
+import MarketingFooter from '../../components/MarketingFooter.astro';
+import { competitors } from '../../data/competitors.ts';
+import '../../styles/marketing.css';
+---
+
+<BaseLayout
+  title="Coworking Software Comparison — OhMyDesk vs Cobot, OfficeRnD, Nexudus, Spacebring, Archie"
+  description="Honest side-by-side comparisons of OhMyDesk vs the major coworking software tools. Real pricing, real feature differences, no inflated claims."
+  canonical="https://ohmydesk.app/compare/"
+>
+  <main>
+    <MarketingNav />
+
+    <section class="hero">
+      <span class="eyebrow">Compare</span>
+      <h1>OhMyDesk vs<br/><span class="accent">every alternative.</span></h1>
+      <p class="lede">
+        Every tool in this list was built for big operators, enterprise clients,
+        or multi-location chains. OhMyDesk was built for independent spaces
+        running 5-50 desks. Same core features, 3-10x lower price.
+      </p>
+    </section>
+
+    <section class="positioning">
+      <div class="positioning-grid">
+        <div>
+          <h2 class="positioning-title">Flat price</h2>
+          <p>$18/mo regardless of member count. Competitors start at $150-187/mo and climb from there.</p>
+        </div>
+        <div>
+          <h2 class="positioning-title">Self-serve</h2>
+          <p>Sign up and start booking today. No demo, no onboarding call, no annual contract.</p>
+        </div>
+        <div>
+          <h2 class="positioning-title">Built by an operator</h2>
+          <p>Alex built OhMyDesk while running Codeburg, an 8-desk space in Burgas. It's not a pivot from another product.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick pricing comparison across all competitors -->
+    <section class="quick-table-section">
+      <h2>Quick pricing comparison</h2>
+      <p class="quick-sub">Entry-level price and free trial across every tool we compare. See each page for full details.</p>
+      <div class="quick-table-wrap">
+        <table class="quick-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Entry price</th>
+              <th>Free trial</th>
+              <th>Pricing model</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ours-row">
+              <td><strong>OhMyDesk</strong></td>
+              <td>$18/mo</td>
+              <td>3 months, no card</td>
+              <td>Flat fee</td>
+            </tr>
+            <tr>
+              <td>Cobot</td>
+              <td>€54/mo (10 members)</td>
+              <td>30 days</td>
+              <td>Per paying member + processing fees</td>
+            </tr>
+            <tr>
+              <td>Nexudus</td>
+              <td>$150/mo</td>
+              <td>None public</td>
+              <td>Per active user</td>
+            </tr>
+            <tr>
+              <td>OfficeRnD</td>
+              <td>~$149+/mo (est.)</td>
+              <td>3 months (switchers only)</td>
+              <td>Demo required</td>
+            </tr>
+            <tr>
+              <td>Spacebring</td>
+              <td>$187/mo</td>
+              <td>7 days</td>
+              <td>Per user + 6-month minimum</td>
+            </tr>
+            <tr>
+              <td>Archie</td>
+              <td>$165/mo</td>
+              <td>14 days (after demo)</td>
+              <td>Per active member</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="quick-note">Verified April 14, 2026 from public pricing pages. See each comparison page for full details, add-on costs, and honest feature gaps.</p>
+    </section>
+
+    <section class="comparisons">
+      <h2>Comparisons</h2>
+      <div class="cmp-grid">
+        {competitors.map((c) => (
+          <a href={`/compare/${c.slug}/`} class="cmp-card">
+            <span class="cmp-eyebrow">OhMyDesk vs</span>
+            <h3>{c.name}</h3>
+            <p class="cmp-line">{c.tagline}</p>
+            <p class="cmp-weakness">{c.theirWeakness}</p>
+            <span class="learn-more">See full comparison →</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <h2>Try every feature free for 3 months.</h2>
+      <p>No credit card. No contract. Under 2 minutes to set up.</p>
+      <a href="/signup/" class="cta-btn">Start Free Trial</a>
+    </section>
+
+    <MarketingFooter />
+  </main>
+</BaseLayout>
+
+<style is:global>
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 96px 0 48px;
+    text-align: center;
+  }
+  .hero .eyebrow {
+    display: inline-block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    padding: 4px 14px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 60px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0 0 24px;
+    letter-spacing: -1px;
+  }
+  .hero h1 .accent { color: var(--green); }
+  .hero .lede {
+    max-width: 620px;
+    margin: 0 auto;
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Positioning row */
+  .positioning {
+    padding: 48px 0 64px;
+  }
+  .positioning-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 720px) {
+    .positioning-grid { grid-template-columns: 1fr; }
+  }
+  .positioning-grid > div {
+    padding: 24px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .positioning-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--green);
+    margin: 0 0 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: -0.2px;
+  }
+  .positioning-grid p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* Quick comparison table */
+  .quick-table-section {
+    padding: 32px 0 64px;
+  }
+  .quick-table-section h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.3px;
+  }
+  .quick-sub {
+    margin: 0 0 24px;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .quick-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+  .quick-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+    font-size: 15px;
+  }
+  .quick-table th,
+  .quick-table td {
+    padding: 14px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .quick-table thead th {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .quick-table tbody tr:last-child td { border-bottom: none; }
+  .quick-table tbody tr.ours-row td {
+    background: rgba(52, 211, 153, 0.06);
+    color: var(--green);
+    font-weight: 600;
+  }
+  .quick-table tbody tr.ours-row td strong {
+    color: var(--green);
+  }
+  .quick-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 12px 0 0;
+  }
+
+  /* Comparisons grid */
+  .comparisons {
+    border-top: 1px solid var(--border);
+    padding-top: 64px;
+    margin-bottom: 72px;
+  }
+  .comparisons h2 {
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 700;
+    margin: 0 0 32px;
+    letter-spacing: -0.3px;
+  }
+  .cmp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .cmp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 28px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .cmp-card:hover {
+    border-color: rgba(52, 211, 153, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(52, 211, 153, 0.1);
+    transform: translateY(-2px);
+  }
+  .cmp-eyebrow {
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--green);
+  }
+  .cmp-card h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+  .cmp-line {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin: 4px 0 0;
+  }
+  .cmp-weakness {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;
+  }
+  .learn-more {
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  /* CTA */
+  .cta-section {
+    text-align: center;
+    padding: 72px 0 80px;
+    border-top: 1px solid var(--border);
+  }
+  .cta-section h2 {
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 700;
+    margin: 0 0 12px;
+    letter-spacing: -0.5px;
+  }
+  .cta-section p {
+    color: var(--text-secondary);
+    font-size: 17px;
+    margin: 0 0 32px;
+  }
+  .cta-btn {
+    display: inline-block;
+    padding: 16px 36px;
+    background: var(--green);
+    color: var(--bg);
+    border-radius: 10px;
+    font-family: 'SF Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cta-btn:hover {
+    background: var(--green-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--green-glow);
+  }
+</style>

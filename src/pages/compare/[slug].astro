@@ -1,0 +1,524 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MarketingNav from '../../components/MarketingNav.astro';
+import MarketingFooter from '../../components/MarketingFooter.astro';
+import { competitors, getOtherCompetitors, type FeatureCell } from '../../data/competitors.ts';
+import '../../styles/marketing.css';
+
+export function getStaticPaths() {
+  return competitors.map((c) => ({ params: { slug: c.slug }, props: { competitor: c } }));
+}
+
+const { competitor } = Astro.props;
+const {
+  slug,
+  name,
+  tagline,
+  theirPricingSummary,
+  theirWeakness,
+  idealSwitcher,
+  pricingRows,
+  featureRows,
+  honestGaps,
+  pricingSource,
+  metaTitle,
+  metaDescription,
+} = competitor;
+const others = getOtherCompetitors(slug);
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Compare', item: 'https://ohmydesk.app/compare/' },
+    { '@type': 'ListItem', position: 2, name, item: `https://ohmydesk.app/compare/${slug}/` },
+  ],
+};
+
+function isBool(v: FeatureCell): v is boolean {
+  return typeof v === 'boolean';
+}
+---
+
+<BaseLayout
+  title={metaTitle}
+  description={metaDescription}
+  canonical={`https://ohmydesk.app/compare/${slug}/`}
+  defaultStructuredData={false}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
+  <main>
+    <MarketingNav />
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/compare/">Compare</a>
+      <span aria-hidden="true">›</span>
+      <span>{name}</span>
+    </nav>
+
+    <section class="hero">
+      <span class="eyebrow-chip">Compare</span>
+      <h1>OhMyDesk vs <span class="accent">{name}</span></h1>
+      <p class="tagline">{tagline}</p>
+      <p class="their-pricing"><strong>{name} pricing today:</strong> {theirPricingSummary}</p>
+    </section>
+
+    <!-- Pricing comparison -->
+    <section class="cmp-section">
+      <h2>Pricing, side by side</h2>
+      <div class="table-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{name}</th>
+              <th class="ours-col">OhMyDesk</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pricingRows.map((row) => (
+              <tr>
+                <td class="row-label">{row.label}</td>
+                <td>{row.theirs}</td>
+                <td class="ours-col">{row.ours}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="weakness">{theirWeakness}</p>
+    </section>
+
+    <!-- Feature comparison -->
+    <section class="cmp-section">
+      <h2>Feature-by-feature</h2>
+      <div class="table-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{name}</th>
+              <th class="ours-col">OhMyDesk</th>
+            </tr>
+          </thead>
+          <tbody>
+            {featureRows.map((row) => (
+              <tr>
+                <td class="row-label">{row.feature}</td>
+                <td>
+                  {isBool(row.theirs)
+                    ? row.theirs
+                      ? <span class="icon-yes" aria-label="Yes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.5 3.5L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      : <span class="icon-no" aria-label="No"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                    : <span class="cell-text">{row.theirs}</span>}
+                </td>
+                <td class="ours-col">
+                  {isBool(row.ours)
+                    ? row.ours
+                      ? <span class="icon-yes" aria-label="Yes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.5 3.5L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      : <span class="icon-no" aria-label="No"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                    : <span class="cell-text">{row.ours}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Who should switch -->
+    <section class="switcher">
+      <h2>Who should switch</h2>
+      <p class="switcher-body">{idealSwitcher}</p>
+    </section>
+
+    <!-- Honest gaps — transparency block -->
+    <section class="honest-gaps">
+      <h2>What OhMyDesk doesn't have (yet)</h2>
+      <p class="honest-intro">We won't pretend to match feature-for-feature. Here's where {name} is genuinely stronger:</p>
+      <ul>
+        {honestGaps.map((gap) => <li>{gap}</li>)}
+      </ul>
+      <p class="honest-note">Most of these are on our roadmap. We ship weekly — <a href="/">see what's next</a>.</p>
+    </section>
+
+    <!-- Honest disclosure -->
+    <p class="disclosure">
+      Source: {pricingSource}. If anything is out of date or unfair, email
+      <a href="mailto:hello@ohmydesk.app">hello@ohmydesk.app</a> and we'll fix it.
+    </p>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2>Try OhMyDesk free for 3 months.</h2>
+      <p>No credit card. No contract. Set up in under two minutes.</p>
+      <a href="/signup/" class="cta-btn">Start Free Trial</a>
+    </section>
+
+    <!-- Related competitors -->
+    {others.length > 0 && (
+      <section class="related">
+        <h2>Compare to other tools</h2>
+        <div class="related-grid">
+          {others.map((c) => (
+            <a href={`/compare/${c.slug}/`} class="related-card">
+              <span class="related-eyebrow">vs {c.name}</span>
+              <h3>{c.tagline}</h3>
+              <span class="learn-more">See comparison →</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <MarketingFooter />
+  </main>
+</BaseLayout>
+
+<style is:global>
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 32px 0 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .breadcrumb a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .breadcrumb a:hover { color: var(--green); }
+
+  /* Hero */
+  .hero {
+    padding: 40px 0 48px;
+    max-width: 820px;
+  }
+  .eyebrow-chip {
+    display: inline-block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    padding: 4px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0 0 20px;
+    letter-spacing: -0.75px;
+  }
+  .hero h1 .accent { color: var(--green); }
+  .hero .tagline {
+    font-size: 19px;
+    color: var(--text-primary);
+    line-height: 1.55;
+    margin: 0 0 16px;
+  }
+  .hero .their-pricing {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .hero .their-pricing strong { color: var(--text-primary); }
+
+  /* Comparison sections */
+  .cmp-section {
+    margin-bottom: 64px;
+  }
+  .cmp-section h2 {
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    margin: 0 0 24px;
+    letter-spacing: -0.3px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 560px;
+    font-size: 15px;
+  }
+  .cmp-table th,
+  .cmp-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmp-table thead th {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding-top: 18px;
+    padding-bottom: 14px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .cmp-table tbody tr:last-child td { border-bottom: none; }
+  .cmp-table .row-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    width: 36%;
+  }
+  .cmp-table .ours-col {
+    color: var(--green);
+    background: rgba(52, 211, 153, 0.05);
+    font-weight: 600;
+  }
+  .cmp-table thead .ours-col {
+    color: var(--green);
+  }
+  .cell-text {
+    color: inherit;
+  }
+  .icon-yes,
+  .icon-no {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .icon-yes {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--green);
+  }
+  .icon-no {
+    background: rgba(249, 112, 102, 0.12);
+    color: var(--strike);
+  }
+  .icon-yes svg,
+  .icon-no svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .weakness {
+    margin: 20px 0 0;
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding: 14px 18px;
+    background: rgba(249, 112, 102, 0.06);
+    border-left: 3px solid var(--strike);
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* Switcher block */
+  .switcher {
+    margin-bottom: 48px;
+    padding: 28px 32px;
+    background: rgba(52, 211, 153, 0.06);
+    border-left: 3px solid var(--green);
+    border-radius: 0 10px 10px 0;
+  }
+  .switcher h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    color: var(--green);
+    letter-spacing: -0.2px;
+  }
+  .switcher-body {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-primary);
+    line-height: 1.65;
+  }
+
+  /* Honest gaps — transparency block */
+  .honest-gaps {
+    margin: 0 0 48px;
+    padding: 28px 32px;
+    background: rgba(249, 112, 102, 0.04);
+    border-left: 3px solid var(--strike);
+    border-radius: 0 10px 10px 0;
+  }
+  .honest-gaps h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--strike);
+    letter-spacing: -0.2px;
+  }
+  .honest-intro {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+  .honest-gaps ul {
+    margin: 0 0 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .honest-gaps li {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-left: 20px;
+    position: relative;
+  }
+  .honest-gaps li::before {
+    content: '·';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    color: var(--strike);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .honest-note {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+  .honest-note a {
+    color: var(--green);
+  }
+  .honest-note a:hover { text-decoration: underline; }
+
+  /* Disclosure */
+  .disclosure {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0 0 64px;
+    text-align: center;
+  }
+  .disclosure a {
+    color: var(--green);
+  }
+  .disclosure a:hover { text-decoration: underline; }
+
+  /* CTA */
+  .cta-section {
+    text-align: center;
+    padding: 64px 0 72px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 64px;
+  }
+  .cta-section h2 {
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 700;
+    margin: 0 0 12px;
+    letter-spacing: -0.5px;
+  }
+  .cta-section p {
+    color: var(--text-secondary);
+    font-size: 17px;
+    margin: 0 0 32px;
+  }
+  .cta-btn {
+    display: inline-block;
+    padding: 16px 36px;
+    background: var(--green);
+    color: var(--bg);
+    border-radius: 10px;
+    font-family: 'SF Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cta-btn:hover {
+    background: var(--green-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--green-glow);
+  }
+
+  /* Related */
+  .related {
+    margin-bottom: 72px;
+  }
+  .related h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 700;
+    margin: 0 0 28px;
+    letter-spacing: -0.3px;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .related-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .related-card:hover {
+    border-color: rgba(52, 211, 153, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(52, 211, 153, 0.1);
+  }
+  .related-eyebrow {
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--green);
+  }
+  .related-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .learn-more {
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 640px) {
+    .cmp-table th,
+    .cmp-table td {
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .switcher { padding: 22px 20px; }
+    .honest-gaps { padding: 22px 20px; }
+  }
+</style>

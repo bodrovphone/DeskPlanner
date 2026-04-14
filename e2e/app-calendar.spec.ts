@@ -11,7 +11,7 @@ import { test, expect } from './fixtures';
  * Test org: e2e-testspace (2 rooms × 4 desks, pre-seeded bookings)
  */
 
-const CALENDAR_URL = '/e2e-testspace/calendar';
+const CALENDAR_URL = '/e2e-testspace/calendar/';
 
 /**
  * Switch to week view before clicking cells.

@@ -200,8 +200,8 @@ const roadmap = [
 // from two separate codebases (React landing + Astro pricing page) but should
 // always show the same numbers and copy.
 const pricingTiers = [
-  { name: 'Free Trial', price: '0', period: '/mo', desc: '3 months free, no card required. Every feature unlocked.', features: ['Every feature unlocked', 'Unlimited rooms & desks', 'Members & flex plans', 'Revenue & expenses', 'Public booking + Stripe payments', '3 months, no card'], cta: 'Start Free Trial', href: '/signup', highlighted: false, disabled: false },
-  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Single space. Lock this rate during trial.', features: ['Everything in Free Trial', 'Ongoing subscription', 'Priority support', 'Custom branding', 'Early-bird price locked'], cta: 'Start Trial', href: '/signup', highlighted: true, disabled: false },
+  { name: 'Free Trial', price: '0', period: '/mo', desc: '3 months free, no card required. Every feature unlocked.', features: ['Every feature unlocked', 'Unlimited rooms & desks', 'Members & flex plans', 'Revenue & expenses', 'Public booking + Stripe payments', '3 months, no card'], cta: 'Start Free Trial', href: '/signup/', highlighted: false, disabled: false },
+  { name: 'Pro', price: '18', originalPrice: '29', period: '/mo', desc: 'Single space. Lock this rate during trial.', features: ['Everything in Free Trial', 'Ongoing subscription', 'Priority support', 'Custom branding', 'Early-bird price locked'], cta: 'Start Trial', href: '/signup/', highlighted: true, disabled: false },
   { name: 'Multi-Location', price: '50', period: '/mo', desc: 'For brands with multiple spaces.', features: ['Everything in Pro', 'Unlimited locations', 'Shared member directory', 'Cross-location bookings', 'Unified billing'], cta: 'Contact Us', href: 'mailto:hello@ohmydesk.app', highlighted: false, disabled: false, external: true },
 ];
 
@@ -624,8 +624,8 @@ export default function LandingPage() {
               {[
                 { label: 'Product', href: '#product' },
                 { label: 'Demo', href: '#demo' },
-                { label: 'Features', href: '/features' },
-                { label: 'Pricing', href: '/pricing' },
+                { label: 'Features', href: '/features/' },
+                { label: 'Pricing', href: '/pricing/' },
               ].map(link => (
                 <a
                   key={link.href}
@@ -675,7 +675,7 @@ export default function LandingPage() {
               </button>
             ) : (
               <>
-                <a href="/login" style={{ textDecoration: 'none' }}>
+                <a href="/login/" style={{ textDecoration: 'none' }}>
                   <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
                     {...touchHoverProps(
                       e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
@@ -684,7 +684,7 @@ export default function LandingPage() {
                     onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
                   >Log In</button>
                 </a>
-                <a href="/signup" style={{ textDecoration: 'none' }}>
+                <a href="/signup/" style={{ textDecoration: 'none' }}>
                   <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
                     {...touchHoverProps(
                       e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
@@ -713,8 +713,8 @@ export default function LandingPage() {
             {[
               { label: 'Product', href: '#product' },
               { label: 'Demo', href: '#demo' },
-              { label: 'Features', href: '/features' },
-              { label: 'Pricing', href: '/pricing' },
+              { label: 'Features', href: '/features/' },
+              { label: 'Pricing', href: '/pricing/' },
             ].map(link => (
               <a
                 key={link.href}
@@ -759,12 +759,12 @@ export default function LandingPage() {
               Contact
             </button>
             <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 8, paddingTop: 12, display: 'flex', gap: 12 }}>
-              <a href="/login" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
+              <a href="/login/" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
                 <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease' }}
                   onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
                 >Log In</button>
               </a>
-              <a href="/signup" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
+              <a href="/signup/" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
                 <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
                   onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
                 >Sign Up Free</button>
@@ -836,7 +836,7 @@ export default function LandingPage() {
             justifyContent: 'center',
             marginTop: 40,
           }}>
-            <a href="/signup" style={{ textDecoration: 'none' }}>
+            <a href="/signup/" style={{ textDecoration: 'none' }}>
               <button style={{
                 fontFamily: '"SF Mono", "Fira Code", monospace',
                 fontSize: 14,
@@ -1104,7 +1104,7 @@ export default function LandingPage() {
         </div>
         <div style={{ textAlign: 'center', marginTop: 40 }}>
           <a
-            href="/pricing"
+            href="/pricing/"
             style={{
               fontFamily: '"SF Mono", "Fira Code", monospace',
               fontSize: 13,
@@ -1201,7 +1201,7 @@ export default function LandingPage() {
               <Linkedin size={18} />
             </a>
             <a
-              href="/podcast"
+              href="/podcast/"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1840,7 +1840,7 @@ function CtaSection() {
       <p style={{ fontSize: 17, color: T.textSecondary, lineHeight: 1.6, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
         Join coworking spaces across Eastern Europe already running on OhMyDesk. Free for 3 months, no credit card.
       </p>
-      <a href="/signup" style={{ textDecoration: 'none' }}>
+      <a href="/signup/" style={{ textDecoration: 'none' }}>
         <button style={{
           fontFamily: '"SF Mono", "Fira Code", monospace',
           fontSize: 15,

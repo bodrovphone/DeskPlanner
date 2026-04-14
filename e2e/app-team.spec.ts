@@ -26,7 +26,7 @@ import { test, expect } from './fixtures';
  *   - See e2e-test-plan.md §Team Management for the full owner + manager plan.
  */
 
-const TEAM_URL = '/e2e-testspace/team';
+const TEAM_URL = '/e2e-testspace/team/';
 
 // Dedicated manager email for the invite + remove cycle.
 // Using a fixed address so we can find and clean up the member reliably.
@@ -197,24 +197,24 @@ test.describe('Team — manager perspective (skipped)', () => {
 
   test('manager: Revenue link is hidden in sidebar', async ({ page }) => {
     // Log in as manager, navigate to calendar, assert "Revenue" not in sidebar
-    await page.goto('/e2e-testspace/calendar');
+    await page.goto('/e2e-testspace/calendar/');
     await expect(page.getByRole('link', { name: 'Revenue' })).not.toBeVisible();
   });
 
   test('manager: Team card is hidden on settings/team page', async ({ page }) => {
-    await page.goto('/e2e-testspace/team');
+    await page.goto('/e2e-testspace/team/');
     // Non-owners see null (SettingsTeamPage returns null when role !== 'owner')
     await expect(page.getByText('Invite managers to help run your space')).not.toBeVisible();
   });
 
   test('manager: can view calendar and open booking dialog', async ({ page }) => {
-    await page.goto('/e2e-testspace/calendar');
+    await page.goto('/e2e-testspace/calendar/');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('heading', { name: 'Calendar' })).toBeVisible();
   });
 
   test('manager: Members page is accessible', async ({ page }) => {
-    await page.goto('/e2e-testspace/members');
+    await page.goto('/e2e-testspace/members/');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible();
   });

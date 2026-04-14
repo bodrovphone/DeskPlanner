@@ -78,6 +78,22 @@ npm run lint
 
 Deployment is automatic — Cloudflare Pages auto-builds and deploys on every push to `main` via the GitHub integration.
 
+## Routing — trailing slash required
+
+`astro.config.mjs` sets `trailingSlash: 'always'`. **Every internal href in this project must end with `/`** or the page 404s (Astro responds: "Your site is configured with trailingSlash set to always. Do you want to go to /features/ instead?").
+
+- Static hrefs: `href="/features/"`, `href="/pricing/"`, `href="/signup/"`, `href="/login/"`, `href="/podcast/"`, `href="/compare/"`
+- Dynamic hrefs: `href={`/features/${slug}/`}`, `href={`/compare/${slug}/`}`
+- **Also applies to React Router**: `<Link to="/login/">`, `<Navigate to="/login/" />`, `navigate('/login/')`. Client-side navigation works without a slash, but refreshing the URL hits Astro's catchall and 404s.
+- **The landing page has 3 link arrays to check** in `client/src/pages/landing.tsx`: desktop sticky nav, mobile drawer menu, and `pricingTiers` (the CTA `href` field). Grepping only `src/` misses all three.
+- SPA-backed routes (`/signup/`, `/login/`) pass through `src/pages/[...slug].astro`; they still need the trailing slash for refresh-safety.
+- Sitemap `<loc>` entries in `public/sitemap.xml` must also end with `/`.
+- When computing active nav state by comparing current path to href, normalize (strip trailing slash from the href) before comparing. See `src/components/MarketingNav.astro`'s `isCurrent` for the pattern.
+
+Grep pattern for regressions:
+- `href="/(features|pricing|compare|login|signup|podcast)"` — double-quoted hrefs
+- `'/(features|pricing|compare|login|signup|podcast)'` — single-quoted (data arrays, `navigate()`, `<Link to=>`)
+
 ## Architecture & Key Design Patterns
 
 ### Tech Stack

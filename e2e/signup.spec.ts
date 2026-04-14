@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Sign Up suite — /signup page validation, navigation, and account creation.
+ * Sign Up suite — /signup/ page validation, navigation, and account creation.
  *
  * The final test creates a fresh timestamped account and saves the Supabase
  * auth state to e2e/.auth/signup.json for the `onboarding` project to consume.
@@ -24,7 +24,7 @@ test.describe('Sign Up', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('page loads with all form fields and submit button', async ({ page }) => {
-    await page.goto('/signup');
+    await page.goto('/signup/');
 
     await expect(page.getByText('Create an account')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByLabel('Full Name')).toBeVisible();
@@ -34,13 +34,13 @@ test.describe('Sign Up', () => {
   });
 
   test('submit button is disabled when fields are empty', async ({ page }) => {
-    await page.goto('/signup');
+    await page.goto('/signup/');
 
     await expect(page.getByRole('button', { name: 'Sign Up' })).toBeDisabled();
   });
 
   test('shows error when password is shorter than 6 characters', async ({ page }) => {
-    await page.goto('/signup');
+    await page.goto('/signup/');
 
     await page.getByLabel('Full Name').fill('Test User');
     await page.getByLabel('Email').fill('test@example.com');
@@ -56,12 +56,12 @@ test.describe('Sign Up', () => {
     });
   });
 
-  test('sign in link points to /login', async ({ page }) => {
-    await page.goto('/signup');
+  test('sign in link points to /login/', async ({ page }) => {
+    await page.goto('/signup/');
 
     const link = page.getByRole('link', { name: 'Sign in' });
     await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute('href', '/login');
+    await expect(link).toHaveAttribute('href', '/login/');
   });
 
   test('successful signup redirects to /onboarding and saves auth state', async ({ page }) => {
@@ -74,7 +74,7 @@ test.describe('Sign Up', () => {
     const timestamp = Date.now();
     const email = `bodrovphone+e2e+${timestamp}@gmail.com`;
 
-    await page.goto('/signup');
+    await page.goto('/signup/');
     await page.getByLabel('Full Name').fill('E2E Test User');
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);

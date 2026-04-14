@@ -27,8 +27,8 @@ import { test, expect } from './fixtures';
 const FLEX_MEMBER_ID = '99901';
 const EXHAUSTED_MEMBER_ID = '99902';
 const ORG_SLUG = 'e2e-testspace';
-const MEMBER_URL = `/book/${FLEX_MEMBER_ID}/${ORG_SLUG}`;
-const EXHAUSTED_URL = `/book/${EXHAUSTED_MEMBER_ID}/${ORG_SLUG}`;
+const MEMBER_URL = `/book/${FLEX_MEMBER_ID}/${ORG_SLUG}/`;
+const EXHAUSTED_URL = `/book/${EXHAUSTED_MEMBER_ID}/${ORG_SLUG}/`;
 
 /**
  * Select an available date by clicking Today or Tomorrow.
@@ -64,7 +64,7 @@ async function selectAvailableDate(page: Page): Promise<boolean> {
 
 test.describe('Member Booking — not found', () => {
   test('non-existent memberId shows "Not found" page', async ({ page }) => {
-    await page.goto(`/book/00000/${ORG_SLUG}`);
+    await page.goto(`/book/00000/${ORG_SLUG}/`);
     await expect(page.getByText('Not found')).toBeVisible({ timeout: 10_000 });
     await expect(
       page.getByText('This booking link is invalid or has expired.'),

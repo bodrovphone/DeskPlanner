@@ -146,7 +146,7 @@ export default function SignupPage() {
 
           <div className="mt-4 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            <Link to="/login/" className="text-blue-600 hover:underline font-medium">
               Sign in
             </Link>
           </div>

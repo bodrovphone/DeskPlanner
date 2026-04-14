@@ -10,7 +10,7 @@ import { test, expect } from './fixtures';
  *   - Some assignments expiring within 10 days
  */
 
-const INSIGHTS_URL = '/e2e-testspace/insights';
+const INSIGHTS_URL = '/e2e-testspace/insights/';
 
 test.describe('Insights — page load', () => {
   test('page loads with heading and stats cards', async ({ page }) => {

@@ -20,10 +20,10 @@ import { test, expect } from './fixtures';
  */
 
 // Settings was split into separate sub-routes
-const SETTINGS_ORG_URL = '/e2e-testspace/organization';
-const SETTINGS_ROOMS_URL = '/e2e-testspace/rooms';
-const SETTINGS_NOTIFICATIONS_URL = '/e2e-testspace/notifications';
-const SETTINGS_INTEGRATIONS_URL = '/e2e-testspace/integrations';
+const SETTINGS_ORG_URL = '/e2e-testspace/organization/';
+const SETTINGS_ROOMS_URL = '/e2e-testspace/rooms/';
+const SETTINGS_NOTIFICATIONS_URL = '/e2e-testspace/notifications/';
+const SETTINGS_INTEGRATIONS_URL = '/e2e-testspace/integrations/';
 
 test.describe('Settings — page load', { tag: ['@smoke'] }, () => {
   test('all settings sub-pages load without errors', async ({ page }) => {

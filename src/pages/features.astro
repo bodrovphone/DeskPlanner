@@ -86,7 +86,7 @@ import { features } from '../data/features.ts';
                 ))}
               </div>
             )}
-            <a href={`/features/${f.slug}`} class="feature-deeplink">
+            <a href={`/features/${f.slug}/`} class="feature-deeplink">
               Learn more about {f.eyebrow.toLowerCase()} →
             </a>
             {i < features.length - 1 && <hr/>}
@@ -99,7 +99,7 @@ import { features } from '../data/features.ts';
     <section class="final-cta">
       <h2>Try every feature free for 3 months.</h2>
       <p>No credit card. Set up your space in under two minutes.</p>
-      <a href="/signup" class="cta--big">Start Free Trial</a>
+      <a href="/signup/" class="cta--big">Start Free Trial</a>
     </section>
 
     <MarketingFooter />

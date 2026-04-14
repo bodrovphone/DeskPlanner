@@ -10,7 +10,7 @@ import { test, expect } from './fixtures';
  *   - Uses Date.now() in names to avoid collisions across retries.
  */
 
-const WAITING_LIST_URL = '/e2e-testspace/waiting-list';
+const WAITING_LIST_URL = '/e2e-testspace/waiting-list/';
 
 test.describe('Waiting List — page load', () => {
   test('page loads with heading and add button', async ({ page }) => {

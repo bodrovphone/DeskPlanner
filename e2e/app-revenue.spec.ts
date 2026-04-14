@@ -16,8 +16,8 @@ import { test, expect } from './fixtures';
  *   - Expense modal is a dialog with heading "Add Expense"
  */
 
-const REVENUE_URL = '/e2e-testspace/revenue';
-const EXPENSES_URL = '/e2e-testspace/expenses';
+const REVENUE_URL = '/e2e-testspace/revenue/';
+const EXPENSES_URL = '/e2e-testspace/expenses/';
 
 test.describe('Revenue — page load', () => {
   test('dashboard loads with heading and stats cards', async ({ page }) => {

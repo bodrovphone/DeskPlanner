@@ -23,8 +23,8 @@ import { test, expect } from './fixtures';
  * to avoid polluting state for other tests within the same suite run.
  */
 
-const MEMBERS_URL = '/e2e-testspace/members';
-const CALENDAR_URL = '/e2e-testspace/calendar';
+const MEMBERS_URL = '/e2e-testspace/members/';
+const CALENDAR_URL = '/e2e-testspace/calendar/';
 
 /**
  * Find a table row whose name input contains the given text.

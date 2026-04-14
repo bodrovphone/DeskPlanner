@@ -13,15 +13,16 @@ const year = new Date().getFullYear();
     <div class="footer-links">
       <div>
         <h4>Product</h4>
-        <a href="/features">Features</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/signup">Start Free</a>
-        <a href="/login">Log in</a>
+        <a href="/features/">Features</a>
+        <a href="/pricing/">Pricing</a>
+        <a href="/compare/">Compare</a>
+        <a href="/signup/">Start Free</a>
+        <a href="/login/">Log in</a>
       </div>
       <div>
         <h4>Features</h4>
         {features.map(f => (
-          <a href={`/features/${f.slug}`}>{f.eyebrow}</a>
+          <a href={`/features/${f.slug}/`}>{f.eyebrow}</a>
         ))}
       </div>
       <div>

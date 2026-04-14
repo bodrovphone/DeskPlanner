@@ -36,7 +36,7 @@ setup('authenticate as test user', async ({ page }) => {
 
   // Navigate to login page — wait for the Email field, not just networkidle,
   // so we're sure the React form has rendered (handles CI cold-start delays).
-  await page.goto('/login');
+  await page.goto('/login/');
   await page.getByLabel('Email').waitFor({ state: 'visible', timeout: 60_000 });
 
   // Disable Umami analytics for e2e tests

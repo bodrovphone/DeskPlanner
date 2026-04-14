@@ -28,7 +28,7 @@ const metaTitle = `${title} for Coworking Spaces — OhMyDesk`;
     <MarketingNav />
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/features">Features</a>
+      <a href="/features/">Features</a>
       <span aria-hidden="true">›</span>
       <span>{eyebrow}</span>
     </nav>
@@ -75,7 +75,7 @@ const metaTitle = `${title} for Coworking Spaces — OhMyDesk`;
       <h2>Explore more features</h2>
       <div class="related-grid">
         {related.map(f => (
-          <a href={`/features/${f.slug}`} class="related-card">
+          <a href={`/features/${f.slug}/`} class="related-card">
             <span class="related-eyebrow">{f.eyebrow}</span>
             <h3>{f.title}</h3>
             <p>{f.intro.length > 110 ? f.intro.slice(0, 107) + '…' : f.intro}</p>
@@ -88,7 +88,7 @@ const metaTitle = `${title} for Coworking Spaces — OhMyDesk`;
     <section class="cta-section">
       <h2>Try every feature free for 3 months.</h2>
       <p>No credit card. Set up your space in under two minutes.</p>
-      <a href="/signup" class="cta-btn">Start Free Trial</a>
+      <a href="/signup/" class="cta-btn">Start Free Trial</a>
     </section>
 
     <MarketingFooter />

@@ -6,6 +6,7 @@
 - [Home](https://ohmydesk.app/)
 - [Features](https://ohmydesk.app/features)
 - [Pricing](https://ohmydesk.app/pricing)
+- [Compare](https://ohmydesk.app/compare) — vs Cobot, OfficeRnD, Nexudus, Spacebring, Archie
 
 ## Product
 - **Type**: B2B SaaS, web application

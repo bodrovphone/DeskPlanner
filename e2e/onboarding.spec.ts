@@ -50,7 +50,7 @@ test.describe('Onboarding — Step 0: Space Info', () => {
     if (!process.env.E2E_SIGNUP_PASSWORD) {
       test.skip(true, 'Missing E2E_SIGNUP_PASSWORD — signup suite was not run');
     }
-    await page.goto('/onboarding');
+    await page.goto('/onboarding/');
     await page.waitForLoadState('networkidle');
   });
 
@@ -88,7 +88,7 @@ test.describe('Onboarding — Step 1: Rooms & Desks', () => {
     if (!process.env.E2E_SIGNUP_PASSWORD) {
       test.skip(true, 'Missing E2E_SIGNUP_PASSWORD — signup suite was not run');
     }
-    await page.goto('/onboarding');
+    await page.goto('/onboarding/');
     await page.waitForLoadState('networkidle');
     await fillStep0(page, true);
   });
@@ -124,7 +124,7 @@ test.describe('Onboarding — Step 2: Meeting Rooms', () => {
     if (!process.env.E2E_SIGNUP_PASSWORD) {
       test.skip(true, 'Missing E2E_SIGNUP_PASSWORD — signup suite was not run');
     }
-    await page.goto('/onboarding');
+    await page.goto('/onboarding/');
     await page.waitForLoadState('networkidle');
     await fillStep0(page, true);
     await advanceStep1(page);
@@ -153,7 +153,7 @@ test.describe('Onboarding — Step 3: Currency', () => {
     if (!process.env.E2E_SIGNUP_PASSWORD) {
       test.skip(true, 'Missing E2E_SIGNUP_PASSWORD — signup suite was not run');
     }
-    await page.goto('/onboarding');
+    await page.goto('/onboarding/');
     await page.waitForLoadState('networkidle');
     await fillStep0(page, true);
     await advanceStep1(page);
@@ -182,7 +182,7 @@ test.describe('Onboarding — Full flow', () => {
       test.skip(true, 'Missing E2E_SIGNUP_PASSWORD — signup suite was not run');
     }
 
-    await page.goto('/onboarding');
+    await page.goto('/onboarding/');
     await page.waitForLoadState('networkidle');
 
     // Step 0: fill space name with unique slug

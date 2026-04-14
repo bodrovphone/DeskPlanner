@@ -183,7 +183,7 @@ export default function DashboardLayout() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/login/');
   };
 
   // Mobile: show first MOBILE_MAX items; overflow goes into "More" drawer

@@ -326,7 +326,7 @@ export default function OnboardingPage() {
                   className="w-full"
                   onClick={async () => {
                     await signOut();
-                    navigate('/login');
+                    navigate('/login/');
                   }}
                 >
                   Already have an account? Sign in

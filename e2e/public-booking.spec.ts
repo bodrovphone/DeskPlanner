@@ -23,13 +23,13 @@ import { test, expect } from './fixtures';
  *   - "You're booked!" is an <h1> heading.
  */
 
-const PUBLIC_URL = '/book/e2e-testspace';
+const PUBLIC_URL = '/book/e2e-testspace/';
 
 // ── Not found ─────────────────────────────────────────────────────────────────
 
 test.describe('Public Booking — not found', () => {
   test('non-existent org slug shows "Not available" message', async ({ page }) => {
-    await page.goto('/book/this-org-does-not-exist-e2e');
+    await page.goto('/book/this-org-does-not-exist-e2e/');
     await expect(page.getByText('Not available')).toBeVisible({ timeout: 10_000 });
     await expect(
       page.getByText("This space doesn't have online booking enabled, or doesn't exist."),

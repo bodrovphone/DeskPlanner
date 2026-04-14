@@ -4,12 +4,14 @@
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
 const links = [
-  { href: '/features', label: 'Features' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '/features/', label: 'Features' },
+  { href: '/pricing/', label: 'Pricing' },
+  { href: '/compare/', label: 'Compare' },
 ];
 
 function isCurrent(href: string) {
-  return path === href || path.startsWith(href + '/');
+  const normalized = href.replace(/\/$/, '') || '/';
+  return path === normalized || path.startsWith(normalized + '/');
 }
 ---
 
@@ -24,8 +26,8 @@ function isCurrent(href: string) {
         {link.label}
       </a>
     ))}
-    <a href="/login" class="login">Log in</a>
-    <a href="/signup" class="cta">Start Free</a>
+    <a href="/login/" class="login">Log in</a>
+    <a href="/signup/" class="cta">Start Free</a>
   </div>
 </nav>
 
