@@ -1,52 +1,112 @@
 ---
 // Shared top nav for marketing pages (/, /pricing, /features, etc.)
 // Highlights the current page automatically based on the URL.
+// Renders as a full-width sticky bar; its inner content stays bound to var(--container-max).
+import logo from '../assets/logo-landing.svg';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
 const links = [
+  { href: '/#product', label: 'Product', anchor: true },
+  { href: '/#demo', label: 'Demo', anchor: true },
   { href: '/features/', label: 'Features' },
   { href: '/pricing/', label: 'Pricing' },
   { href: '/compare/', label: 'Compare' },
+  { href: '/#contact', label: 'Contact', anchor: true },
 ];
 
 function isCurrent(href: string) {
+  if (href.includes('#')) return false;
   const normalized = href.replace(/\/$/, '') || '/';
   return path === normalized || path.startsWith(normalized + '/');
 }
 ---
 
 <nav class="topnav" aria-label="Main">
-  <a href="/" class="brand">OhMyDesk</a>
-  <div class="topnav-links">
-    {links.map((link) => (
-      <a
-        href={link.href}
-        {...(isCurrent(link.href) ? { 'aria-current': 'page' } : {})}
-      >
-        {link.label}
-      </a>
-    ))}
-    <a href="/login/" class="login">Log in</a>
-    <a href="/signup/" class="cta">Start Free</a>
+  <div class="topnav-inner">
+    <a href="/" class="brand" aria-label="OhMyDesk home">
+      <img src={logo.src} alt="OhMyDesk" width="140" height="32" />
+    </a>
+
+    <button
+      type="button"
+      class="hamburger"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="topnav-menu"
+      data-menu-toggle
+    >
+      <svg class="icon-open" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+      <svg class="icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="6" y1="6" x2="18" y2="18" />
+        <line x1="18" y1="6" x2="6" y2="18" />
+      </svg>
+    </button>
+
+    <div id="topnav-menu" class="topnav-links" data-menu>
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class:list={[{ anchor: link.anchor }]}
+          {...(isCurrent(link.href) ? { 'aria-current': 'page' } : {})}
+        >
+          {link.label}
+        </a>
+      ))}
+      <a href="/login/" class="login">Log in</a>
+      <a href="/signup/" class="cta">Start Free</a>
+    </div>
   </div>
 </nav>
 
 <style>
   .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    /* Subtle shadow gives separation when scrolling under it */
+    box-shadow: 0 1px 0 0 transparent;
+  }
+  .topnav-inner {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 16px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--border);
+    gap: 16px;
   }
   .brand {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--green);
-    letter-spacing: -0.5px;
+    display: inline-flex;
+    align-items: center;
     text-decoration: none;
   }
+  .brand img {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+
+  .hamburger {
+    display: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .hamburger:hover { color: var(--green); border-color: var(--border); }
+  .hamburger .icon-close { display: none; }
+  .hamburger[aria-expanded="true"] .icon-open { display: none; }
+  .hamburger[aria-expanded="true"] .icon-close { display: block; }
+
   .topnav-links {
     display: flex;
     align-items: center;
@@ -73,14 +133,70 @@ function isCurrent(href: string) {
     color: var(--green);
     border-radius: 6px;
     font-weight: 600;
+    white-space: nowrap;
     transition: all 0.2s ease;
   }
   .topnav-links .cta:hover { background: var(--green); color: var(--bg); }
 
-  @media (max-width: 640px) {
-    .topnav { padding: 18px 0; }
-    .topnav-links { gap: 16px; }
-    .topnav-links a { font-size: 13px; }
-    .topnav-links .login { display: none; }
+  @media (max-width: 960px) {
+    .topnav-links a.anchor { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .topnav-inner { padding: 12px 24px; }
+    .hamburger { display: inline-flex; align-items: center; justify-content: center; }
+    .topnav-links {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 8px 24px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+    }
+    .topnav-links.open { display: flex; }
+    .topnav-links a.anchor { display: block; }
+    .topnav-links a {
+      padding: 12px 4px;
+      font-size: 15px;
+    }
+    .topnav-links .login,
+    .topnav-links .cta {
+      margin-top: 8px;
+      text-align: center;
+      padding: 10px 18px;
+    }
   }
 </style>
+
+<script>
+  function initMarketingNav() {
+    const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+    const menu = document.querySelector<HTMLElement>('[data-menu]');
+    if (!toggle || !menu) return;
+
+    const setOpen = (open: boolean) => {
+      menu.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(!menu.classList.contains('open'));
+    });
+
+    menu.querySelectorAll('a').forEach((a) => {
+      a.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.classList.contains('open')) setOpen(false);
+    });
+  }
+
+  initMarketingNav();
+</script>

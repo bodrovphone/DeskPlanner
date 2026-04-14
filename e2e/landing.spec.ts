@@ -9,13 +9,14 @@ test('page loads with correct title', { tag: ['@smoke'] }, async ({ page }) => {
 });
 
 test('nav Log In and Sign Up buttons are visible and link correctly', { tag: ['@smoke'] }, async ({ page }) => {
+  // MarketingNav labels (case-sensitive): "Log in" and "Start Free"
   const loginLink = page.locator('nav a[href="/login/"]');
   await expect(loginLink).toBeVisible();
-  await expect(loginLink).toContainText('Log In');
+  await expect(loginLink).toContainText('Log in');
 
   const signupLink = page.locator('nav a[href="/signup/"]');
   await expect(signupLink).toBeVisible();
-  await expect(signupLink).toContainText('Sign Up');
+  await expect(signupLink).toContainText('Start Free');
 });
 
 test('hero CTA links to signup', { tag: ['@smoke'] }, async ({ page }) => {

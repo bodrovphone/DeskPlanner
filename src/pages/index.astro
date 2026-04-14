@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketingNav from '../components/MarketingNav.astro';
 import LandingPage from '@/pages/landing';
+import '../styles/marketing.css';
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -68,5 +70,6 @@ const faqSchema = {
 
 <BaseLayout>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <MarketingNav />
   <LandingPage client:load />
 </BaseLayout>

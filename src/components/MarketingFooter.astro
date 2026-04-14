@@ -1,13 +1,16 @@
 ---
 // Shared footer for marketing pages.
 import { features } from '../data/features.ts';
+import logo from '../assets/logo-landing.svg';
 const year = new Date().getFullYear();
 ---
 
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
-      <span class="brand">OhMyDesk</span>
+      <a href="/" class="brand" aria-label="OhMyDesk home">
+        <img src={logo.src} alt="OhMyDesk" width="140" height="32" />
+      </a>
       <p>Coworking desk booking & management software.</p>
     </div>
     <div class="footer-links">
@@ -53,12 +56,15 @@ const year = new Date().getFullYear();
     .footer-inner { grid-template-columns: 1fr; gap: 40px; }
   }
   .footer-brand .brand {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 16px;
+    text-decoration: none;
+  }
+  .footer-brand .brand img {
+    height: 32px;
+    width: auto;
     display: block;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--green);
-    margin-bottom: 12px;
   }
   .footer-brand p {
     margin: 0;

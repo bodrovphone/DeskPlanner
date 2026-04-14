@@ -9,9 +9,15 @@
 # Instead, list each dashboard sub-path explicitly. The second path
 # segment is a fixed literal, so single-segment static files at root
 # (favicon.ico, og-image.png, robots.txt) keep working.
+#
+# Every sub-path needs BOTH slash variants — Cloudflare _redirects does
+# not normalize trailing slashes, and `trailingSlash: 'always'` in
+# astro.config makes internal hrefs end with `/`. Without the `/` variant
+# the URL falls through and Cloudflare serves the marketing index.html.
 
 # /app resolver
 /app          /spa/  200
+/app/         /spa/  200
 /app/*        /spa/  200
 
 # Public booking + share links
@@ -19,18 +25,33 @@
 /book/*       /spa/  200
 
 # Org dashboard sub-paths (mirrors routes in client/src/router.tsx)
-/:org/calendar        /spa/  200
-/:org/members         /spa/  200
-/:org/meeting-rooms   /spa/  200
-/:org/insights        /spa/  200
-/:org/revenue         /spa/  200
-/:org/expenses        /spa/  200
-/:org/waiting-list    /spa/  200
-/:org/organization    /spa/  200
-/:org/rooms           /spa/  200
-/:org/plans           /spa/  200
-/:org/team            /spa/  200
-/:org/notifications   /spa/  200
-/:org/integrations    /spa/  200
-/:org/admin                /spa/  200
-/:org/floor-plan-editor    /spa/  200
+/:org/calendar         /spa/  200
+/:org/calendar/        /spa/  200
+/:org/members          /spa/  200
+/:org/members/         /spa/  200
+/:org/meeting-rooms    /spa/  200
+/:org/meeting-rooms/   /spa/  200
+/:org/insights         /spa/  200
+/:org/insights/        /spa/  200
+/:org/revenue          /spa/  200
+/:org/revenue/         /spa/  200
+/:org/expenses         /spa/  200
+/:org/expenses/        /spa/  200
+/:org/waiting-list     /spa/  200
+/:org/waiting-list/    /spa/  200
+/:org/organization     /spa/  200
+/:org/organization/    /spa/  200
+/:org/rooms            /spa/  200
+/:org/rooms/           /spa/  200
+/:org/plans            /spa/  200
+/:org/plans/           /spa/  200
+/:org/team             /spa/  200
+/:org/team/            /spa/  200
+/:org/notifications    /spa/  200
+/:org/notifications/   /spa/  200
+/:org/integrations     /spa/  200
+/:org/integrations/    /spa/  200
+/:org/admin            /spa/  200
+/:org/admin/           /spa/  200
+/:org/floor-plan-editor   /spa/  200
+/:org/floor-plan-editor/  /spa/  200

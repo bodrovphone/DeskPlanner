@@ -21,11 +21,8 @@ import {
   Package,
   Headphones,
   CreditCard,
-  Menu,
-  X as XIcon,
 } from 'lucide-react';
 import logoLanding from '@/assets/logo-landing.svg?url';
-import logoLandingIcon from '@/assets/logo-landing-icon.svg?url';
 import logoCodeburg from '@/assets/logos/android-chrome-512x512.png?url';
 import logoDesk4Day from '@/assets/logos/desk4Day.jpeg?url';
 import logoBuilderHouse from '@/assets/logos/builder_house.jpg?url';
@@ -563,16 +560,8 @@ function FauxRevenue() {
 
 export default function LandingPage() {
   const heroTyping = useTyping('Your desks, bookings, and revenue in one place.', 45, 800);
-  const [navScrolled, setNavScrolled] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useNarrow(768);
-
-  useEffect(() => {
-    const onScroll = () => setNavScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const sectionStyle = (py = 100): CSSProperties => ({
     padding: `${py}px 0`,
@@ -605,179 +594,8 @@ export default function LandingPage() {
       {/* ── noise overlay ── */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, opacity: 0.025, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat', mixBlendMode: 'overlay' }} />
 
-      {/* ── NAV ── */}
-      <nav style={{
-        position: 'fixed', width: '100%',
-        top: 0,
-        zIndex: 100,
-        background: navScrolled ? 'rgba(10,10,10,0.92)' : 'transparent',
-        backdropFilter: navScrolled ? 'blur(12px)' : 'none',
-        borderBottom: navScrolled ? `1px solid ${T.border}` : '1px solid transparent',
-        transition: 'all 0.3s ease',
-      }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src={logoLanding} alt="OhMyDesk" style={{ height: 32 }} />
-          </div>
-          {navScrolled && !isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {[
-                { label: 'Product', href: '#product' },
-                { label: 'Demo', href: '#demo' },
-                { label: 'Features', href: '/features/' },
-                { label: 'Pricing', href: '/pricing/' },
-                { label: 'Compare', href: '/compare/' },
-              ].map(link => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 13,
-                    color: T.textSecondary,
-                    textDecoration: 'none',
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; }}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <button
-                onClick={() => setDemoOpen(true)}
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  color: T.textSecondary,
-                  background: 'transparent',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; }}
-                onMouseLeave={e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; }}
-              >
-                Contact
-              </button>
-            </div>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {isMobile ? (
-              <button
-                onClick={() => setMobileMenuOpen(o => !o)}
-                style={{ background: 'transparent', border: 'none', color: T.textSecondary, cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {mobileMenuOpen ? <XIcon size={22} /> : <Menu size={22} />}
-              </button>
-            ) : (
-              <>
-                <a href="/login/" style={{ textDecoration: 'none' }}>
-                  <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease', minHeight: 44 }}
-                    {...touchHoverProps(
-                      e => { e.currentTarget.style.borderColor = T.green + '66'; e.currentTarget.style.color = T.green; },
-                      e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
-                    )}
-                    onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
-                  >Log In</button>
-                </a>
-                <a href="/signup/" style={{ textDecoration: 'none' }}>
-                  <button style={{ fontFamily: 'monospace', fontSize: 13, padding: '7px 18px', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', minHeight: 44 }}
-                    {...touchHoverProps(
-                      e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = T.bg; },
-                      e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.color = T.green; },
-                    )}
-                    onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
-                  >Sign Up Free</button>
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ── MOBILE MENU DRAWER ── */}
-        {isMobile && mobileMenuOpen && (
-          <div style={{
-            background: 'rgba(10,10,10,0.96)',
-            backdropFilter: 'blur(16px)',
-            borderTop: `1px solid ${T.border}`,
-            padding: '16px 24px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            animation: 'fadeIn 0.2s ease',
-          }}>
-            {[
-              { label: 'Product', href: '#product' },
-              { label: 'Demo', href: '#demo' },
-              { label: 'Features', href: '/features/' },
-              { label: 'Pricing', href: '/pricing/' },
-              { label: 'Compare', href: '/compare/' },
-            ].map(link => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: 15,
-                  color: T.textSecondary,
-                  textDecoration: 'none',
-                  padding: '12px 8px',
-                  borderRadius: 6,
-                  transition: 'all 0.2s ease',
-                }}
-                {...touchHoverProps(
-                  e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; },
-                  e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; },
-                )}
-              >
-                {link.label}
-              </a>
-            ))}
-            <button
-              onClick={() => { setDemoOpen(true); setMobileMenuOpen(false); }}
-              style={{
-                fontFamily: 'monospace',
-                fontSize: 15,
-                color: T.textSecondary,
-                background: 'transparent',
-                border: 'none',
-                padding: '12px 8px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-              {...touchHoverProps(
-                e => { e.currentTarget.style.color = T.green; e.currentTarget.style.background = T.greenFaint; },
-                e => { e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; },
-              )}
-            >
-              Contact
-            </button>
-            <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 8, paddingTop: 12, display: 'flex', gap: 12 }}>
-              <a href="/login/" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
-                <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, cursor: 'pointer', transition: 'all 0.2s ease' }}
-                  onClick={() => trackEvent(EVENTS.NAV_LOGIN)}
-                >Log In</button>
-              </a>
-              <a href="/signup/" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none', flex: 1 }}>
-                <button style={{ width: '100%', fontFamily: 'monospace', fontSize: 13, padding: '10px 0', borderRadius: 6, border: `1px solid ${T.green}`, background: T.greenFaint, color: T.green, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
-                  onClick={() => trackEvent(EVENTS.NAV_SIGNUP)}
-                >Sign Up Free</button>
-              </a>
-            </div>
-          </div>
-        )}
-      </nav>
-
       {/* ── HERO ── */}
-      <section style={{ paddingTop: isMobile ? 96 : 144, paddingBottom: 48, position: 'relative' }}>
+      <section style={{ paddingTop: isMobile ? 32 : 56, paddingBottom: 48, position: 'relative' }}>
         {/* radial glow */}
         <div style={{ position: 'absolute', top: -200, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: `radial-gradient(ellipse at center, ${T.greenFaint} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
