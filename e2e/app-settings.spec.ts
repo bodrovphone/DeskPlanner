@@ -26,7 +26,9 @@ const SETTINGS_NOTIFICATIONS_URL = '/e2e-testspace/notifications/';
 const SETTINGS_INTEGRATIONS_URL = '/e2e-testspace/integrations/';
 
 test.describe('Settings — page load', { tag: ['@smoke'] }, () => {
-  test('all settings sub-pages load without errors', async ({ page }) => {
+  // Each page navigates and waits for org data (SettingsPage returns null until currentOrg loads).
+  // 4 pages × ~20s each = ~80s worst-case — give the test 120s total.
+  test('all settings sub-pages load without errors', { timeout: 120_000 }, async ({ page }) => {
     // Settings is split into separate routes — verify each loads
     for (const [url, heading] of [
       [SETTINGS_ORG_URL, 'Organization'],
@@ -36,7 +38,8 @@ test.describe('Settings — page load', { tag: ['@smoke'] }, () => {
     ] as [string, string][]) {
       await page.goto(url);
       await page.waitForLoadState('networkidle');
-      await expect(page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 10_000 });
+      // SettingsPage renders `null` while currentOrg is loading — wait up to 25s
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 25_000 });
     }
   });
 });

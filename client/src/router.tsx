@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext';
 import { DataStoreProvider } from '@/contexts/DataStoreContext';
 import { Loader2 } from 'lucide-react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import DeskCalendar from '@/pages/desk-calendar';
 import OnboardingPage from '@/pages/onboarding';
 import DashboardLayout from '@/layouts/DashboardLayout';

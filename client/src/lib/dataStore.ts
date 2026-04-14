@@ -1,4 +1,4 @@
-import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense, Client, ExpenseCategory } from '@/../../shared/schema';
+import { DeskBooking, MonthlyStats, Currency, Expense, RecurringExpense, Client, ExpenseCategory } from '@shared/schema';
 
 /**
  * Abstract data store interface for desk bookings

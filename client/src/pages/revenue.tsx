@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import RevenueDashboard from '@/components/RevenueDashboard';
-import RevenueChart from '@/components/RevenueChart';
+import RevenueDashboard from '@/components/revenue/RevenueDashboard';
+import RevenueChart from '@/components/revenue/RevenueChart';
 import { getMonthRange } from '@/lib/dateUtils';
 
 export default function RevenuePage() {

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Calendar, BarChart3, Users, UserRoundSearch, Settings, LogOut, Lightbulb, PanelLeftClose, PanelLeftOpen, Shield, DoorOpen, MoreHorizontal, ChevronsUpDown, Plus, MapPin, LayoutGrid, Bell, Package, Globe, Receipt, Pencil } from 'lucide-react';
 import logoCompact from '@/assets/logo-compact.svg?url';
-import TrialBanner from '@/components/TrialBanner';
+import TrialBanner from '@/components/shared/TrialBanner';
 import { useState } from 'react';
 import { isAdmin } from '@/lib/admin';
 import type { User } from '@supabase/supabase-js';

@@ -46,7 +46,8 @@ test.describe('Members — page load', () => {
 
   test('members page renders with heading and add button', { tag: ['@smoke'] }, async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: 'Add Member' })).toBeVisible();
+    // Button is inside {!isLoading && ...} — wait for data to load before asserting
+    await expect(page.getByRole('button', { name: 'Add Member' })).toBeVisible({ timeout: 20_000 });
   });
 
   test('members table shows Name, Contact, Email, and Flex Balance columns', async ({ page }) => {
@@ -107,7 +108,7 @@ test.describe('Members — flex balance', () => {
   test('active flex member shows balance', { tag: ['@smoke'] }, async ({ page }) => {
     // The flex member row should show the balance as a clickable button (e.g. 10/10 or 9/10)
     const flexMemberRow = rowByName(page, 'E2E Flex Member');
-    await expect(flexMemberRow.getByText(/\d+\/10/)).toBeVisible({ timeout: 10_000 });
+    await expect(flexMemberRow.getByText(/\d+\/10/)).toBeVisible({ timeout: 25_000 });
   });
 
   test('exhausted member shows 0/5 balance', async ({ page }) => {

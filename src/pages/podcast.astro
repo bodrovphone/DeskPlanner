@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketingNav from '../components/MarketingNav.astro';
+import '../styles/marketing.css';
 
 const podcastSchema = {
   "@context": "https://schema.org",
@@ -37,17 +39,9 @@ const podcastSchema = {
   <div style="background:#121214;min-height:100vh;font-family:'Inter',system-ui,sans-serif;color:#e0e0e0;">
 
     <!-- Nav -->
-    <nav style="border-bottom:1px solid #242428;padding:0 24px;">
-      <div style="max-width:1120px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;">
-        <a href="/" style="text-decoration:none;">
-          <img src="/favicon.svg" alt="OhMyDesk" style="height:28px;" />
-        </a>
-        <a href="/" style="font-family:monospace;font-size:13px;color:#777;text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid #242428;transition:all 0.2s ease;"
-          onmouseover="this.style.color='#34d399';this.style.borderColor='rgba(52,211,153,0.3)'"
-          onmouseout="this.style.color='#777';this.style.borderColor='#242428'"
-        >← Back to site</a>
-      </div>
-    </nav>
+    <div style="max-width:var(--container-max);margin:0 auto;padding:0 24px;">
+      <MarketingNav />
+    </div>
 
     <!-- Content -->
     <main style="max-width:680px;margin:0 auto;padding:80px 24px;">

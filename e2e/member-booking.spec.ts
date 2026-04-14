@@ -145,7 +145,7 @@ test.describe('Member Booking — date selection', () => {
 // ── Successful booking ────────────────────────────────────────────────────────
 
 test.describe('Member Booking — successful booking', () => {
-  test('confirms booking and sees success screen', { tag: ['@smoke'] }, async ({ page }) => {
+  test('confirms booking and sees success screen', { tag: ['@smoke'], timeout: 60_000 }, async ({ page }) => {
     await page.goto(MEMBER_URL);
     await page.waitForLoadState('networkidle');
 
@@ -163,9 +163,9 @@ test.describe('Member Booking — successful booking', () => {
 
     await page.getByRole('button', { name: 'Confirm Booking' }).click();
 
-    // Success screen
+    // Success screen — booking write + Supabase round-trip can be slow in production CI
     await expect(page.getByRole('heading', { name: "You're in, E2E Flex Member!" })).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
 
     // Desk assignment shown (e.g. "Your desk at E2E Test Space is reserved.")

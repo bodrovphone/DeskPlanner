@@ -6,9 +6,9 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { Loader2, CalendarCheck, Check, MapPin, CalendarDays, Package } from 'lucide-react';
-import { SpaceContactBar } from '@/components/SpaceContactBar';
+import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
-import { FloorPlanReadOnly } from '@/components/FloorPlanReadOnly';
+import { FloorPlanReadOnly } from '@/components/floor-plan/FloorPlanReadOnly';
 
 /**
  * Member self-service booking page.

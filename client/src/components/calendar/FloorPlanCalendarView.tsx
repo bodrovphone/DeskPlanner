@@ -3,7 +3,7 @@ import { Loader2, Map } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useFloorPlan } from '@/hooks/use-floor-plan';
 import { useBookings } from '@/hooks/use-bookings';
-import { DeskSymbol, ShapeSymbol, SHAPES, getDoorRadius } from '@/components/floor-plan-symbols';
+import { DeskSymbol, ShapeSymbol, SHAPES, getDoorRadius } from '@/components/floor-plan/floor-plan-symbols';
 import type { DeskPosition, FloorPlanObject, DeskBooking } from '@shared/schema';
 
 // ─── Status colours ───────────────────────────────────────────────────────────

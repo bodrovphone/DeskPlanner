@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { DeskSymbol, ShapeSymbol, SHAPES, getDoorRadius } from '@/components/floor-plan-symbols';
+import { DeskSymbol, ShapeSymbol, SHAPES, getDoorRadius } from '@/components/floor-plan/floor-plan-symbols';
 import type { DeskPosition, FloorPlanObject } from '@shared/schema';
 
 const PADDING = 48;

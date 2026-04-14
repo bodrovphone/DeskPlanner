@@ -16,6 +16,7 @@
   --text-secondary: #999999;
   --text-muted: #555555;
   --strike: #f97066;
+  --container-max: 1180px;
 }
 
 * { box-sizing: border-box; }

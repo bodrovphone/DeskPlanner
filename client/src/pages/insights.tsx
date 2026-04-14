@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import NextDatesPanel from '@/components/calendar/NextDatesPanel';
 import StatsCards from '@/components/calendar/StatsCards';
-import BookingModal from '@/components/BookingModal';
+import BookingModal from '@/components/bookings/BookingModal';
 import { useNextDates, BookedDate, ExpiringAssignment } from '@/hooks/use-next-dates';
 import { useBookingStats } from '@/hooks/use-bookings';
 import { useBookingActions } from '@/hooks/use-booking-actions';

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { MeetingRoom, MeetingRoomBooking } from '@shared/schema';
-import ClientAutocomplete from '@/components/ClientAutocomplete';
+import ClientAutocomplete from '@/components/members/ClientAutocomplete';
 import { useCreateMeetingRoomBooking, useUpdateMeetingRoomBooking, useCancelMeetingRoomBooking } from '@/hooks/use-meeting-room-bookings';
 import { currencySymbols } from '@/lib/settings';
 

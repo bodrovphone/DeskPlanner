@@ -626,6 +626,7 @@ export default function LandingPage() {
                 { label: 'Demo', href: '#demo' },
                 { label: 'Features', href: '/features/' },
                 { label: 'Pricing', href: '/pricing/' },
+                { label: 'Compare', href: '/compare/' },
               ].map(link => (
                 <a
                   key={link.href}
@@ -715,6 +716,7 @@ export default function LandingPage() {
               { label: 'Demo', href: '#demo' },
               { label: 'Features', href: '/features/' },
               { label: 'Pricing', href: '/pricing/' },
+              { label: 'Compare', href: '/compare/' },
             ].map(link => (
               <a
                 key={link.href}

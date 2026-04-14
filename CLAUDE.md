@@ -150,7 +150,6 @@ Grep pattern for regressions:
 The project uses these import aliases:
 - `@/` -> `/client/src/`
 - `@shared/` -> `/shared/`
-- `@assets/` -> `/client/src/assets/`
 
 ### Key Files for Understanding Architecture
 

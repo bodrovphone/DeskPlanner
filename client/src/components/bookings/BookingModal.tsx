@@ -10,7 +10,7 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
 import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package, ArrowRightLeft } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import ClientAutocomplete from './ClientAutocomplete';
+import ClientAutocomplete from '@/components/members/ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 

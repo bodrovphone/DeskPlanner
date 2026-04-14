@@ -13,8 +13,8 @@ import { currencySymbols } from '@/lib/settings';
 import { getMonthRange, getMonthRangeString } from '@/lib/dateUtils';
 import { buildCategoryUsageMap } from '@/lib/expenseStats';
 import { Expense } from '@shared/schema';
-import ExpenseModal from '@/components/ExpenseModal';
-import RecurringExpenseModal from '@/components/RecurringExpenseModal';
+import ExpenseModal from '@/components/expenses/ExpenseModal';
+import RecurringExpenseModal from '@/components/expenses/RecurringExpenseModal';
 import { useToast } from '@/hooks/use-toast';
 import {
   ChevronLeft,

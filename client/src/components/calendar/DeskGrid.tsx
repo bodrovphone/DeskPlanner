@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import { Card } from '@/components/ui/card';
-import DeskCell from '@/components/DeskCell';
+import DeskCell from '@/components/bookings/DeskCell';
 import { DeskBooking, Desk } from '@shared/schema';
 import { isNonWorkingDay, DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
 

@@ -27,6 +27,9 @@ test-results/
 playwright-report/
 e2e/.auth/
 .playwright-mcp/
+
+# Vitest coverage
+coverage/
 # Claude Code local config (skills, local settings)
 .claude/skills/
 .claude/skills-lock.json

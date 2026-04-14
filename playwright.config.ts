@@ -62,6 +62,9 @@ export default defineConfig({
     },
 
     // Authenticated app suites — depend on auth-setup
+    // timeout bumped to 60s: production Supabase round-trips from CI runners
+    // are slower than localhost. OrgGate shows a LoadingScreen until org data
+    // loads, so the first page render after networkidle can be delayed.
     {
       name: 'app',
       testMatch: 'app-*.spec.ts',
@@ -69,6 +72,7 @@ export default defineConfig({
       use: {
         storageState: AUTH_STATE,
       },
+      timeout: 60_000,
     },
   ],
 });

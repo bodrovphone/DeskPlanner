@@ -19,7 +19,11 @@ const CALENDAR_URL = '/e2e-testspace/calendar/';
  * Week view fits all 7 days in the viewport with no horizontal scroll needed.
  */
 async function switchToWeekView(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Week' }).click();
+  // Wait for the calendar UI to finish rendering (requires org/rooms/desks to load).
+  // In production CI the OrgGate shows a LoadingScreen until org data arrives.
+  const weekBtn = page.getByRole('button', { name: 'Week' });
+  await weekBtn.waitFor({ state: 'visible', timeout: 40_000 });
+  await weekBtn.click();
   await page.waitForTimeout(300);
 }
 
@@ -33,8 +37,8 @@ test.describe('Calendar — page load', { tag: ['@smoke'] }, () => {
     // Table header with "Desk" column label (multiple room groups produce multiple headers)
     await expect(page.locator('table th').filter({ hasText: 'Desk' }).first()).toBeVisible({ timeout: 10_000 });
 
-    // At least one desk row is visible
-    await expect(page.locator('.desk-cell').first()).toBeVisible();
+    // At least one desk row is visible (give extra time for room/desk data to load after org)
+    await expect(page.locator('.desk-cell').first()).toBeVisible({ timeout: 20_000 });
 
     // Date range string is rendered in the nav card
     // Matches month view ("April 2026") or week view ("April 1-7, 2026" / "Mar 30 - Apr 5, 2026")
@@ -49,7 +53,7 @@ test.describe('Calendar — page load', { tag: ['@smoke'] }, () => {
     // Desk label in the left sticky column (custom labels may not contain "desk",
     // so match the sticky left-column td that holds desk info)
     const deskLabel = page.locator('td.sticky span.text-sm.font-semibold').first();
-    await expect(deskLabel).toBeVisible();
+    await expect(deskLabel).toBeVisible({ timeout: 20_000 });
   });
 });
 

@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Trash2, RotateCcw, RotateCw, Loader2, Check } from 'lucide-react';
 import type { OrgDesk } from '@shared/schema';
 import type { DeskPosition, FloorPlanObject } from '@shared/schema';
-import { ShapeKey, SHAPES, PREVIEW_SIZES, getDoorRadius, DeskSymbol, ShapeSymbol } from '@/components/floor-plan-symbols';
+import { ShapeKey, SHAPES, PREVIEW_SIZES, getDoorRadius, DeskSymbol, ShapeSymbol } from '@/components/floor-plan/floor-plan-symbols';
 
 const DESK_SIZE = 72;
 const ROTATE_STEP = 90;

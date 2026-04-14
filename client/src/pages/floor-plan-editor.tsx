@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import FloorPlanEditor from '@/components/FloorPlanEditor';
+import FloorPlanEditor from '@/components/floor-plan/FloorPlanEditor';
 import { Monitor } from 'lucide-react';
 
 const MOBILE_BREAKPOINT = 1024;

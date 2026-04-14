@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import DeskCell from '@/components/DeskCell';
+import DeskCell from '@/components/bookings/DeskCell';
 import { useSwipe } from '@/hooks/use-mobile';
 import { getThreeDayRange, getThreeDayRangeString } from '@/lib/dateUtils';
 import { useBookings } from '@/hooks/use-bookings';

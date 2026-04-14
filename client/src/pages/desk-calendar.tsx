@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import PersonModal from '@/components/PersonModal';
-import BookingModal from '@/components/BookingModal';
-import ShareBookingModal from '@/components/ShareBookingModal';
-import PauseBookingModal from '@/components/PauseBookingModal';
-import AvailabilityRangeModal from '@/components/AvailabilityRangeModal';
+import PersonModal from '@/components/members/PersonModal';
+import BookingModal from '@/components/bookings/BookingModal';
+import ShareBookingModal from '@/components/bookings/ShareBookingModal';
+import PauseBookingModal from '@/components/bookings/PauseBookingModal';
+import AvailabilityRangeModal from '@/components/bookings/AvailabilityRangeModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import FloorPlanCalendarView from '@/components/calendar/FloorPlanCalendarView';
 import CalendarNavigation from '@/components/calendar/CalendarNavigation';
