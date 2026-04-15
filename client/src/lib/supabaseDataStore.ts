@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client, ExpenseCategory } from '@shared/schema';
+import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client, ExpenseCategory, Currency } from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -292,15 +292,7 @@ export class SupabaseDataStore implements IDataStore {
     const monthEnd = new Date(year, month + 1, 0);
 
     // Generate all calendar days in month
-    const daysInMonth: string[] = [];
-    let current = new Date(monthStart);
-    while (current <= monthEnd) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, '0');
-      const d = String(current.getDate()).padStart(2, '0');
-      daysInMonth.push(`${y}-${m}-${d}`);
-      current.setDate(current.getDate() + 1);
-    }
+    const daysInMonth = this.generateDateRange(monthStart, monthEnd);
 
     const workingDayCount = workingDays
       ? daysInMonth.filter(d => !isNonWorkingDay(d, workingDays)).length
@@ -317,66 +309,7 @@ export class SupabaseDataStore implements IDataStore {
 
       if (error) throw error;
 
-      const processedBookings = new Set<string>();
-      const seenSlots = new Set<string>();
-      let confirmedRevenue = 0;
-      let expectedRevenue = 0;
-      let occupiedDays = 0;
-      let assignedWorkingDays = 0;
-
-      for (const row of data || []) {
-        // Count occupied days, deduplicating by desk_id+date
-        const slotKey = `${row.desk_id}:${row.date}`;
-        const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
-        if (!seenSlots.has(slotKey)) {
-          seenSlots.add(slotKey);
-          if ((row.status === 'assigned' || row.status === 'booked') && isWorking) {
-            occupiedDays++;
-          }
-          if (row.status === 'assigned' && isWorking) {
-            assignedWorkingDays++;
-          }
-        }
-
-        // For revenue: only process each unique booking once, with pro-rata calculation
-        const bookingKey = `${row.desk_id}-${row.start_date}`;
-        if (processedBookings.has(bookingKey)) continue;
-        processedBookings.add(bookingKey);
-
-        // Calculate pro-rated revenue for this month
-        const bookingStart = new Date(row.start_date);
-        const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
-        const effectiveStart = bookingStart > monthStart ? bookingStart : monthStart;
-        const effectiveEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
-        const daysInThisMonth = this.countCalendarDays(effectiveStart, effectiveEnd);
-
-        const bookingPrice = row.price || 0;
-        const proratedPrice = totalBookingDays > 0
-          ? (daysInThisMonth / totalBookingDays) * bookingPrice
-          : 0;
-
-        if (row.status === 'assigned') {
-          confirmedRevenue += proratedPrice;
-        } else if (row.status === 'booked') {
-          expectedRevenue += proratedPrice;
-        }
-      }
-
-      const totalRevenue = confirmedRevenue + expectedRevenue;
-      const occupancyRate = totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
-
-      return {
-        totalRevenue,
-        confirmedRevenue,
-        expectedRevenue,
-        occupiedDays: assignedWorkingDays,
-        totalDeskDays,
-        occupancyRate,
-        revenuePerOccupiedDay,
-        currency,
-      };
+      return this.calculateStatsFromRows(data || [], monthStart, monthEnd, totalDeskDays, workingDays, currency);
     } catch (error) {
       console.error('Error fetching monthly stats:', error);
       return {
@@ -390,6 +323,86 @@ export class SupabaseDataStore implements IDataStore {
         currency,
       };
     }
+  }
+
+  private generateDateRange(start: Date, end: Date): string[] {
+    const dates: string[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const y = current.getFullYear();
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      const d = String(current.getDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${d}`);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  }
+
+  private calculateStatsFromRows(
+    rows: Array<{ desk_id: string; date: string; status: string; price: number | null; start_date: string; end_date: string }>,
+    periodStart: Date,
+    periodEnd: Date,
+    totalDeskDays: number,
+    workingDays?: number[],
+    currency: Currency = 'EUR',
+  ): MonthlyStats {
+    const processedBookings = new Set<string>();
+    const seenSlots = new Set<string>();
+    let confirmedRevenue = 0;
+    let expectedRevenue = 0;
+    let occupiedDays = 0;
+    let assignedWorkingDays = 0;
+
+    for (const row of rows) {
+      const slotKey = `${row.desk_id}:${row.date}`;
+      const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
+      if (!seenSlots.has(slotKey)) {
+        seenSlots.add(slotKey);
+        if ((row.status === 'assigned' || row.status === 'booked') && isWorking) {
+          occupiedDays++;
+        }
+        if (row.status === 'assigned' && isWorking) {
+          assignedWorkingDays++;
+        }
+      }
+
+      const bookingKey = `${row.desk_id}-${row.start_date}`;
+      if (processedBookings.has(bookingKey)) continue;
+      processedBookings.add(bookingKey);
+
+      const bookingStart = new Date(row.start_date);
+      const bookingEnd = new Date(row.end_date);
+      const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
+      const effectiveStart = bookingStart > periodStart ? bookingStart : periodStart;
+      const effectiveEnd = bookingEnd < periodEnd ? bookingEnd : periodEnd;
+      const daysInPeriod = this.countCalendarDays(effectiveStart, effectiveEnd);
+
+      const bookingPrice = row.price || 0;
+      const proratedPrice = totalBookingDays > 0
+        ? (daysInPeriod / totalBookingDays) * bookingPrice
+        : 0;
+
+      if (row.status === 'assigned') {
+        confirmedRevenue += proratedPrice;
+      } else if (row.status === 'booked') {
+        expectedRevenue += proratedPrice;
+      }
+    }
+
+    const totalRevenue = confirmedRevenue + expectedRevenue;
+    const occupancyRate = totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
+    const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
+
+    return {
+      totalRevenue,
+      confirmedRevenue,
+      expectedRevenue,
+      occupiedDays: assignedWorkingDays,
+      totalDeskDays,
+      occupancyRate,
+      revenuePerOccupiedDay,
+      currency,
+    };
   }
 
   private countCalendarDays(start: Date, end: Date): number {
@@ -406,15 +419,7 @@ export class SupabaseDataStore implements IDataStore {
     const rangeStart = new Date(startDate + 'T00:00:00');
     const rangeEnd = new Date(endDate + 'T00:00:00');
 
-    const daysInRange: string[] = [];
-    let current = new Date(rangeStart);
-    while (current <= rangeEnd) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, '0');
-      const d = String(current.getDate()).padStart(2, '0');
-      daysInRange.push(`${y}-${m}-${d}`);
-      current.setDate(current.getDate() + 1);
-    }
+    const daysInRange = this.generateDateRange(rangeStart, rangeEnd);
 
     const workingDayCount = workingDays
       ? daysInRange.filter(d => !isNonWorkingDay(d, workingDays)).length
@@ -431,58 +436,7 @@ export class SupabaseDataStore implements IDataStore {
 
       if (error) throw error;
 
-      const processedBookings = new Set<string>();
-      const seenSlots = new Set<string>();
-      let confirmedRevenue = 0;
-      let expectedRevenue = 0;
-      let occupiedDays = 0;
-      let assignedWorkingDays = 0;
-
-      for (const row of data || []) {
-        // Count occupied days, deduplicating by desk_id+date
-        const slotKey = `${row.desk_id}:${row.date}`;
-        const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
-        if (!seenSlots.has(slotKey)) {
-          seenSlots.add(slotKey);
-          if ((row.status === 'assigned' || row.status === 'booked') && isWorking) {
-            occupiedDays++;
-          }
-          if (row.status === 'assigned' && isWorking) {
-            assignedWorkingDays++;
-          }
-        }
-
-        const bookingKey = `${row.desk_id}-${row.start_date}`;
-        if (processedBookings.has(bookingKey)) continue;
-        processedBookings.add(bookingKey);
-
-        const bookingStart = new Date(row.start_date);
-        const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
-        const effectiveStart = bookingStart > rangeStart ? bookingStart : rangeStart;
-        const effectiveEnd = bookingEnd < rangeEnd ? bookingEnd : rangeEnd;
-        const daysInThisRange = this.countCalendarDays(effectiveStart, effectiveEnd);
-
-        const bookingPrice = row.price || 0;
-        const proratedPrice = totalBookingDays > 0
-          ? (daysInThisRange / totalBookingDays) * bookingPrice
-          : 0;
-
-        if (row.status === 'assigned') {
-          confirmedRevenue += proratedPrice;
-        } else if (row.status === 'booked') {
-          expectedRevenue += proratedPrice;
-        }
-      }
-
-      const totalRevenue = confirmedRevenue + expectedRevenue;
-      const occupancyRate = totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
-
-      return {
-        totalRevenue, confirmedRevenue, expectedRevenue, occupiedDays: assignedWorkingDays,
-        totalDeskDays, occupancyRate, revenuePerOccupiedDay, currency,
-      };
+      return this.calculateStatsFromRows(data || [], rangeStart, rangeEnd, totalDeskDays, workingDays, currency);
     } catch (error) {
       console.error('Error fetching stats for date range:', error);
       return {
