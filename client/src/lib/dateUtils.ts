@@ -7,6 +7,16 @@ dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 
+export function formatLocalDate(date: Date): string {
+  return formatYMD(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+export function formatYMD(year: number, month: number, day: number): string {
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
 export interface WeekDay {
   date: Dayjs;
   dayName: string;

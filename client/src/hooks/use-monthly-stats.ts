@@ -3,6 +3,7 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { MonthlyStats } from '@shared/schema';
 import { DEFAULT_WORKING_DAYS } from '@/lib/workingDays';
+import { formatLocalDate, formatYMD } from '@/lib/dateUtils';
 
 export interface RevenueHistoryEntry {
   month: string;
@@ -33,9 +34,8 @@ export function useRevenueHistory(monthCount = 6) {
 
         let totalExpenses = 0;
         if (dataStore.getExpenses) {
-          const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-          const monthEnd = new Date(year, month + 1, 0);
-          const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+          const monthStart = formatYMD(year, month + 1, 1);
+          const monthEndStr = formatLocalDate(new Date(year, month + 1, 0));
           const expenses = await dataStore.getExpenses(monthStart, monthEndStr);
           totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
         }

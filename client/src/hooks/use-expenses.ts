@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { Expense, RecurringExpense, ExpenseCategory } from '@shared/schema';
+import { formatLocalDate, formatYMD } from '@/lib/dateUtils';
 
 export function useExpenses(startDate: string, endDate: string) {
   const dataStore = useDataStore();
@@ -165,8 +166,8 @@ export function useDeleteExpenseCategory() {
 
 // Helper hook to get total expenses for a period
 export function useMonthlyExpensesTotal(year: number, month: number) {
-  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const monthEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
+  const monthStart = formatYMD(year, month + 1, 1);
+  const monthEnd = formatLocalDate(new Date(year, month + 1, 0));
 
   const { data: expenses, ...rest } = useExpenses(monthStart, monthEnd);
 

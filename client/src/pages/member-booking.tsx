@@ -5,6 +5,7 @@ import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
+import { formatLocalDate } from '@/lib/dateUtils';
 import { Loader2, CalendarCheck, Check, MapPin, CalendarDays, Package } from 'lucide-react';
 import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
@@ -41,7 +42,7 @@ export default function MemberBookingPage() {
   useEffect(() => {
     if (!orgSlug || !memberId) return;
 
-    const todayStr = formatDateStr(new Date());
+    const todayStr = formatLocalDate(new Date());
 
     Promise.all([
       SupabaseDataStore.getPublicAvailability(orgSlug),
@@ -121,7 +122,7 @@ export default function MemberBookingPage() {
     for (let i = 0; i <= org.maxDaysAhead; i++) {
       const d = new Date(now);
       d.setDate(now.getDate() + i);
-      const dateStr = formatDateStr(d);
+      const dateStr = formatLocalDate(d);
       const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
       map[dateStr] = totalDesks - bookedCount;
     }
@@ -231,10 +232,10 @@ export default function MemberBookingPage() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = formatDateStr(today);
+  const todayStr = formatLocalDate(today);
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
-  const tomorrowStr = formatDateStr(tomorrow);
+  const tomorrowStr = formatLocalDate(tomorrow);
 
   const todayAvailable = (availabilityMap[todayStr] ?? 0) > 0 && !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowAvailable = (availabilityMap[tomorrowStr] ?? 0) > 0 && !isNonWorkingDay(tomorrowStr, org.workingDays);
@@ -242,7 +243,7 @@ export default function MemberBookingPage() {
   const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
 
   const isDateDisabled = (date: Date) => {
-    const dateStr = formatDateStr(date);
+    const dateStr = formatLocalDate(date);
     if (date < today || date > maxDate) return true;
     if (isNonWorkingDay(dateStr, org.workingDays)) return true;
     if ((availabilityMap[dateStr] ?? 0) <= 0) return true;
@@ -468,7 +469,7 @@ export default function MemberBookingPage() {
                         selected={undefined}
                         onSelect={(date) => {
                           if (date) {
-                            setSelectedDate(formatDateStr(date));
+                            setSelectedDate(formatLocalDate(date));
                             setShowCalendar(false);
                           }
                         }}
@@ -478,7 +479,7 @@ export default function MemberBookingPage() {
                         className="rounded-xl border p-3"
                         modifiers={{
                           available: (date: Date) => {
-                            const dateStr = formatDateStr(date);
+                            const dateStr = formatLocalDate(date);
                             return (availabilityMap[dateStr] ?? 0) > 0
                               && !isNonWorkingDay(dateStr, org.workingDays)
                               && date >= today && date <= maxDate;
@@ -554,13 +555,6 @@ export default function MemberBookingPage() {
       </div>
     </div>
   );
-}
-
-function formatDateStr(d: Date) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
 }
 
 function Footer() {

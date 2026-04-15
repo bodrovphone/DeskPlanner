@@ -4,6 +4,7 @@ import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
 import { isNonWorkingDay } from './workingDays';
+import { formatLocalDate, formatYMD } from './dateUtils';
 
 export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
@@ -295,10 +296,7 @@ export class SupabaseDataStore implements IDataStore {
     const daysInMonth: string[] = [];
     let current = new Date(monthStart);
     while (current <= monthEnd) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, '0');
-      const d = String(current.getDate()).padStart(2, '0');
-      daysInMonth.push(`${y}-${m}-${d}`);
+      daysInMonth.push(formatLocalDate(current));
       current.setDate(current.getDate() + 1);
     }
 
@@ -409,10 +407,7 @@ export class SupabaseDataStore implements IDataStore {
     const daysInRange: string[] = [];
     let current = new Date(rangeStart);
     while (current <= rangeEnd) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, '0');
-      const d = String(current.getDate()).padStart(2, '0');
-      daysInRange.push(`${y}-${m}-${d}`);
+      daysInRange.push(formatLocalDate(current));
       current.setDate(current.getDate() + 1);
     }
 
@@ -811,8 +806,8 @@ export class SupabaseDataStore implements IDataStore {
       const activeExpenses = recurringExpenses.filter(e => e.isActive);
 
       // Get existing expenses for this month to avoid duplicates
-      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const monthEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const monthStart = formatYMD(year, month + 1, 1);
+      const monthEnd = formatLocalDate(new Date(year, month + 1, 0));
       const existingExpenses = await this.getExpenses(monthStart, monthEnd);
 
       const generatedExpenses: Expense[] = [];
@@ -823,7 +818,7 @@ export class SupabaseDataStore implements IDataStore {
         );
 
         if (!alreadyExists) {
-          const expenseDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(recurring.dayOfMonth).padStart(2, '0')}`;
+          const expenseDate = formatYMD(year, month + 1, recurring.dayOfMonth);
           const newExpense: Expense = {
             id: `expense-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             date: expenseDate,

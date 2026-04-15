@@ -5,6 +5,7 @@ import { SupabaseDataStore } from '@/lib/supabaseDataStore';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
+import { formatLocalDate } from '@/lib/dateUtils';
 import { Loader2, CalendarCheck, ChevronLeft, Check, MapPin, CalendarDays } from 'lucide-react';
 import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
 import { Calendar } from '@/components/ui/calendar';
@@ -72,10 +73,7 @@ export default function PublicBookingPage() {
     for (let i = 0; i <= org.maxDaysAhead; i++) {
       const d = new Date(now);
       d.setDate(now.getDate() + i);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const dateStr = formatLocalDate(d);
       const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
       map[dateStr] = totalDesks - bookedCount;
     }
@@ -157,17 +155,10 @@ export default function PublicBookingPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const formatDateStr = (d: Date) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const todayStr = formatDateStr(today);
+  const todayStr = formatLocalDate(today);
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
-  const tomorrowStr = formatDateStr(tomorrow);
+  const tomorrowStr = formatLocalDate(tomorrow);
 
   const todayAvailable = (availabilityMap[todayStr] ?? 0) > 0 && !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowAvailable = (availabilityMap[tomorrowStr] ?? 0) > 0 && !isNonWorkingDay(tomorrowStr, org.workingDays);
@@ -176,7 +167,7 @@ export default function PublicBookingPage() {
 
   // For the calendar: disable dates that are full, non-working, or out of range
   const isDateDisabled = (date: Date) => {
-    const dateStr = formatDateStr(date);
+    const dateStr = formatLocalDate(date);
     if (date < today || date > maxDate) return true;
     if (isNonWorkingDay(dateStr, org.workingDays)) return true;
     if ((availabilityMap[dateStr] ?? 0) <= 0) return true;
@@ -188,7 +179,7 @@ export default function PublicBookingPage() {
   for (let i = 0; i <= org.maxDaysAhead; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    const dateStr = formatDateStr(d);
+    const dateStr = formatLocalDate(d);
     if (isNonWorkingDay(dateStr, org.workingDays)) continue;
     const available = availabilityMap[dateStr] ?? 0;
     if (available <= 0) continue;
@@ -396,7 +387,7 @@ export default function PublicBookingPage() {
                           selected={undefined}
                           onSelect={(date) => {
                             if (date) {
-                              setSelectedDate(formatDateStr(date));
+                              setSelectedDate(formatLocalDate(date));
                               setShowCalendar(false);
                             }
                           }}
@@ -406,7 +397,7 @@ export default function PublicBookingPage() {
                           className="rounded-xl border p-3"
                           modifiers={{
                             available: (date: Date) => {
-                              const dateStr = formatDateStr(date);
+                              const dateStr = formatLocalDate(date);
                               const avail = availabilityMap[dateStr] ?? 0;
                               return avail > 0 && !isNonWorkingDay(dateStr, org.workingDays) && date >= today && date <= maxDate;
                             },

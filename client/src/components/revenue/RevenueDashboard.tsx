@@ -6,6 +6,7 @@ import { useExpenses } from '@/hooks/use-expenses';
 import { useMeetingRoomBookingsRange } from '@/hooks/use-meeting-room-bookings';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencySymbols } from '@/lib/settings';
+import { formatLocalDate, formatYMD } from '@/lib/dateUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   TrendingUp, TrendingDown, Banknote, Receipt, Armchair, BarChart3,
@@ -30,8 +31,8 @@ export default function RevenueDashboard({ viewMode, monthOffset = 0, startDate,
   const month = targetDate.getMonth();
 
   // Calculate date range for expenses
-  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const monthEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
+  const monthStart = formatYMD(year, month + 1, 1);
+  const monthEnd = formatLocalDate(new Date(year, month + 1, 0));
 
   // Use different hooks based on view mode
   const monthlyStats = useMonthlyStats(year, month);

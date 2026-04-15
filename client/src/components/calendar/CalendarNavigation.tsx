@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, PlusCircle, Map, CalendarIcon } from 'lucide
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { formatLocalDate } from '@/lib/dateUtils';
 
 function formatNextDate(dateStr: string): string {
   const today = new Date();
@@ -75,9 +76,6 @@ export default function CalendarNavigation({
 }: CalendarNavigationProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
-  function localDateStr(d: Date) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
 
   function stepDate(dateStr: string, dir: 1 | -1) {
     const working = mapWorkingDays && mapWorkingDays.length > 0 ? mapWorkingDays : null;
@@ -89,7 +87,7 @@ export default function CalendarNavigation({
       const isoDay = d.getDay() === 0 ? 7 : d.getDay();
       if (working.includes(isoDay)) break;
     } while (true);
-    return localDateStr(d);
+    return formatLocalDate(d);
   }
 
   function formatDate(dateStr: string) {
@@ -98,7 +96,7 @@ export default function CalendarNavigation({
   }
 
   function todayStr() {
-    return localDateStr(new Date());
+    return formatLocalDate(new Date());
   }
   return (
     <Card className="mb-4">

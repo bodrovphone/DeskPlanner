@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
+import { formatLocalDate } from '@/lib/dateUtils';
 
 interface MeetingRoomHeaderProps {
   date: string;
@@ -30,10 +31,7 @@ export default function MeetingRoomHeader({ date, onPrev, onNext, onDateChange }
 
   const handleSelect = (d: Date | undefined) => {
     if (!d) return;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    onDateChange(`${y}-${m}-${day}`);
+    onDateChange(formatLocalDate(d));
     setOpen(false);
   };
 

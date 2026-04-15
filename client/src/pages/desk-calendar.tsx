@@ -16,6 +16,7 @@ import {
   getWeekRangeString,
   getMonthRange,
   getMonthRangeString,
+  formatLocalDate,
 } from '@/lib/dateUtils';
 import { DeskBooking, Currency } from '@shared/schema';
 import { useNextDates } from '@/hooks/use-next-dates';
@@ -46,10 +47,7 @@ export default function DeskCalendar() {
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'floor-plan'>('week');
-  const [mapDate, setMapDate] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  });
+  const [mapDate, setMapDate] = useState(() => formatLocalDate(new Date()));
   const [mapRoomId, setMapRoomId] = useState('all');
   const [roomViewMode, setRoomViewMode] = useState<'all' | 'single'>(() =>
     rooms.length >= 4 ? 'single' : 'all'
