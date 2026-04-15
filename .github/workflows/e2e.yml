@@ -36,6 +36,27 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      # On push to main, Cloudflare Pages auto-deploys but takes 1-3 minutes.
+      # CI would otherwise race against the deploy and test the OLD build.
+      # We poll a trailing-slash SPA route: before deploy Cloudflare serves the
+      # marketing page; after deploy it serves the SPA (title "OhMyDesk").
+      # The fix itself was to /_redirects, so this is a reliable deploy marker.
+      - name: Wait for Cloudflare Pages deploy
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting for Cloudflare Pages deploy to complete..."
+          for i in $(seq 1 60); do
+            title=$(curl -s --max-time 10 "https://ohmydesk.app/e2e-testspace/calendar/" | grep -oE '<title>[^<]+</title>' | head -1 || echo "")
+            if [[ "$title" == "<title>OhMyDesk</title>" ]]; then
+              echo "Deploy live (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/60: not yet live (title=$title)"
+            sleep 10
+          done
+          echo "Timeout: Cloudflare Pages deploy did not complete in 10 minutes"
+          exit 1
+
       - name: Run E2E tests
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
