@@ -6,10 +6,12 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { formatLocalDate } from '@/lib/dateUtils';
+import { buildAvailabilityMap, pickRandomAvailableDesk, getIsoDay } from '@/lib/bookingAvailability';
 import { Loader2, CalendarCheck, ChevronLeft, Check, MapPin, CalendarDays } from 'lucide-react';
 import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
-import { Calendar } from '@/components/ui/calendar';
 import { FloorPlanReadOnly } from '@/components/floor-plan/FloorPlanReadOnly';
+import { AvailabilityCalendar } from '@/components/booking/AvailabilityCalendar';
+import { PoweredByFooter } from '@/components/booking/PoweredByFooter';
 
 const SCARCITY_THRESHOLD = 3;
 
@@ -61,23 +63,7 @@ export default function PublicBookingPage() {
   // All hooks must be above early returns
   const { availabilityMap, maxDate } = useMemo(() => {
     if (!availability) return { availabilityMap: {} as Record<string, number>, maxDate: new Date() };
-    const { org, rooms, bookedSlots } = availability;
-    const bookedSet = new Set(bookedSlots.map(s => `${s.deskId}:${s.date}`));
-    const allDesks = rooms.flatMap(r => r.desks);
-    const totalDesks = allDesks.length;
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const map: Record<string, number> = {};
-    const max = new Date(now);
-    max.setDate(now.getDate() + org.maxDaysAhead);
-    for (let i = 0; i <= org.maxDaysAhead; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
-      const dateStr = formatLocalDate(d);
-      const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
-      map[dateStr] = totalDesks - bookedCount;
-    }
-    return { availabilityMap: map, maxDate: max };
+    return buildAvailabilityMap(availability);
   }, [availability]);
 
   if (loading) {
@@ -96,7 +82,7 @@ export default function PublicBookingPage() {
           <h1 className="text-lg font-semibold text-gray-900">Not available</h1>
           <p className="text-gray-500 mt-1">This space doesn't have online booking enabled, or doesn't exist.</p>
         </div>
-        <Footer />
+        <PoweredByFooter />
       </div>
     );
   }
@@ -141,7 +127,7 @@ export default function PublicBookingPage() {
               className="mt-6 pt-6 border-t"
             />
           </div>
-          <Footer />
+          <PoweredByFooter />
         </div>
       </div>
     );
@@ -165,15 +151,6 @@ export default function PublicBookingPage() {
   const todayIsWorkingDay = !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
 
-  // For the calendar: disable dates that are full, non-working, or out of range
-  const isDateDisabled = (date: Date) => {
-    const dateStr = formatLocalDate(date);
-    if (date < today || date > maxDate) return true;
-    if (isNonWorkingDay(dateStr, org.workingDays)) return true;
-    if ((availabilityMap[dateStr] ?? 0) <= 0) return true;
-    return false;
-  };
-
   // Generate dates list (still needed for selectedDateInfo)
   const dates: { date: string; dayLabel: string; dateLabel: string; available: number }[] = [];
   for (let i = 0; i <= org.maxDaysAhead; i++) {
@@ -183,22 +160,13 @@ export default function PublicBookingPage() {
     if (isNonWorkingDay(dateStr, org.workingDays)) continue;
     const available = availabilityMap[dateStr] ?? 0;
     if (available <= 0) continue;
-    const jsDay = d.getDay();
-    const isoDay = jsDay === 0 ? 7 : jsDay;
     dates.push({
       date: dateStr,
-      dayLabel: DAY_LABELS[isoDay] || '',
+      dayLabel: DAY_LABELS[getIsoDay(d)] || '',
       dateLabel: d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
       available,
     });
   }
-
-  // Pick a random available desk for the selected date
-  const getRandomAvailableDesk = (date: string) => {
-    const availableDesks = allDesks.filter(desk => !bookedSet.has(`${desk.deskId}:${date}`));
-    if (availableDesks.length === 0) return null;
-    return availableDesks[Math.floor(Math.random() * availableDesks.length)];
-  };
 
   const selectedDateInfo = dates.find(d => d.date === selectedDate);
   const step = selectedDate ? 2 : 1;
@@ -247,7 +215,7 @@ export default function PublicBookingPage() {
       }
 
       // Free path — existing behavior
-      const desk = getRandomAvailableDesk(selectedDate);
+      const desk = pickRandomAvailableDesk(allDesks, bookedSet, selectedDate);
       if (!desk) {
         setError('Sorry, all desks just got booked for this date. Please pick another.');
         setSubmitting(false);
@@ -380,42 +348,17 @@ export default function PublicBookingPage() {
                         Pick another date
                       </button>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <Calendar
-                          mode="single"
-                          weekStartsOn={1}
-                          selected={undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              setSelectedDate(formatLocalDate(date));
-                              setShowCalendar(false);
-                            }
-                          }}
-                          disabled={isDateDisabled}
-                          fromDate={today}
-                          toDate={maxDate}
-                          className="rounded-xl border p-3"
-                          modifiers={{
-                            available: (date: Date) => {
-                              const dateStr = formatLocalDate(date);
-                              const avail = availabilityMap[dateStr] ?? 0;
-                              return avail > 0 && !isNonWorkingDay(dateStr, org.workingDays) && date >= today && date <= maxDate;
-                            },
-                          }}
-                          modifiersClassNames={{
-                            available: '!text-lime-600 font-semibold',
-                          }}
-                          classNames={{
-                            day_disabled: 'text-gray-500 opacity-100',
-                          }}
-                        />
-                        <button
-                          onClick={() => setShowCalendar(false)}
-                          className="mt-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                      <AvailabilityCalendar
+                        today={today}
+                        maxDate={maxDate}
+                        workingDays={org.workingDays}
+                        availabilityMap={availabilityMap}
+                        onSelect={(dateStr) => {
+                          setSelectedDate(dateStr);
+                          setShowCalendar(false);
+                        }}
+                        onCancel={() => setShowCalendar(false)}
+                      />
                     )}
                   </div>
                 )}
@@ -523,7 +466,7 @@ export default function PublicBookingPage() {
           </div>
         </div>
 
-        <Footer />
+        <PoweredByFooter />
       </div>
     </div>
   );
@@ -531,19 +474,4 @@ export default function PublicBookingPage() {
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en', { style: 'currency', currency }).format(amount);
-}
-
-function Footer() {
-  return (
-    <div className="text-center mt-6">
-      <a
-        href="https://ohmydesk.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
-      >
-        Powered by OhMyDesk
-      </a>
-    </div>
-  );
 }

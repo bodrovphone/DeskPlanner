@@ -6,10 +6,12 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan';
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { formatLocalDate } from '@/lib/dateUtils';
+import { buildAvailabilityMap, pickRandomAvailableDesk, getIsoDay } from '@/lib/bookingAvailability';
 import { Loader2, CalendarCheck, Check, MapPin, CalendarDays, Package } from 'lucide-react';
 import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
-import { Calendar } from '@/components/ui/calendar';
 import { FloorPlanReadOnly } from '@/components/floor-plan/FloorPlanReadOnly';
+import { AvailabilityCalendar } from '@/components/booking/AvailabilityCalendar';
+import { PoweredByFooter } from '@/components/booking/PoweredByFooter';
 
 /**
  * Member self-service booking page.
@@ -110,23 +112,7 @@ export default function MemberBookingPage() {
 
   const { availabilityMap, maxDate } = useMemo(() => {
     if (!availability) return { availabilityMap: {} as Record<string, number>, maxDate: new Date() };
-    const { org, rooms, bookedSlots } = availability;
-    const bookedSet = new Set(bookedSlots.map(s => `${s.deskId}:${s.date}`));
-    const allDesks = rooms.flatMap(r => r.desks);
-    const totalDesks = allDesks.length;
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const map: Record<string, number> = {};
-    const max = new Date(now);
-    max.setDate(now.getDate() + org.maxDaysAhead);
-    for (let i = 0; i <= org.maxDaysAhead; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
-      const dateStr = formatLocalDate(d);
-      const bookedCount = allDesks.filter(desk => bookedSet.has(`${desk.deskId}:${dateStr}`)).length;
-      map[dateStr] = totalDesks - bookedCount;
-    }
-    return { availabilityMap: map, maxDate: max };
+    return buildAvailabilityMap(availability);
   }, [availability]);
 
   if (loading) {
@@ -145,7 +131,7 @@ export default function MemberBookingPage() {
           <h1 className="text-lg font-semibold text-gray-900">Not found</h1>
           <p className="text-gray-500 mt-1">This booking link is invalid or has expired.</p>
         </div>
-        <Footer />
+        <PoweredByFooter />
       </div>
     );
   }
@@ -220,7 +206,7 @@ export default function MemberBookingPage() {
               className="mt-6 pt-6 border-t"
             />
           </div>
-          <Footer />
+          <PoweredByFooter />
         </div>
       </div>
     );
@@ -242,20 +228,6 @@ export default function MemberBookingPage() {
   const todayIsWorkingDay = !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
 
-  const isDateDisabled = (date: Date) => {
-    const dateStr = formatLocalDate(date);
-    if (date < today || date > maxDate) return true;
-    if (isNonWorkingDay(dateStr, org.workingDays)) return true;
-    if ((availabilityMap[dateStr] ?? 0) <= 0) return true;
-    return false;
-  };
-
-  const getRandomAvailableDesk = (date: string) => {
-    const availableDesks = allDesks.filter(desk => !bookedSet.has(`${desk.deskId}:${date}`));
-    if (availableDesks.length === 0) return null;
-    return availableDesks[Math.floor(Math.random() * availableDesks.length)];
-  };
-
   const perVisitPrice = flexConfig && flexConfig.days > 0
     ? flexConfig.price / flexConfig.days
     : 0;
@@ -272,7 +244,7 @@ export default function MemberBookingPage() {
     setError('');
 
     try {
-      const desk = getRandomAvailableDesk(selectedDate);
+      const desk = pickRandomAvailableDesk(allDesks, bookedSet, selectedDate);
       if (!desk) {
         setError('Sorry, all desks just got booked. Please pick another date.');
         setSubmitting(false);
@@ -390,12 +362,10 @@ export default function MemberBookingPage() {
                 <div className="space-y-1.5">
                   {upcomingBookings.map(b => {
                     const d = new Date(b.date + 'T00:00:00');
-                    const jsDay = d.getDay();
-                    const isoDay = jsDay === 0 ? 7 : jsDay;
                     return (
                       <div key={b.date} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm">
                         <span className="text-gray-700">
-                          {DAY_LABELS[isoDay]}, {d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
+                          {DAY_LABELS[getIsoDay(d)]}, {d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                         </span>
                         <span className="text-gray-400 text-xs">{b.deskLabel}</span>
                       </div>
@@ -462,43 +432,17 @@ export default function MemberBookingPage() {
                       Pick another date
                     </button>
                   ) : (
-                    <div className="flex flex-col items-center">
-                      <Calendar
-                        mode="single"
-                        weekStartsOn={1}
-                        selected={undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            setSelectedDate(formatLocalDate(date));
-                            setShowCalendar(false);
-                          }
-                        }}
-                        disabled={isDateDisabled}
-                        fromDate={today}
-                        toDate={maxDate}
-                        className="rounded-xl border p-3"
-                        modifiers={{
-                          available: (date: Date) => {
-                            const dateStr = formatLocalDate(date);
-                            return (availabilityMap[dateStr] ?? 0) > 0
-                              && !isNonWorkingDay(dateStr, org.workingDays)
-                              && date >= today && date <= maxDate;
-                          },
-                        }}
-                        modifiersClassNames={{
-                          available: '!text-lime-600 font-semibold',
-                        }}
-                        classNames={{
-                          day_disabled: 'text-gray-500 opacity-100',
-                        }}
-                      />
-                      <button
-                        onClick={() => setShowCalendar(false)}
-                        className="mt-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    <AvailabilityCalendar
+                      today={today}
+                      maxDate={maxDate}
+                      workingDays={org.workingDays}
+                      availabilityMap={availabilityMap}
+                      onSelect={(dateStr) => {
+                        setSelectedDate(dateStr);
+                        setShowCalendar(false);
+                      }}
+                      onCancel={() => setShowCalendar(false)}
+                    />
                   )}
                 </div>
               </div>
@@ -517,9 +461,7 @@ export default function MemberBookingPage() {
                     <p className="font-semibold text-amber-900">
                       {(() => {
                         const d = new Date(selectedDate + 'T00:00:00');
-                        const jsDay = d.getDay();
-                        const isoDay = jsDay === 0 ? 7 : jsDay;
-                        return `${DAY_LABELS[isoDay]}, ${d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
+                        return `${DAY_LABELS[getIsoDay(d)]}, ${d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
                       })()}
                     </p>
                     <p className="text-xs text-amber-600 mt-0.5">A desk will be assigned for you</p>
@@ -551,23 +493,9 @@ export default function MemberBookingPage() {
             )}
           </div>
         </div>
-        <Footer />
+        <PoweredByFooter />
       </div>
     </div>
   );
 }
 
-function Footer() {
-  return (
-    <div className="text-center mt-6">
-      <a
-        href="https://ohmydesk.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
-      >
-        Powered by OhMyDesk
-      </a>
-    </div>
-  );
-}
