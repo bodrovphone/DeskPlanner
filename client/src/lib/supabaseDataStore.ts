@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DeskBooking, WaitingListEntry, AppSettings, MonthlyStats, Expense, RecurringExpense, SharedBooking, PublicAvailability, Client, ExpenseCategory } from '@shared/schema';
+import {
+  DeskBooking,
+  WaitingListEntry,
+  AppSettings,
+  MonthlyStats,
+  Expense,
+  RecurringExpense,
+  SharedBooking,
+  PublicAvailability,
+  Client,
+  ExpenseCategory,
+  Currency,
+} from '@shared/schema';
 import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
@@ -24,8 +36,10 @@ export class SupabaseDataStore implements IDataStore {
   private async checkAuthStatus(): Promise<void> {
     try {
       // Check if already authenticated
-      const { data: { user } } = await this.client.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await this.client.auth.getUser();
+
       if (!user) {
         // Don't sign in anonymously - just work without auth
         // Read operations will still work due to RLS policies
@@ -40,7 +54,10 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   isConfigured(): boolean {
-    return !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+    return !!(
+      import.meta.env.VITE_SUPABASE_URL &&
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    );
   }
 
   private getBookingKey(deskId: string, date: string): string {
@@ -72,7 +89,7 @@ export class SupabaseDataStore implements IDataStore {
           .from('desk_bookings')
           .select('*')
           .eq('desk_id', deskId)
-          .eq('date', date)
+          .eq('date', date),
       ).limit(1);
 
       if (error) {
@@ -89,12 +106,13 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async getAllBookings(startDate?: string, endDate?: string): Promise<Record<string, DeskBooking>> {
+  async getAllBookings(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Record<string, DeskBooking>> {
     try {
       let query = this.scopeQuery(
-        this.client
-          .from('desk_bookings')
-          .select('*')
+        this.client.from('desk_bookings').select('*'),
       );
 
       // Apply date range filtering if provided
@@ -126,14 +144,12 @@ export class SupabaseDataStore implements IDataStore {
   async saveBooking(booking: DeskBooking): Promise<void> {
     try {
       const dbData = this.mapToDatabase(booking);
-      
+
       // First try to update existing record, then insert if not found
-      const { error } = await this.client
-        .from('desk_bookings')
-        .upsert(dbData, { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
-        });
+      const { error } = await this.client.from('desk_bookings').upsert(dbData, {
+        onConflict: 'id',
+        ignoreDuplicates: false,
+      });
 
       if (error) {
         console.error('Supabase upsert error:', error);
@@ -162,8 +178,8 @@ export class SupabaseDataStore implements IDataStore {
 
   async bulkUpdateBookings(bookings: DeskBooking[]): Promise<void> {
     try {
-      const dbData = bookings.map(booking => this.mapToDatabase(booking));
-      
+      const dbData = bookings.map((booking) => this.mapToDatabase(booking));
+
       const { error } = await this.client
         .from('desk_bookings')
         .upsert(dbData, { onConflict: 'id' });
@@ -175,14 +191,16 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async bulkDeleteBookings(deletions: { deskId: string; date: string }[]): Promise<void> {
+  async bulkDeleteBookings(
+    deletions: { deskId: string; date: string }[],
+  ): Promise<void> {
     try {
       // Build a filter to delete multiple bookings in one query
       // Use OR conditions to match any of the desk_id + date combinations
-      const orConditions = deletions.map(({ deskId, date }) => 
-        `and(desk_id.eq.${deskId},date.eq.${date})`
+      const orConditions = deletions.map(
+        ({ deskId, date }) => `and(desk_id.eq.${deskId},date.eq.${date})`,
       );
-      
+
       const { error } = await this.client
         .from('desk_bookings')
         .delete()
@@ -195,32 +213,36 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async getBookingsForDateRange(startDate: string, endDate: string): Promise<DeskBooking[]> {
+  async getBookingsForDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<DeskBooking[]> {
     try {
       const { data, error } = await this.scopeQuery(
         this.client
           .from('desk_bookings')
           .select('*')
           .gte('date', startDate)
-          .lte('date', endDate)
+          .lte('date', endDate),
       ).order('date');
 
       if (error) throw error;
 
-      return (data || []).map(row => this.mapFromDatabase(row));
+      return (data || []).map((row) => this.mapFromDatabase(row));
     } catch (error) {
       console.error('Error fetching bookings for date range:', error);
       throw new Error('Failed to fetch bookings for date range');
     }
   }
 
-  async getBookingsForDesk(deskId: string, startDate?: string, endDate?: string): Promise<DeskBooking[]> {
+  async getBookingsForDesk(
+    deskId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<DeskBooking[]> {
     try {
       let query = this.scopeQuery(
-        this.client
-          .from('desk_bookings')
-          .select('*')
-          .eq('desk_id', deskId)
+        this.client.from('desk_bookings').select('*').eq('desk_id', deskId),
       );
 
       if (startDate) query = query.gte('date', startDate);
@@ -232,7 +254,7 @@ export class SupabaseDataStore implements IDataStore {
 
       if (error) throw error;
 
-      return (data || []).map(row => this.mapFromDatabase(row));
+      return (data || []).map((row) => this.mapFromDatabase(row));
     } catch (error) {
       console.error('Error fetching bookings for desk:', error);
       throw new Error('Failed to fetch bookings for desk');
@@ -249,7 +271,7 @@ export class SupabaseDataStore implements IDataStore {
         this.client
           .from('desk_bookings')
           .select('desk_id, date, status')
-          .in('date', dates)
+          .in('date', dates),
       );
 
       if (error) throw error;
@@ -284,7 +306,12 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async getMonthlyStats(year: number, month: number, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
+  async getMonthlyStats(
+    year: number,
+    month: number,
+    workingDays?: number[],
+    deskCount?: number,
+  ): Promise<MonthlyStats> {
     const currency = 'EUR';
     // Uses DESK_COUNT from deskConfig
 
@@ -293,15 +320,10 @@ export class SupabaseDataStore implements IDataStore {
     const monthEnd = new Date(year, month + 1, 0);
 
     // Generate all calendar days in month
-    const daysInMonth: string[] = [];
-    let current = new Date(monthStart);
-    while (current <= monthEnd) {
-      daysInMonth.push(formatLocalDate(current));
-      current.setDate(current.getDate() + 1);
-    }
+    const daysInMonth = this.generateDateRange(monthStart, monthEnd);
 
     const workingDayCount = workingDays
-      ? daysInMonth.filter(d => !isNonWorkingDay(d, workingDays)).length
+      ? daysInMonth.filter((d) => !isNonWorkingDay(d, workingDays)).length
       : daysInMonth.length;
     const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
 
@@ -310,71 +332,19 @@ export class SupabaseDataStore implements IDataStore {
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
-          .in('date', daysInMonth)
+          .in('date', daysInMonth),
       );
 
       if (error) throw error;
 
-      const processedBookings = new Set<string>();
-      const seenSlots = new Set<string>();
-      let confirmedRevenue = 0;
-      let expectedRevenue = 0;
-      let occupiedDays = 0;
-      let assignedWorkingDays = 0;
-
-      for (const row of data || []) {
-        // Count occupied days, deduplicating by desk_id+date
-        const slotKey = `${row.desk_id}:${row.date}`;
-        const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
-        if (!seenSlots.has(slotKey)) {
-          seenSlots.add(slotKey);
-          if ((row.status === 'assigned' || row.status === 'booked') && isWorking) {
-            occupiedDays++;
-          }
-          if (row.status === 'assigned' && isWorking) {
-            assignedWorkingDays++;
-          }
-        }
-
-        // For revenue: only process each unique booking once, with pro-rata calculation
-        const bookingKey = `${row.desk_id}-${row.start_date}`;
-        if (processedBookings.has(bookingKey)) continue;
-        processedBookings.add(bookingKey);
-
-        // Calculate pro-rated revenue for this month
-        const bookingStart = new Date(row.start_date);
-        const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
-        const effectiveStart = bookingStart > monthStart ? bookingStart : monthStart;
-        const effectiveEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
-        const daysInThisMonth = this.countCalendarDays(effectiveStart, effectiveEnd);
-
-        const bookingPrice = row.price || 0;
-        const proratedPrice = totalBookingDays > 0
-          ? (daysInThisMonth / totalBookingDays) * bookingPrice
-          : 0;
-
-        if (row.status === 'assigned') {
-          confirmedRevenue += proratedPrice;
-        } else if (row.status === 'booked') {
-          expectedRevenue += proratedPrice;
-        }
-      }
-
-      const totalRevenue = confirmedRevenue + expectedRevenue;
-      const occupancyRate = totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
-
-      return {
-        totalRevenue,
-        confirmedRevenue,
-        expectedRevenue,
-        occupiedDays: assignedWorkingDays,
+      return this.calculateStatsFromRows(
+        data || [],
+        monthStart,
+        monthEnd,
         totalDeskDays,
-        occupancyRate,
-        revenuePerOccupiedDay,
+        workingDays,
         currency,
-      };
+      );
     } catch (error) {
       console.error('Error fetching monthly stats:', error);
       return {
@@ -390,6 +360,100 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
+  private generateDateRange(start: Date, end: Date): string[] {
+    const dates: string[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const y = current.getFullYear();
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      const d = String(current.getDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${d}`);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  }
+
+  private calculateStatsFromRows(
+    rows: Array<{
+      desk_id: string;
+      date: string;
+      status: string;
+      price: number | null;
+      start_date: string;
+      end_date: string;
+    }>,
+    periodStart: Date,
+    periodEnd: Date,
+    totalDeskDays: number,
+    workingDays?: number[],
+    currency: Currency = 'EUR',
+  ): MonthlyStats {
+    const processedBookings = new Set<string>();
+    const seenSlots = new Set<string>();
+    let confirmedRevenue = 0;
+    let expectedRevenue = 0;
+    let occupiedDays = 0;
+    let assignedWorkingDays = 0;
+
+    for (const row of rows) {
+      const slotKey = `${row.desk_id}:${row.date}`;
+      const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
+      if (!seenSlots.has(slotKey)) {
+        seenSlots.add(slotKey);
+        if (
+          (row.status === 'assigned' || row.status === 'booked') &&
+          isWorking
+        ) {
+          occupiedDays++;
+        }
+        if (row.status === 'assigned' && isWorking) {
+          assignedWorkingDays++;
+        }
+      }
+
+      const bookingKey = `${row.desk_id}-${row.start_date}`;
+      if (processedBookings.has(bookingKey)) continue;
+      processedBookings.add(bookingKey);
+
+      const bookingStart = new Date(row.start_date);
+      const bookingEnd = new Date(row.end_date);
+      const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
+      const effectiveStart =
+        bookingStart > periodStart ? bookingStart : periodStart;
+      const effectiveEnd = bookingEnd < periodEnd ? bookingEnd : periodEnd;
+      const daysInPeriod = this.countCalendarDays(effectiveStart, effectiveEnd);
+
+      const bookingPrice = row.price || 0;
+      const proratedPrice =
+        totalBookingDays > 0
+          ? (daysInPeriod / totalBookingDays) * bookingPrice
+          : 0;
+
+      if (row.status === 'assigned') {
+        confirmedRevenue += proratedPrice;
+      } else if (row.status === 'booked') {
+        expectedRevenue += proratedPrice;
+      }
+    }
+
+    const totalRevenue = confirmedRevenue + expectedRevenue;
+    const occupancyRate =
+      totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
+    const revenuePerOccupiedDay =
+      assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
+
+    return {
+      totalRevenue,
+      confirmedRevenue,
+      expectedRevenue,
+      occupiedDays: assignedWorkingDays,
+      totalDeskDays,
+      occupancyRate,
+      revenuePerOccupiedDay,
+      currency,
+    };
+  }
+
   private countCalendarDays(start: Date, end: Date): number {
     const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
@@ -397,22 +461,22 @@ export class SupabaseDataStore implements IDataStore {
     return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  async getStatsForDateRange(startDate: string, endDate: string, workingDays?: number[], deskCount?: number): Promise<MonthlyStats> {
+  async getStatsForDateRange(
+    startDate: string,
+    endDate: string,
+    workingDays?: number[],
+    deskCount?: number,
+  ): Promise<MonthlyStats> {
     const currency = 'EUR';
     // Uses DESK_COUNT from deskConfig
 
     const rangeStart = new Date(startDate + 'T00:00:00');
     const rangeEnd = new Date(endDate + 'T00:00:00');
 
-    const daysInRange: string[] = [];
-    let current = new Date(rangeStart);
-    while (current <= rangeEnd) {
-      daysInRange.push(formatLocalDate(current));
-      current.setDate(current.getDate() + 1);
-    }
+    const daysInRange = this.generateDateRange(rangeStart, rangeEnd);
 
     const workingDayCount = workingDays
-      ? daysInRange.filter(d => !isNonWorkingDay(d, workingDays)).length
+      ? daysInRange.filter((d) => !isNonWorkingDay(d, workingDays)).length
       : daysInRange.length;
     const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
 
@@ -421,68 +485,30 @@ export class SupabaseDataStore implements IDataStore {
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
-          .in('date', daysInRange)
+          .in('date', daysInRange),
       );
 
       if (error) throw error;
 
-      const processedBookings = new Set<string>();
-      const seenSlots = new Set<string>();
-      let confirmedRevenue = 0;
-      let expectedRevenue = 0;
-      let occupiedDays = 0;
-      let assignedWorkingDays = 0;
-
-      for (const row of data || []) {
-        // Count occupied days, deduplicating by desk_id+date
-        const slotKey = `${row.desk_id}:${row.date}`;
-        const isWorking = !workingDays || !isNonWorkingDay(row.date, workingDays);
-        if (!seenSlots.has(slotKey)) {
-          seenSlots.add(slotKey);
-          if ((row.status === 'assigned' || row.status === 'booked') && isWorking) {
-            occupiedDays++;
-          }
-          if (row.status === 'assigned' && isWorking) {
-            assignedWorkingDays++;
-          }
-        }
-
-        const bookingKey = `${row.desk_id}-${row.start_date}`;
-        if (processedBookings.has(bookingKey)) continue;
-        processedBookings.add(bookingKey);
-
-        const bookingStart = new Date(row.start_date);
-        const bookingEnd = new Date(row.end_date);
-        const totalBookingDays = this.countCalendarDays(bookingStart, bookingEnd);
-        const effectiveStart = bookingStart > rangeStart ? bookingStart : rangeStart;
-        const effectiveEnd = bookingEnd < rangeEnd ? bookingEnd : rangeEnd;
-        const daysInThisRange = this.countCalendarDays(effectiveStart, effectiveEnd);
-
-        const bookingPrice = row.price || 0;
-        const proratedPrice = totalBookingDays > 0
-          ? (daysInThisRange / totalBookingDays) * bookingPrice
-          : 0;
-
-        if (row.status === 'assigned') {
-          confirmedRevenue += proratedPrice;
-        } else if (row.status === 'booked') {
-          expectedRevenue += proratedPrice;
-        }
-      }
-
-      const totalRevenue = confirmedRevenue + expectedRevenue;
-      const occupancyRate = totalDeskDays > 0 ? (assignedWorkingDays / totalDeskDays) * 100 : 0;
-      const revenuePerOccupiedDay = assignedWorkingDays > 0 ? confirmedRevenue / assignedWorkingDays : 0;
-
-      return {
-        totalRevenue, confirmedRevenue, expectedRevenue, occupiedDays: assignedWorkingDays,
-        totalDeskDays, occupancyRate, revenuePerOccupiedDay, currency,
-      };
+      return this.calculateStatsFromRows(
+        data || [],
+        rangeStart,
+        rangeEnd,
+        totalDeskDays,
+        workingDays,
+        currency,
+      );
     } catch (error) {
       console.error('Error fetching stats for date range:', error);
       return {
-        totalRevenue: 0, confirmedRevenue: 0, expectedRevenue: 0, occupiedDays: 0,
-        totalDeskDays, occupancyRate: 0, revenuePerOccupiedDay: 0, currency,
+        totalRevenue: 0,
+        confirmedRevenue: 0,
+        expectedRevenue: 0,
+        occupiedDays: 0,
+        totalDeskDays,
+        occupancyRate: 0,
+        revenuePerOccupiedDay: 0,
+        currency,
       };
     }
   }
@@ -511,7 +537,10 @@ export class SupabaseDataStore implements IDataStore {
         const timestampMatch = entry.id.match(/waiting-(\d+)-/);
         numericId = timestampMatch ? parseInt(timestampMatch[1]) : Date.now();
       } else {
-        numericId = typeof entry.id === 'string' ? parseInt(entry.id) || Date.now() : entry.id;
+        numericId =
+          typeof entry.id === 'string'
+            ? parseInt(entry.id) || Date.now()
+            : entry.id;
       }
 
       const dbData: any = {
@@ -541,14 +570,12 @@ export class SupabaseDataStore implements IDataStore {
   async getWaitingListEntries(): Promise<WaitingListEntry[]> {
     try {
       const { data, error } = await this.scopeQuery(
-        this.client
-          .from('waiting_list_entries')
-          .select('*')
+        this.client.from('waiting_list_entries').select('*'),
       ).order('created_at');
 
       if (error) throw error;
 
-      return (data || []).map(row => ({
+      return (data || []).map((row) => ({
         id: row.id.toString(), // Convert numeric ID back to string for consistency
         name: row.name,
         preferredDates: row.preferred_dates,
@@ -568,7 +595,9 @@ export class SupabaseDataStore implements IDataStore {
       let numericId: number;
       if (id.startsWith('waiting-')) {
         const timestampMatch = id.match(/waiting-(\d+)-/);
-        numericId = timestampMatch ? parseInt(timestampMatch[1]) : parseInt(id) || 0;
+        numericId = timestampMatch
+          ? parseInt(timestampMatch[1])
+          : parseInt(id) || 0;
       } else {
         numericId = parseInt(id) || 0;
       }
@@ -635,7 +664,9 @@ export class SupabaseDataStore implements IDataStore {
   // Helper methods for data mapping
   private mapToDatabase(booking: DeskBooking): any {
     // Include organizationId in hash to avoid cross-org ID collisions
-    const hashInput = this.organizationId ? `${this.organizationId}:${booking.id}` : booking.id;
+    const hashInput = this.organizationId
+      ? `${this.organizationId}:${booking.id}`
+      : booking.id;
     const numericId = this.stringToNumericId(hashInput);
 
     const record: any = {
@@ -650,7 +681,9 @@ export class SupabaseDataStore implements IDataStore {
       price: booking.price,
       currency: booking.currency,
       created_at: booking.createdAt,
-      client_id: booking.clientId ? parseInt(booking.clientId, 10) || null : null,
+      client_id: booking.clientId
+        ? parseInt(booking.clientId, 10) || null
+        : null,
       is_flex: booking.isFlex || false,
     };
 
@@ -689,7 +722,7 @@ export class SupabaseDataStore implements IDataStore {
     let hash = 0;
     for (let i = 0; i < stringId.length; i++) {
       const char = stringId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     // Ensure positive number
@@ -705,12 +738,12 @@ export class SupabaseDataStore implements IDataStore {
           .select('*, expense_categories(id, name)')
           .gte('date', startDate)
           .lte('date', endDate)
-          .order('date', { ascending: false })
+          .order('date', { ascending: false }),
       );
 
       if (error) throw error;
 
-      return (data || []).map(row => this.mapExpenseFromDatabase(row));
+      return (data || []).map((row) => this.mapExpenseFromDatabase(row));
     } catch (error) {
       console.error('Error fetching expenses:', error);
       return [];
@@ -756,12 +789,14 @@ export class SupabaseDataStore implements IDataStore {
         this.client
           .from('recurring_expenses')
           .select('*, expense_categories(id, name)')
-          .eq('is_active', true)
+          .eq('is_active', true),
       );
 
       if (error) throw error;
 
-      return (data || []).map(row => this.mapRecurringExpenseFromDatabase(row));
+      return (data || []).map((row) =>
+        this.mapRecurringExpenseFromDatabase(row),
+      );
     } catch (error) {
       console.error('Error fetching recurring expenses:', error);
       return [];
@@ -800,10 +835,13 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  async generateRecurringExpenses(year: number, month: number): Promise<Expense[]> {
+  async generateRecurringExpenses(
+    year: number,
+    month: number,
+  ): Promise<Expense[]> {
     try {
       const recurringExpenses = await this.getRecurringExpenses();
-      const activeExpenses = recurringExpenses.filter(e => e.isActive);
+      const activeExpenses = recurringExpenses.filter((e) => e.isActive);
 
       // Get existing expenses for this month to avoid duplicates
       const monthStart = formatYMD(year, month + 1, 1);
@@ -814,7 +852,7 @@ export class SupabaseDataStore implements IDataStore {
 
       for (const recurring of activeExpenses) {
         const alreadyExists = existingExpenses.some(
-          e => e.isRecurring && e.recurringExpenseId === recurring.id
+          (e) => e.isRecurring && e.recurringExpenseId === recurring.id,
         );
 
         if (!alreadyExists) {
@@ -847,10 +885,14 @@ export class SupabaseDataStore implements IDataStore {
   // Expense mapping helpers
   private mapExpenseToDatabase(expense: Expense): any {
     // If the ID is already numeric (from database), use it directly; otherwise hash it
-    const numericId = /^\d+$/.test(expense.id) ? parseInt(expense.id, 10) : this.stringToNumericId(expense.id);
+    const numericId = /^\d+$/.test(expense.id)
+      ? parseInt(expense.id, 10)
+      : this.stringToNumericId(expense.id);
     // Same for recurring_expense_id
     const recurringId = expense.recurringExpenseId
-      ? (/^\d+$/.test(expense.recurringExpenseId) ? parseInt(expense.recurringExpenseId, 10) : this.stringToNumericId(expense.recurringExpenseId))
+      ? /^\d+$/.test(expense.recurringExpenseId)
+        ? parseInt(expense.recurringExpenseId, 10)
+        : this.stringToNumericId(expense.recurringExpenseId)
       : null;
     const record: any = {
       id: numericId,
@@ -879,14 +921,18 @@ export class SupabaseDataStore implements IDataStore {
       categoryName: row.expense_categories?.name ?? '',
       description: row.description,
       isRecurring: row.is_recurring || false,
-      recurringExpenseId: row.recurring_expense_id ? String(row.recurring_expense_id) : undefined,
+      recurringExpenseId: row.recurring_expense_id
+        ? String(row.recurring_expense_id)
+        : undefined,
       createdAt: row.created_at,
     };
   }
 
   private mapRecurringExpenseToDatabase(expense: RecurringExpense): any {
     // If the ID is already numeric (from database), use it directly; otherwise hash it
-    const numericId = /^\d+$/.test(expense.id) ? parseInt(expense.id, 10) : this.stringToNumericId(expense.id);
+    const numericId = /^\d+$/.test(expense.id)
+      ? parseInt(expense.id, 10)
+      : this.stringToNumericId(expense.id);
     const record: any = {
       id: numericId,
       amount: expense.amount,
@@ -919,10 +965,17 @@ export class SupabaseDataStore implements IDataStore {
 
   async getExpenseCategories(): Promise<ExpenseCategory[]> {
     const { data, error } = await this.scopeQuery(
-      this.client.from('expense_categories').select('id, name, is_default').order('name')
+      this.client
+        .from('expense_categories')
+        .select('id, name, is_default')
+        .order('name'),
     );
     if (error) throw new Error('Failed to fetch expense categories');
-    return (data || []).map(row => ({ id: row.id, name: row.name, isDefault: row.is_default }));
+    return (data || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      isDefault: row.is_default,
+    }));
   }
 
   async createExpenseCategory(name: string): Promise<ExpenseCategory> {
@@ -955,16 +1008,21 @@ export class SupabaseDataStore implements IDataStore {
   async getClients(): Promise<Client[]> {
     // Fetch clients with their most recent booking date for sorting
     const { data, error } = await this.scopeClientQuery(
-      this.client.from('clients').select('*, desk_bookings(date)')
+      this.client.from('clients').select('*, desk_bookings(date)'),
     ).order('name');
 
     if (error) throw error;
 
-    const clients = (data || []).map(row => {
+    const clients = (data || []).map((row) => {
       const bookings = row.desk_bookings as { date: string }[] | null;
-      const lastBookingDate = bookings && bookings.length > 0
-        ? bookings.reduce((max: string, b: { date: string }) => b.date > max ? b.date : max, bookings[0].date)
-        : null;
+      const lastBookingDate =
+        bookings && bookings.length > 0
+          ? bookings.reduce(
+              (max: string, b: { date: string }) =>
+                b.date > max ? b.date : max,
+              bookings[0].date,
+            )
+          : null;
       return {
         ...this.mapClientFromDatabase(row),
         lastBookingDate,
@@ -973,7 +1031,8 @@ export class SupabaseDataStore implements IDataStore {
 
     // Sort by last booking date (most recent first), then by name for those without bookings
     clients.sort((a, b) => {
-      if (a.lastBookingDate && b.lastBookingDate) return b.lastBookingDate.localeCompare(a.lastBookingDate);
+      if (a.lastBookingDate && b.lastBookingDate)
+        return b.lastBookingDate.localeCompare(a.lastBookingDate);
       if (a.lastBookingDate) return -1;
       if (b.lastBookingDate) return 1;
       return a.name.localeCompare(b.name);
@@ -984,11 +1043,13 @@ export class SupabaseDataStore implements IDataStore {
 
   async searchClients(query: string): Promise<Client[]> {
     const { data, error } = await this.scopeClientQuery(
-      this.client.from('clients').select('*').ilike('name', `%${query}%`)
-    ).order('name').limit(10);
+      this.client.from('clients').select('*').ilike('name', `%${query}%`),
+    )
+      .order('name')
+      .limit(10);
 
     if (error) throw error;
-    return (data || []).map(row => this.mapClientFromDatabase(row));
+    return (data || []).map((row) => this.mapClientFromDatabase(row));
   }
 
   async saveClient(client: Client): Promise<Client> {
@@ -1119,7 +1180,11 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   // Share token operations
-  async getOrCreateShareToken(bookingId: string, deskId?: string, date?: string): Promise<string> {
+  async getOrCreateShareToken(
+    bookingId: string,
+    deskId?: string,
+    date?: string,
+  ): Promise<string> {
     // Build query - prefer desk_id + date + org lookup (reliable), fall back to numeric ID
     let query = this.client.from('desk_bookings').select('share_token, id');
 
@@ -1129,7 +1194,9 @@ export class SupabaseDataStore implements IDataStore {
         .eq('date', date)
         .eq('organization_id', this.organizationId);
     } else {
-      const numericId = /^\d+$/.test(bookingId) ? parseInt(bookingId, 10) : this.stringToNumericId(bookingId);
+      const numericId = /^\d+$/.test(bookingId)
+        ? parseInt(bookingId, 10)
+        : this.stringToNumericId(bookingId);
       query = query.eq('id', numericId);
     }
 
@@ -1159,13 +1226,20 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   static async getSharedBooking(token: string): Promise<SharedBooking | null> {
-    const { data, error } = await supabaseClient.rpc('get_shared_booking', { p_token: token });
+    const { data, error } = await supabaseClient.rpc('get_shared_booking', {
+      p_token: token,
+    });
     if (error || !data) return null;
     return data as SharedBooking;
   }
 
-  static async getPublicAvailability(orgSlug: string): Promise<PublicAvailability | null> {
-    const { data, error } = await supabaseClient.rpc('get_public_availability', { p_org_slug: orgSlug });
+  static async getPublicAvailability(
+    orgSlug: string,
+  ): Promise<PublicAvailability | null> {
+    const { data, error } = await supabaseClient.rpc(
+      'get_public_availability',
+      { p_org_slug: orgSlug },
+    );
     if (error || !data) return null;
     return data as PublicAvailability;
   }
@@ -1185,23 +1259,21 @@ export class SupabaseDataStore implements IDataStore {
     if (params.visitorNotes) titleParts.push(params.visitorNotes);
     const title = titleParts.length > 0 ? titleParts.join(' | ') : null;
 
-    const { error } = await supabaseClient
-      .from('desk_bookings')
-      .insert({
-        desk_id: params.deskId,
-        date: params.date,
-        start_date: params.date,
-        end_date: params.date,
-        status: 'booked',
-        organization_id: params.organizationId,
-        visitor_name: params.visitorName,
-        visitor_email: params.visitorEmail,
-        visitor_phone: params.visitorPhone || null,
-        visitor_notes: params.visitorNotes || null,
-        person_name: params.visitorName,
-        title,
-        created_at: new Date().toISOString(),
-      });
+    const { error } = await supabaseClient.from('desk_bookings').insert({
+      desk_id: params.deskId,
+      date: params.date,
+      start_date: params.date,
+      end_date: params.date,
+      status: 'booked',
+      organization_id: params.organizationId,
+      visitor_name: params.visitorName,
+      visitor_email: params.visitorEmail,
+      visitor_phone: params.visitorPhone || null,
+      visitor_notes: params.visitorNotes || null,
+      person_name: params.visitorName,
+      title,
+      created_at: new Date().toISOString(),
+    });
 
     if (error) throw error;
 
@@ -1222,15 +1294,17 @@ export class SupabaseDataStore implements IDataStore {
     }
 
     // Fire-and-forget email notification to owner
-    supabaseClient.functions.invoke('notify-public-booking-email', {
-      body: {
-        organizationId: params.organizationId,
-        visitorName: params.visitorName,
-        visitorPhone: params.visitorPhone || null,
-        deskId: params.deskId,
-        date: params.date,
-        notes: params.visitorNotes || null,
-      },
-    }).catch(() => {});
+    supabaseClient.functions
+      .invoke('notify-public-booking-email', {
+        body: {
+          organizationId: params.organizationId,
+          visitorName: params.visitorName,
+          visitorPhone: params.visitorPhone || null,
+          deskId: params.deskId,
+          date: params.date,
+          notes: params.visitorNotes || null,
+        },
+      })
+      .catch(() => {});
   }
 }
