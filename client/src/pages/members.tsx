@@ -3,7 +3,10 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake } from 'lucide-react';
+import { DeskBooking } from '@shared/schema';
+import { formatLocalDate } from '@/lib/dateUtils';
+import ReactivationModal from '@/components/members/ReactivationModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,6 +19,98 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabaseClient } from '@/lib/supabaseClient';
 
 const DEFAULT_VISIBLE = 20;
+
+interface PlanState {
+  activeDaysLeft: number;
+  bankedDays: number;
+  bankedBookings: DeskBooking[];
+  activeEndDate: string | null;
+  planType: 'weekly' | 'monthly' | null;
+  isPaused: boolean;
+}
+
+interface BalanceCellProps {
+  client: Client;
+  planState: PlanState | undefined;
+  flexConfigured: boolean;
+  orgSlug: string | undefined;
+  onActivateFlex: (client: Client) => void;
+  onReactivate: (client: Client, banked: DeskBooking[]) => void;
+  onCopyLink: (link: string, clientName: string) => void;
+}
+
+function BalanceCell({
+  client,
+  planState,
+  flexConfigured,
+  orgSlug,
+  onActivateFlex,
+  onReactivate,
+  onCopyLink,
+}: BalanceCellProps) {
+  const hasFlex = flexConfigured && client.flexActive;
+  const hasActivePlan = !!planState && planState.activeDaysLeft > 0;
+  const hasBankedPlan = !!planState && planState.bankedDays > 0;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {hasBankedPlan && (
+        <div className="inline-flex items-center gap-2">
+          <span className="text-sm text-gray-400">
+            {planState!.bankedDays}d left
+          </span>
+          <button
+            onClick={() => onReactivate(client, planState!.bankedBookings)}
+            className="px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+          >
+            Reactivate
+          </button>
+        </div>
+      )}
+      {hasActivePlan && !hasBankedPlan && (
+        <span className="text-sm font-medium text-emerald-700">
+          {planState!.activeDaysLeft} day{planState!.activeDaysLeft === 1 ? '' : 's'} left
+        </span>
+      )}
+      {hasFlex && (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => onActivateFlex(client)}
+            className="text-sm font-medium text-amber-600 hover:text-amber-700"
+          >
+            {client.flexTotalDays - client.flexUsedDays}/{client.flexTotalDays}
+          </button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={async () => {
+                    const link = `${window.location.origin}/book/${client.id}/${orgSlug}`;
+                    await navigator.clipboard.writeText(link);
+                    onCopyLink(link, client.name);
+                  }}
+                  className="px-1.5 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
+                >
+                  Copy link
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px] text-center">
+                <p>Copy this member's personal booking link to share via messenger or email</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+      {flexConfigured && !client.flexActive && !hasActivePlan && !hasBankedPlan && (
+        <Checkbox
+          checked={false}
+          onCheckedChange={() => onActivateFlex(client)}
+          className="data-[state=unchecked]:border-gray-300"
+        />
+      )}
+    </div>
+  );
+}
 
 function useDebouncedSave(dataStore: ReturnType<typeof useDataStore>, toast: ReturnType<typeof useToast>['toast']) {
   const timers = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -66,8 +161,10 @@ export default function MembersPage() {
   const [flexActivateTarget, setFlexActivateTarget] = useState<Client | null>(null);
   const [flexActivatedLink, setFlexActivatedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [reactivateTarget, setReactivateTarget] = useState<{ client: Client; banked: DeskBooking[] } | null>(null);
   const newNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const today = formatLocalDate(new Date());
 
   const flexConfigured = !!(currentOrg?.flexPlanDays && currentOrg.flexPlanDays > 0 && currentOrg?.flexPlanPrice && currentOrg.flexPlanPrice > 0);
 
@@ -78,6 +175,41 @@ export default function MembersPage() {
     queryFn: () => dataStore.getClients!(),
     enabled: !!dataStore.getClients,
   });
+
+  const { data: planBookings } = useQuery({
+    queryKey: ['org-plan-bookings'],
+    queryFn: () => dataStore.getOrgPlanBookings!(),
+    enabled: !!dataStore.getOrgPlanBookings,
+  });
+
+  const planStateByClient = useMemo(() => {
+    const map = new Map<string, PlanState>();
+    for (const b of planBookings ?? []) {
+      if (!b.clientId) continue;
+      const entry = map.get(b.clientId) ?? {
+        activeDaysLeft: 0,
+        bankedDays: 0,
+        bankedBookings: [],
+        activeEndDate: null,
+        planType: null,
+        isPaused: false,
+      };
+      const pt = b.planType === 'weekly' || b.planType === 'monthly' ? b.planType : null;
+      if (pt && !entry.planType) entry.planType = pt;
+      if (b.pausedAt) {
+        entry.bankedDays += 1;
+        entry.bankedBookings.push(b);
+        entry.isPaused = true;
+      } else if (!b.isFrozen && b.date >= today) {
+        entry.activeDaysLeft += 1;
+        if (!entry.activeEndDate || b.endDate > entry.activeEndDate) {
+          entry.activeEndDate = b.endDate;
+        }
+      }
+      map.set(b.clientId, entry);
+    }
+    return map;
+  }, [planBookings, today]);
 
   useEffect(() => {
     if (clients) setLocalClients(clients);
@@ -228,10 +360,9 @@ export default function MembersPage() {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
-                  {flexConfigured && (
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-48">Flex Balance</th>
-                )}
-                  <th className="w-12" />
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-24">Plan</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-48">Balance</th>
+                  <th className="w-24" />
                 </tr>
               </thead>
               <tbody>
@@ -275,45 +406,35 @@ export default function MembersPage() {
                         className="w-full bg-transparent border-0 outline-none text-sm text-gray-600 placeholder-gray-300 focus:ring-0 py-1"
                       />
                     </td>
-                    {flexConfigured && (
-                      <td className="px-4 py-1.5">
-                        {client.flexActive ? (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => setFlexActivateTarget(client)}
-                              className="text-sm font-medium text-amber-600 hover:text-amber-700"
-                            >
-                              {client.flexTotalDays - client.flexUsedDays}/{client.flexTotalDays}
-                            </button>
-                            <TooltipProvider delayDuration={200}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={async () => {
-                                      const link = `${window.location.origin}/book/${client.id}/${currentOrg?.slug}`;
-                                      await navigator.clipboard.writeText(link);
-                                      toast({ title: 'Link copied', description: `Booking link for ${client.name} copied.`, duration: 1500 });
-                                    }}
-                                    className="px-1.5 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
-                                  >
-                                    Copy link
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-[220px] text-center">
-                                  <p>Copy this member's personal booking link to share via messenger or email</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
+                    <td className="px-4 py-1.5">
+                      {(() => {
+                        const ps = planStateByClient.get(client.id);
+                        const label = ps?.planType === 'weekly' ? 'Weekly'
+                          : ps?.planType === 'monthly' ? 'Monthly'
+                          : client.flexActive ? 'Flex'
+                          : null;
+                        if (!label) return null;
+                        return ps?.isPaused ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                            <Snowflake className="h-3 w-3" />
+                            {label}
+                          </span>
                         ) : (
-                          <Checkbox
-                            checked={false}
-                            onCheckedChange={() => setFlexActivateTarget(client)}
-                            className="data-[state=unchecked]:border-gray-300"
-                          />
-                        )}
-                      </td>
-                    )}
+                          <span className="text-xs text-gray-600 font-medium">{label}</span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-1.5">
+                      <BalanceCell
+                        client={client}
+                        planState={planStateByClient.get(client.id)}
+                        flexConfigured={flexConfigured}
+                        orgSlug={currentOrg?.slug}
+                        onActivateFlex={setFlexActivateTarget}
+                        onReactivate={(c, banked) => setReactivateTarget({ client: c, banked })}
+                        onCopyLink={(_link, clientName) => toast({ title: 'Link copied', description: `Booking link for ${clientName} copied.`, duration: 1500 })}
+                      />
+                    </td>
                     <td className="px-2 py-1.5">
                       <button
                         onClick={() => setDeleteTarget(client)}
@@ -438,6 +559,13 @@ export default function MembersPage() {
           )}
         </AlertDialogContent>
       </AlertDialog>
+
+      <ReactivationModal
+        isOpen={!!reactivateTarget}
+        onClose={() => setReactivateTarget(null)}
+        client={reactivateTarget?.client ?? null}
+        bankedBookings={reactivateTarget?.banked ?? []}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>

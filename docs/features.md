@@ -1,6 +1,6 @@
 # OhMyDesk — Feature List
 
-**55 features** across desk booking, meeting rooms, members, flex plans, revenue tracking, analytics, notifications, team management, and workspace management.
+**57 features** across desk booking, meeting rooms, members, dedicated & flex plans, revenue tracking, analytics, notifications, team management, and workspace management.
 
 > **Roadmap & upcoming features** are managed in [Linear (Deskplanner team)](https://linear.app/deskplanner). The `docs/roadmap/` folder contains detailed specs for each feature but Linear is the source of truth for priorities, status, and dependencies.
 
@@ -13,7 +13,8 @@
 6. **Quick Book** — auto-books the first available desk on the next free date
 7. **Person assignment** — assign people to desks with name tracking
 8. **Booking conflict detection** — prevents double-booking
-9. **Pause & Extend** — pause a booking for selected days (freeing them for resale), automatically adds free extension days at the end; prices prorate correctly so revenue is never overcounted
+9. **Dedicated desk plans** — weekly (7 calendar days) and monthly (rolling calendar month) fixed-price plans; plan selector in booking dialog (Day pass / Weekly / Monthly / Custom); configurable prices in Settings with per-working-day and per-calendar-day breakdowns; auto-creates a member record when booking with a new name; smart desk suggestions when the chosen desk is busy for the full plan range
+10. **Plan freeze & reactivation** — freeze a weekly/monthly plan mid-way from the booking dialog (pick the pause-from date); remaining days are banked, desk is released, and revenue prorates to the cent (rounded, no decimals); members list shows active plan balance ("N days left") and paused state with Reactivate button; reactivation allocates banked days day-by-day across available desks (prefers same desk, swaps when needed); fails fast if any day has zero free desks
 
 ## Sharing & Communication
 10. **Shareable booking confirmation** — automatically prompted after every new booking or assignment; share a public booking link via Copy, Telegram, WhatsApp, or Viber; shows space name, room, desk, and dates (no personal info or pricing); links auto-expire after booking end date; "Powered by OhMyDesk" promo footer on share page

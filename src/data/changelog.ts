@@ -16,6 +16,14 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-17',
+    title: 'Dedicated desk plans with freeze option',
+    description:
+      "Stop juggling spreadsheets for fixed-desk members. Set a weekly or monthly price in Settings, pick the plan when booking, and the system handles everything: auto-creates the member, tracks their remaining days on the Members page, and prorates revenue cleanly. When a member needs a break, freeze their plan from the booking dialog — remaining days are banked and the desk opens up for others. Ready to come back? Hit Reactivate and the system finds available desks automatically, even splitting across multiple desks if no single one is free for the full run.",
+    tags: ['Plans', 'Members', 'Booking'],
+    linkedFeature: 'dedicated-plans',
+  },
+  {
     date: '2026-04-11',
     title: 'Stripe Checkout on public booking page',
     description:
@@ -101,13 +109,5 @@ export const changelog: ChangelogEntry[] = [
       "Get booking updates where you actually read messages — on Telegram. Link your account once in Settings and you'll see a morning summary of tomorrow's arrivals and assignments ending, plus instant pings when a visitor books through your public link. No new app to install, no notification fatigue.",
     tags: ['Notifications'],
     linkedFeature: 'notifications',
-  },
-  {
-    date: '2026-03-05',
-    title: 'Pause & extend bookings',
-    description:
-      "Members travelling for a week? Pause their booking without issuing a refund. Pick the dates they're away and those desks become available for someone else to book; the extension days get added to the end of their booking automatically. Revenue prorates perfectly so your month-end numbers stay accurate.",
-    tags: ['Booking'],
-    linkedFeature: 'booking',
   },
 ];

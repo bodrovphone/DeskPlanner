@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import PersonModal from '@/components/members/PersonModal';
 import BookingModal from '@/components/bookings/BookingModal';
 import ShareBookingModal from '@/components/bookings/ShareBookingModal';
-import PauseBookingModal from '@/components/bookings/PauseBookingModal';
 import AvailabilityRangeModal from '@/components/bookings/AvailabilityRangeModal';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import FloorPlanCalendarView from '@/components/calendar/FloorPlanCalendarView';
@@ -24,7 +23,7 @@ import { useRealtimeBookings } from '@/hooks/use-realtime-bookings';
 import { useBookings } from '@/hooks/use-bookings';
 import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { useBookingActions } from '@/hooks/use-booking-actions';
-import { usePauseBooking } from '@/hooks/use-pause-booking';
+import { usePlanFreeze } from '@/hooks/use-plan-freeze';
 import { DEFAULT_WORKING_DAYS, isNonWorkingDay } from '@/lib/workingDays';
 
 const MOBILE_BREAKPOINT = 1024;
@@ -86,7 +85,6 @@ export default function DeskCalendar() {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
-const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +169,7 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
     workingDays
   );
 
-  const { handlePauseBooking } = usePauseBooking();
+  const { freeze: freezePlanMutation } = usePlanFreeze();
 
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
@@ -273,10 +271,16 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
         currency={currentCurrency}
         onSave={handleBookingSave}
         onDiscard={handleDiscardBooking}
-        onPause={() => {
-          setIsBookingModalOpen(false);
-          setIsPauseModalOpen(true);
-          // Don't clear selectedBooking — PauseBookingModal needs it
+        onFreezePlan={async (pausedAt) => {
+          const b = selectedBooking?.booking;
+          if (!b || !b.clientId) return;
+          await freezePlanMutation.mutateAsync({
+            clientId: b.clientId,
+            clientName: b.personName ?? 'member',
+            startDate: b.startDate,
+            endDate: b.endDate,
+            pausedAt,
+          });
         }}
         onShare={(savedData) => {
           // Ensure selectedBooking has a booking object (needed for new bookings)
@@ -314,26 +318,6 @@ const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
           deskLabel={desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId}
           spaceName={currentOrg?.name || 'Coworking Space'}
           roomName={desks.find(d => d.id === selectedBooking.deskId)?.roomName || ''}
-        />
-      )}
-
-      {selectedBooking?.booking && selectedBooking.booking.startDate !== selectedBooking.booking.endDate && (
-        <PauseBookingModal
-          isOpen={isPauseModalOpen}
-          onClose={() => {
-            setIsPauseModalOpen(false);
-            setSelectedBooking(null);
-          }}
-          booking={selectedBooking.booking}
-          currency={currentCurrency}
-          onConfirm={async (pauseStart, pauseEnd) => {
-            await handlePauseBooking(
-              selectedBooking.booking!,
-              selectedBooking.deskId,
-              pauseStart,
-              pauseEnd,
-            );
-          }}
         />
       )}
 

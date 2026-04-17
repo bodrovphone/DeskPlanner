@@ -17,6 +17,7 @@ import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
 import { isNonWorkingDay } from './workingDays';
 import { formatLocalDate, formatYMD } from './dateUtils';
+import { DEDICATED_PLAN_TYPES, addDays, daysBetweenInclusive } from './planDates';
 
 export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
@@ -82,9 +83,20 @@ export class SupabaseDataStore implements IDataStore {
     return query;
   }
 
+  // Scoped desk_bookings query that by default hides frozen rows. Freeze/unfreeze
+  // flows and audit exports pass includeFrozen=true to see frozen rows.
+  private scopeBookingsQuery<T>(
+    query: T,
+    opts: { includeFrozen?: boolean } = {},
+  ): T {
+    const scoped = this.scopeQuery(query) as any;
+    if (opts.includeFrozen) return scoped as T;
+    return scoped.eq('is_frozen', false) as T;
+  }
+
   async getBooking(deskId: string, date: string): Promise<DeskBooking | null> {
     try {
-      const { data, error } = await this.scopeQuery(
+      const { data, error } = await this.scopeBookingsQuery(
         this.client
           .from('desk_bookings')
           .select('*')
@@ -111,7 +123,7 @@ export class SupabaseDataStore implements IDataStore {
     endDate?: string,
   ): Promise<Record<string, DeskBooking>> {
     try {
-      let query = this.scopeQuery(
+      let query = this.scopeBookingsQuery(
         this.client.from('desk_bookings').select('*'),
       );
 
@@ -218,7 +230,7 @@ export class SupabaseDataStore implements IDataStore {
     endDate: string,
   ): Promise<DeskBooking[]> {
     try {
-      const { data, error } = await this.scopeQuery(
+      const { data, error } = await this.scopeBookingsQuery(
         this.client
           .from('desk_bookings')
           .select('*')
@@ -241,7 +253,7 @@ export class SupabaseDataStore implements IDataStore {
     endDate?: string,
   ): Promise<DeskBooking[]> {
     try {
-      let query = this.scopeQuery(
+      let query = this.scopeBookingsQuery(
         this.client.from('desk_bookings').select('*').eq('desk_id', deskId),
       );
 
@@ -267,7 +279,7 @@ export class SupabaseDataStore implements IDataStore {
     booked: number;
   }> {
     try {
-      const { data, error } = await this.scopeQuery(
+      const { data, error } = await this.scopeBookingsQuery(
         this.client
           .from('desk_bookings')
           .select('desk_id, date, status')
@@ -328,7 +340,7 @@ export class SupabaseDataStore implements IDataStore {
     const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
 
     try {
-      const { data, error } = await this.scopeQuery(
+      const { data, error } = await this.scopeBookingsQuery(
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
@@ -481,7 +493,7 @@ export class SupabaseDataStore implements IDataStore {
     const totalDeskDays = (deskCount ?? DESK_COUNT) * workingDayCount;
 
     try {
-      const { data, error } = await this.scopeQuery(
+      const { data, error } = await this.scopeBookingsQuery(
         this.client
           .from('desk_bookings')
           .select('date, start_date, end_date, status, price, desk_id')
@@ -685,6 +697,9 @@ export class SupabaseDataStore implements IDataStore {
         ? parseInt(booking.clientId, 10) || null
         : null,
       is_flex: booking.isFlex || false,
+      is_frozen: booking.isFrozen || false,
+      paused_at: booking.pausedAt ?? null,
+      plan_type: booking.planType ?? null,
     };
 
     if (this.organizationId) {
@@ -709,6 +724,9 @@ export class SupabaseDataStore implements IDataStore {
       shareToken: row.share_token || undefined,
       clientId: row.client_id ? String(row.client_id) : undefined,
       isFlex: row.is_flex || false,
+      isFrozen: row.is_frozen || false,
+      pausedAt: row.paused_at ?? null,
+      planType: row.plan_type ?? null,
       paymentStatus: row.payment_status ?? null,
       stripeCheckoutSessionId: row.stripe_checkout_session_id ?? null,
       stripePaymentIntentId: row.stripe_payment_intent_id ?? null,
@@ -1144,6 +1162,142 @@ export class SupabaseDataStore implements IDataStore {
     const refreshed = await this.getClientById(clientId);
     if (!refreshed) throw new Error('Client not found after deduction');
     return refreshed;
+  }
+
+  async freezePlanBooking(args: {
+    clientId: string;
+    startDate: string;
+    endDate: string;
+    pausedAt: string;
+  }): Promise<{ pausedCount: number }> {
+    const numericId = parseInt(args.clientId, 10);
+
+    const { data: allRows, error: fetchError } = await this.client
+      .from('desk_bookings')
+      .select('id, date, price')
+      .eq('client_id', numericId)
+      .eq('start_date', args.startDate)
+      .eq('end_date', args.endDate)
+      .eq('is_frozen', false);
+    if (fetchError) throw fetchError;
+    if (!allRows || allRows.length === 0) return { pausedCount: 0 };
+
+    const originalPrice = allRows[0].price ?? 0;
+    const totalCount = allRows.length;
+    const activeIds = allRows.filter((r) => r.date < args.pausedAt).map((r) => r.id);
+    const frozenIds = allRows.filter((r) => r.date >= args.pausedAt).map((r) => r.id);
+    if (frozenIds.length === 0) return { pausedCount: 0 };
+
+    const activePrice =
+      activeIds.length > 0
+        ? Math.round((originalPrice * activeIds.length) / totalCount)
+        : 0;
+    const newEndDate = addDays(args.pausedAt, -1);
+
+    if (activeIds.length > 0) {
+      const { error } = await this.client
+        .from('desk_bookings')
+        .update({ price: activePrice, end_date: newEndDate })
+        .in('id', activeIds);
+      if (error) throw error;
+    }
+
+    const { error: freezeError } = await this.client
+      .from('desk_bookings')
+      .update({ is_frozen: true, paused_at: args.pausedAt })
+      .in('id', frozenIds);
+    if (freezeError) throw freezeError;
+
+    return { pausedCount: frozenIds.length };
+  }
+
+  async reactivatePlan(
+    clientId: string,
+    allocations: { deskId: string; date: string }[],
+  ): Promise<{ reactivatedCount: number }> {
+    if (allocations.length === 0) return { reactivatedCount: 0 };
+    const numericId = parseInt(clientId, 10);
+
+    // Fetch banked rows, oldest paused_at first, to restore in order.
+    const { data: bankedRows, error: fetchError } = await this.client
+      .from('desk_bookings')
+      .select('*')
+      .eq('client_id', numericId)
+      .not('paused_at', 'is', null)
+      .order('date', { ascending: true })
+      .limit(allocations.length);
+    if (fetchError) throw fetchError;
+    if (!bankedRows || bankedRows.length < allocations.length) {
+      throw new Error(
+        `Not enough banked days to reactivate (need ${allocations.length}, found ${bankedRows?.length ?? 0})`,
+      );
+    }
+
+    const newStart = allocations[0].date;
+    const newEnd = allocations[allocations.length - 1].date;
+
+    // Compute reactivated price proportionally from the original plan.
+    // Frozen rows still carry the original price + original start/end span.
+    const originalPrice = bankedRows[0].price ?? 0;
+    const origTotalDays = daysBetweenInclusive(
+      bankedRows[0].start_date,
+      bankedRows[0].end_date,
+    );
+    const reactivatedPrice =
+      origTotalDays > 0
+        ? Math.round((originalPrice * allocations.length) / origTotalDays)
+        : 0;
+
+    // Move each banked row to its new (desk_id, date) and clear paused state.
+    // Rows are independent, so fire UPDATEs in parallel.
+    const results = await Promise.all(
+      allocations.map((target, i) =>
+        this.client
+          .from('desk_bookings')
+          .update({
+            desk_id: target.deskId,
+            date: target.date,
+            start_date: newStart,
+            end_date: newEnd,
+            price: reactivatedPrice,
+            is_frozen: false,
+            paused_at: null,
+          })
+          .eq('id', bankedRows[i].id),
+      ),
+    );
+    const firstError = results.find((r) => r.error)?.error;
+    if (firstError) throw firstError;
+
+    return { reactivatedCount: allocations.length };
+  }
+
+  async getClientPlanBookings(clientId: string): Promise<DeskBooking[]> {
+    const numericId = parseInt(clientId, 10);
+    const { data, error } = await this.client
+      .from('desk_bookings')
+      .select('*')
+      .eq('client_id', numericId)
+      .eq('status', 'assigned')
+      .in('plan_type', DEDICATED_PLAN_TYPES)
+      .order('date', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => this.mapFromDatabase(row));
+  }
+
+  async getOrgPlanBookings(): Promise<DeskBooking[]> {
+    // Include frozen rows so we can see both active plans and paused (banked) ones.
+    const { data, error } = await this.scopeBookingsQuery(
+      this.client
+        .from('desk_bookings')
+        .select('*')
+        .eq('status', 'assigned')
+        .in('plan_type', DEDICATED_PLAN_TYPES)
+        .eq('is_flex', false),
+      { includeFrozen: true },
+    ).order('date', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => this.mapFromDatabase(row));
   }
 
   async restoreFlexDays(clientId: string, days: number): Promise<Client> {

@@ -57,6 +57,23 @@ export const features: Feature[] = [
     images: [{ src: membersShot, alt: 'Members list with autocomplete and contact details' }],
   },
   {
+    slug: 'dedicated-plans',
+    eyebrow: 'Dedicated plans',
+    title: 'Weekly & monthly desk plans with freeze and reactivation',
+    quickAnswer: 'Assign a member to a dedicated desk for a week or a month in one click. If they need to pause mid-plan, freeze their remaining days and reactivate later on any available desk.',
+    intro:
+      'Fixed-price weekly (7 calendar days) and monthly (rolling calendar month) dedicated-desk plans. Configure prices in Settings, then select a plan when booking. If a member goes on holiday, freeze the plan to bank remaining days and free the desk. When they return, reactivate and the system finds available desks automatically — even splitting across multiple desks if needed.',
+    bullets: [
+      'Weekly and monthly plan prices configurable in Settings with per-day cost breakdown',
+      'Plan selector in booking dialog: Day pass, Weekly, Monthly, or Custom range',
+      'Freeze a plan mid-way: remaining days are banked, desk is released, revenue prorates correctly',
+      'Reactivate from the Members page: system allocates banked days across available desks',
+      'Smart desk suggestions when the chosen desk is busy for the full plan range',
+      'Auto-creates a member record when booking with a new name',
+    ],
+    images: [{ src: membersShot, alt: 'Members list showing active weekly plan balance and paused plan with reactivate button' }],
+  },
+  {
     slug: 'flex-plans',
     eyebrow: 'Flex plans',
     title: 'Flex day packages with auto-balance tracking',

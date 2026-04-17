@@ -69,6 +69,7 @@ export function countOccupiedDays(
   let assignedDays = 0;
 
   for (const booking of bookings) {
+    if (booking.isFrozen) continue;
     if (!daysInPeriod.includes(booking.date)) continue;
 
     if (booking.status === 'assigned' || booking.status === 'booked') {
@@ -99,6 +100,7 @@ export function calculateRevenueByStatus(
   let expectedRevenue = 0;
 
   for (const booking of bookings) {
+    if (booking.isFrozen) continue;
     if (!daysInPeriod.includes(booking.date)) continue;
 
     const bookingKey = `${booking.deskId}-${booking.startDate}`;

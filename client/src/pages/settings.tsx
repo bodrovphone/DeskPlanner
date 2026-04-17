@@ -12,9 +12,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount, useMergeRooms } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, Users, Shield, UserMinus, Loader2, AlertTriangle } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, CalendarDays, CalendarRange, Users, Shield, UserMinus, Loader2, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Organization } from '@shared/schema';
+import { currencySymbols } from '@/lib/settings';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
 import telegramIcon from '@/assets/telegram.svg?url';
 import viberIcon from '@/assets/viber.svg?url';
@@ -2172,6 +2173,133 @@ function DayPassPlanCard() {
   );
 }
 
+interface DedicatedPlanCardProps {
+  orgId: string;
+  currency: string;
+  planKey: 'weekly' | 'monthly';
+  currentPrice: number | null;
+  workingDaysPerWeek: number;
+}
+
+function DedicatedPlanCard({ orgId, currency, planKey, currentPrice, workingDaysPerWeek }: DedicatedPlanCardProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [price, setPrice] = useState(currentPrice?.toString() ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const hasChanges = (price || '0') !== (currentPrice?.toString() ?? '');
+
+  const labels = planKey === 'weekly'
+    ? {
+        title: 'Weekly Plan',
+        description: 'Fixed price for 7 calendar days at a dedicated desk.',
+        priceLabel: `Price per week (${currency})`,
+        icon: <CalendarDays className="h-5 w-5 text-sky-600" />,
+      }
+    : {
+        title: 'Monthly Plan',
+        description: 'Fixed price for one calendar month at a dedicated desk.',
+        priceLabel: `Price per month (${currency})`,
+        icon: <CalendarRange className="h-5 w-5 text-indigo-600" />,
+      };
+
+  const column = planKey === 'weekly' ? 'weekly_plan_price' : 'monthly_plan_price';
+
+  const writePrice = async (value: number | null) => {
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({ [column]: value })
+        .eq('id', orgId);
+      if (error) throw error;
+      if (value === null) setPrice('');
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({
+        title: value === null ? 'Disabled' : 'Saved',
+        description: value === null
+          ? `${labels.title} is no longer offered.`
+          : `${labels.title} updated.`,
+      });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = () => {
+    const parsed = parseFloat(price);
+    const value = isNaN(parsed) || parsed <= 0 ? null : parsed;
+    return writePrice(value);
+  };
+  const handleClear = () => writePrice(null);
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          {labels.icon}
+          <CardTitle>{labels.title}</CardTitle>
+        </div>
+        <CardDescription>{labels.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1">
+        <div className="space-y-4 flex-1">
+          <div>
+            <Label htmlFor={`${planKey}Price`}>{labels.priceLabel}</Label>
+            <Input
+              id={`${planKey}Price`}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Leave empty to disable"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            {(() => {
+              const parsed = parseFloat(price);
+              if (!price || isNaN(parsed) || parsed <= 0) {
+                return (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {planKey === 'weekly'
+                      ? 'Booking modal will offer a Weekly plan button when this is set.'
+                      : 'Booking modal will offer a Monthly plan button when this is set.'}
+                  </p>
+                );
+              }
+              const calendarDays = planKey === 'weekly' ? 7 : 30;
+              const workingDays = planKey === 'weekly'
+                ? workingDaysPerWeek
+                : Math.round((workingDaysPerWeek / 7) * 30);
+              const perCalendarDay = parsed / calendarDays;
+              const perWorkingDay = workingDays > 0 ? parsed / workingDays : 0;
+              const sym = currencySymbols[currency] ?? currency;
+              return (
+                <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
+                  <p>{sym}{perWorkingDay.toFixed(2)} / working day ({workingDays} days)</p>
+                  <p>{sym}{perCalendarDay.toFixed(2)} / calendar day ({calendarDays} days)</p>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t flex items-center justify-between gap-2">
+          <Button onClick={handleSave} disabled={saving || !hasChanges}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+          {currentPrice != null && (
+            <Button variant="ghost" size="sm" onClick={handleClear} disabled={saving}>
+              Disable
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsPlansPage() {
   const { currentOrg, currentRole } = useOrganization();
   if (!currentOrg) return null;
@@ -2181,6 +2309,20 @@ export function SettingsPlansPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Plans</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         <DayPassPlanCard />
+        <DedicatedPlanCard
+          orgId={currentOrg.id}
+          currency={currentOrg.currency}
+          planKey="weekly"
+          currentPrice={currentOrg.weeklyPlanPrice ?? null}
+          workingDaysPerWeek={(currentOrg.workingDays ?? [1,2,3,4,5]).length}
+        />
+        <DedicatedPlanCard
+          orgId={currentOrg.id}
+          currency={currentOrg.currency}
+          planKey="monthly"
+          currentPrice={currentOrg.monthlyPlanPrice ?? null}
+          workingDaysPerWeek={(currentOrg.workingDays ?? [1,2,3,4,5]).length}
+        />
         <FlexPlanCard
           orgId={currentOrg.id}
           currency={currentOrg.currency}

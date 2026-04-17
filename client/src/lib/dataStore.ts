@@ -65,6 +65,20 @@ export interface IDataStore {
   getClientById?(id: string): Promise<Client | null>;
   deductFlexDay?(clientId: string): Promise<Client>;
   restoreFlexDays?(clientId: string, days: number): Promise<Client>;
+
+  // Per-booking plan pause (DES-87 v2)
+  freezePlanBooking?(args: {
+    clientId: string;
+    startDate: string;
+    endDate: string;
+    pausedAt: string;
+  }): Promise<{ pausedCount: number }>;
+  reactivatePlan?(
+    clientId: string,
+    allocations: { deskId: string; date: string }[],
+  ): Promise<{ reactivatedCount: number }>;
+  getClientPlanBookings?(clientId: string): Promise<DeskBooking[]>;
+  getOrgPlanBookings?(): Promise<DeskBooking[]>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';

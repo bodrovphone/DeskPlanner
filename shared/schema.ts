@@ -2,6 +2,15 @@ import { z } from "zod";
 
 export const deskStatusSchema = z.enum(["available", "booked", "assigned"]);
 
+export const planTypeSchema = z.enum([
+  "day_pass",
+  "weekly",
+  "monthly",
+  "custom",
+  "flex",
+]);
+export type PlanType = z.infer<typeof planTypeSchema>;
+
 export const currencySchema = z.string().regex(/^[A-Z]{3}$/, 'Must be a 3-letter ISO currency code');
 
 export const orgMemberRoleSchema = z.enum(["owner", "admin", "member"]);
@@ -25,6 +34,9 @@ export const deskBookingSchema = z.object({
   visitorNotes: z.string().optional(),
   clientId: z.string().optional(),
   isFlex: z.boolean().optional(),
+  isFrozen: z.boolean().optional(),
+  pausedAt: z.string().nullable().optional(),
+  planType: planTypeSchema.nullable().optional(),
   paymentStatus: z.enum(['pending', 'paid', 'refunded', 'failed']).nullable().optional(),
   stripeCheckoutSessionId: z.string().nullable().optional(),
   stripePaymentIntentId: z.string().nullable().optional(),
@@ -103,6 +115,8 @@ export const organizationSchema = z.object({
   contactWhatsappEnabled: z.boolean().default(false),
   flexPlanDays: z.number().nullable().optional(),
   flexPlanPrice: z.number().nullable().optional(),
+  weeklyPlanPrice: z.number().nullable().optional(),
+  monthlyPlanPrice: z.number().nullable().optional(),
   groupId: z.string().nullable().optional(),
   floorPlanCombined: z.boolean().default(false),
   stripePublishableKey: z.string().nullable().optional(),

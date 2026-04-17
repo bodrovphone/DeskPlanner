@@ -50,11 +50,11 @@ test.describe('Members — page load', () => {
     await expect(page.getByRole('button', { name: 'Add Member' })).toBeVisible({ timeout: 20_000 });
   });
 
-  test('members table shows Name, Contact, Email, and Flex Balance columns', async ({ page }) => {
+  test('members table shows Name, Contact, Email, and Balance columns', async ({ page }) => {
     await expect(page.locator('th', { hasText: 'Name' })).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('th', { hasText: 'Contact' })).toBeVisible();
     await expect(page.locator('th', { hasText: 'Email' })).toBeVisible();
-    await expect(page.locator('th', { hasText: 'Flex Balance' })).toBeVisible();
+    await expect(page.locator('th', { hasText: 'Balance' })).toBeVisible();
   });
 
   test('seeded flex member is visible in the table', async ({ page }) => {

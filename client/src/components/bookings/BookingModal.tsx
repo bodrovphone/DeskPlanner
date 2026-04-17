@@ -1,18 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Desk, DeskBooking, DeskStatus, Currency, Client } from '@shared/schema';
+import { Desk, DeskBooking, DeskStatus, Currency, Client, PlanType } from '@shared/schema';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, PauseCircle, Share2, Package, ArrowRightLeft } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, Share2, Package, ArrowRightLeft, Snowflake, CalendarDays, CalendarRange, Calendar } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { formatLocalDate } from '@/lib/dateUtils';
 import { Checkbox } from '@/components/ui/checkbox';
 import ClientAutocomplete from '@/components/members/ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { computePlanEnd, planAutoPrice, inferPlanFromBooking } from '@/lib/planDates';
+
+const MAX_CONFLICT_SUGGESTIONS = 6;
+
+const PLAN_META: Record<Exclude<PlanType, 'flex'>, { icon: typeof Calendar; label: string }> = {
+  day_pass: { icon: Calendar, label: 'Day pass' },
+  weekly: { icon: CalendarDays, label: 'Weekly' },
+  monthly: { icon: CalendarRange, label: 'Monthly' },
+  custom: { icon: ArrowRightLeft, label: 'Custom' },
+};
+const PLAN_TOGGLE_ORDER: Array<Exclude<PlanType, 'flex'>> = ['day_pass', 'weekly', 'monthly', 'custom'];
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -32,10 +45,11 @@ interface BookingModalProps {
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    planType?: PlanType;
     newDeskId?: string;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
-  onPause?: () => void;
+  onFreezePlan?: (pausedAt: string) => Promise<void>;
   onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency; clientId?: string }) => void;
 }
 
@@ -49,7 +63,7 @@ export default function BookingModal({
   currency,
   onSave,
   onDiscard,
-  onPause,
+  onFreezePlan,
   onShare,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
@@ -59,7 +73,8 @@ export default function BookingModal({
   const flexPerVisit = flexConfigured ? (currentOrg!.flexPlanPrice! / currentOrg!.flexPlanDays!) : 0;
   const [personName, setPersonName] = useState('');
   const [clientId, setClientId] = useState<string | undefined>(undefined);
-  const [flexClient, setFlexClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const flexClient = selectedClient?.flexActive ? selectedClient : null;
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [status, setStatus] = useState<DeskStatus>('assigned');
@@ -70,16 +85,31 @@ export default function BookingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
+  const [freezeDate, setFreezeDate] = useState('');
+  const [isFreezing, setIsFreezing] = useState(false);
   const [shareOnSave, setShareOnSave] = useState(false);
   const [newDeskId, setNewDeskId] = useState<string>(deskId);
   const [availableDesks, setAvailableDesks] = useState<Desk[]>([]);
   const [loadingDesks, setLoadingDesks] = useState(false);
+  const [planKey, setPlanKey] = useState<PlanType>('day_pass');
+  const [busyDeskIds, setBusyDeskIds] = useState<Set<string>>(new Set());
+
+  const weeklyEnabled = !!(currentOrg?.weeklyPlanPrice && currentOrg.weeklyPlanPrice > 0);
+  const monthlyEnabled = !!(currentOrg?.monthlyPlanPrice && currentOrg.monthlyPlanPrice > 0);
+  const availablePlans = useMemo<PlanType[]>(() => {
+    const plans: PlanType[] = ['day_pass'];
+    if (weeklyEnabled) plans.push('weekly');
+    if (monthlyEnabled) plans.push('monthly');
+    plans.push('custom');
+    return plans;
+  }, [weeklyEnabled, monthlyEnabled]);
 
   useEffect(() => {
     if (isOpen) {
       setPersonName(booking?.personName || '');
       setClientId(booking?.clientId);
-      setFlexClient(null);
+      setSelectedClient(null);
       setTitle(booking?.title || '');
       setPrice(booking?.price?.toString() || String(defaultPrice));
       setStatus(booking?.status || 'assigned');
@@ -107,15 +137,39 @@ export default function BookingModal({
 
       setConflictError('');
       setConfirmDiscard(false);
+      setFreezeDialogOpen(false);
       setShareOnSave(false);
       setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
+      setPlanKey(booking ? inferPlanFromBooking(booking) : 'day_pass');
     }
   }, [isOpen, booking, date]);
 
-  // Load available desks when editing an existing booking
+  // When the user switches plan, reset the auto-price. End-date sync is handled
+  // by the shared plan/startDate effect below.
   useEffect(() => {
-    if (!isOpen || !booking || !startDate || !endDate) {
+    if (!isOpen) return;
+    if (planKey === 'custom' || planKey === 'flex') return;
+    const auto = planAutoPrice(planKey, currentOrg);
+    if (auto != null) setPrice(auto.toString());
+    setEndDateTouched(false);
+  }, [planKey]);
+
+  // Slave endDate to startDate for fixed-length plans; only setState if the
+  // computed value actually differs to avoid needless re-renders.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (planKey === 'custom' || planKey === 'flex') return;
+    if (!startDate) return;
+    const nextEnd = computePlanEnd(planKey, startDate);
+    if (nextEnd !== endDate) setEndDate(nextEnd);
+  }, [planKey, startDate]);
+
+  // Scan the current range for conflicts (applies to both new and existing
+  // bookings — a plan can stretch dates beyond what the user clicked).
+  useEffect(() => {
+    if (!isOpen || !startDate || !endDate) {
       setAvailableDesks(desks);
+      setBusyDeskIds(new Set());
       return;
     }
     let cancelled = false;
@@ -124,22 +178,25 @@ export default function BookingModal({
     dataStore.getBookingsForDateRange(startDate, endDate).then(allBookings => {
       if (cancelled) return;
 
-      // Find desks that have no conflicts for the entire date range
-      const busyDeskIds = new Set<string>();
+      const busy = new Set<string>();
       for (const b of allBookings) {
-        // Skip bookings on the current desk (we're moving away from it)
-        if (b.deskId === deskId) continue;
+        // Ignore the booking being edited (it already occupies this slot)
+        if (booking && b.id === booking.id) continue;
         if (b.status !== 'available') {
-          busyDeskIds.add(b.deskId);
+          busy.add(b.deskId);
         }
       }
 
-      const available = desks.filter(d => d.id === deskId || !busyDeskIds.has(d.id));
-      setAvailableDesks(available);
+      // Dropdown keeps the current desk as an option even if "busy" so the user
+      // can always stay put; suggestions exclude it (see freeDesks below).
+      const dropdown = desks.filter(d => d.id === deskId || !busy.has(d.id));
+      setAvailableDesks(dropdown);
+      setBusyDeskIds(busy);
       setLoadingDesks(false);
     }).catch(() => {
       if (!cancelled) {
         setAvailableDesks(desks);
+        setBusyDeskIds(new Set());
         setLoadingDesks(false);
       }
     });
@@ -147,16 +204,23 @@ export default function BookingModal({
     return () => { cancelled = true; };
   }, [isOpen, booking, startDate, endDate, deskId, desks, dataStore]);
 
-  // Fetch flex client data when a client is selected
+  const activeDeskId = newDeskId || deskId;
+  const hasDeskConflict = !!startDate && !!endDate && busyDeskIds.has(activeDeskId);
+  const freeDesks = useMemo(
+    () => desks.filter(d => d.id !== activeDeskId && !busyDeskIds.has(d.id)),
+    [desks, busyDeskIds, activeDeskId],
+  );
+
+  // Fetch selected client data (used for flex plan + freeze window checks)
   useEffect(() => {
-    if (!clientId || !flexConfigured || !dataStore.getClientById) {
-      setFlexClient(null);
+    if (!clientId || !dataStore.getClientById) {
+      setSelectedClient(null);
       return;
     }
     let cancelled = false;
     dataStore.getClientById(clientId).then(c => {
       if (!cancelled) {
-        setFlexClient(c?.flexActive ? c : null);
+        setSelectedClient(c ?? null);
         // Auto-fill per-visit price for flex members — only for new bookings
         if (c?.flexActive && flexPerVisit > 0 && !booking) {
           setPrice(flexPerVisit.toFixed(2));
@@ -165,7 +229,7 @@ export default function BookingModal({
       }
     });
     return () => { cancelled = true; };
-  }, [clientId, flexConfigured, booking]);
+  }, [clientId, flexPerVisit, booking, dataStore]);
 
   const handleSave = async () => {
     const trimmedName = personName.trim();
@@ -186,6 +250,7 @@ export default function BookingModal({
           currency: currency,
           clientId: clientId,
           isFlex: !!flexClient,
+          planType: flexClient ? 'flex' : planKey,
           newDeskId: newDeskId !== deskId ? newDeskId : undefined,
         });
         if (onShare && shareOnSave) {
@@ -240,8 +305,30 @@ export default function BookingModal({
     }
   };
 
+  const openFreezeDialog = () => {
+    const today = formatLocalDate(new Date());
+    // Default to whichever is later: today or the plan's start (can't freeze
+    // before the plan started — past days already count as revenue anyway).
+    const defaultDate = booking && booking.startDate > today ? booking.startDate : today;
+    setFreezeDate(defaultDate);
+    setFreezeDialogOpen(true);
+  };
+
+  const handleFreezeConfirm = async () => {
+    if (!onFreezePlan || !freezeDate) return;
+    try {
+      setIsFreezing(true);
+      await onFreezePlan(freezeDate);
+      setFreezeDialogOpen(false);
+      onClose();
+    } catch (error) {
+      setConflictError('Failed to freeze plan.');
+    } finally {
+      setIsFreezing(false);
+    }
+  };
+
   const isExistingBooking = booking && booking.status !== 'available';
-  const isMultiDayBooking = isExistingBooking && booking.startDate !== booking.endDate;
 
   const desk = desks.find(d => d.id === deskId);
 
@@ -272,7 +359,8 @@ export default function BookingModal({
 
   const isValidForm = personName.trim() &&
                      price.trim() && !isNaN(parseFloat(price)) && parseFloat(price) >= 0 &&
-                     startDate && endDate && startDate <= endDate;
+                     startDate && endDate && startDate <= endDate &&
+                     !hasDeskConflict;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -288,7 +376,7 @@ export default function BookingModal({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <Label className="text-sm font-medium text-blue-900">Desk Information</Label>
             <p className="text-sm text-blue-800 mt-1">
-              {desk?.label} - {formattedDate}
+              {(desks.find(d => d.id === activeDeskId) ?? desk)?.label} - {formattedDate}
             </p>
           </div>
 
@@ -329,10 +417,42 @@ export default function BookingModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          {/* Plan selector — hidden for flex members since flex has its own flow */}
+          {!flexClient && (
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Plan</Label>
+              <div className="grid grid-cols-4 gap-1.5 mt-1">
+                {PLAN_TOGGLE_ORDER.map((key) => {
+                  const enabled = availablePlans.includes(key);
+                  const selected = planKey === key;
+                  const { icon: Icon, label } = PLAN_META[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => setPlanKey(key)}
+                      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                        !enabled ? 'opacity-40 cursor-not-allowed border-gray-200 text-gray-400' :
+                        selected
+                          ? 'border-blue-400 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                      title={enabled ? label : `${label} plan not configured`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className={planKey === 'custom' || planKey === 'flex' ? 'grid grid-cols-2 gap-2 sm:gap-4' : ''}>
             <div>
               <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
-                Start Date *
+                {planKey === 'day_pass' ? 'Date *' : 'Start Date *'}
               </Label>
               <Input
                 id="startDate"
@@ -341,32 +461,73 @@ export default function BookingModal({
                 onChange={(e) => {
                   const newStart = e.target.value;
                   setStartDate(newStart);
-                  if (!endDateTouched || newStart > endDate) {
+                  if (planKey === 'custom' && (!endDateTouched || newStart > endDate)) {
                     setEndDate(newStart);
                   }
                 }}
                 className="mt-1"
                 required
               />
+              {planKey !== 'custom' && planKey !== 'day_pass' && planKey !== 'flex' && endDate && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Covers {startDate} → {endDate}
+                </p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">
-                End Date *
-              </Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setEndDateTouched(true);
-                }}
-                min={startDate}
-                className="mt-1"
-                required
-              />
-            </div>
+            {(planKey === 'custom' || planKey === 'flex') && (
+              <div>
+                <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                  End Date *
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setEndDateTouched(true);
+                  }}
+                  min={startDate}
+                  className="mt-1"
+                  required
+                />
+              </div>
+            )}
           </div>
+
+          {hasDeskConflict && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-amber-900">
+                    {desks.find(d => d.id === activeDeskId)?.label ?? 'This desk'} isn't free for the whole range.
+                  </p>
+                  {freeDesks.length > 0 ? (
+                    <div className="mt-2">
+                      <p className="text-amber-800 text-xs mb-1.5">Try another desk:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {freeDesks.slice(0, MAX_CONFLICT_SUGGESTIONS).map(d => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => setNewDeskId(d.id)}
+                            className="px-2 py-1 rounded bg-white border border-amber-300 text-amber-800 text-xs font-medium hover:bg-amber-100"
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-amber-800 text-xs mt-1">
+                      No desks are free for this range. Pick a shorter range or a different start date.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="personName" className="text-sm font-medium text-gray-700">
@@ -505,7 +666,7 @@ export default function BookingModal({
             <Button
               variant="outline"
               onClick={handleDiscard}
-              disabled={isDiscarding || isLoading}
+              disabled={isDiscarding || isLoading || isFreezing}
               className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               {isDiscarding ? (
@@ -526,26 +687,22 @@ export default function BookingModal({
               )}
             </Button>
           )}
-          {isMultiDayBooking && onPause && (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => onPause()}
-                    disabled={isDiscarding || isLoading}
-                    className="shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-                  >
-                    <PauseCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px] text-center">
-                  <p>Pause selected days and extend the booking for free</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {isExistingBooking
+            && onFreezePlan
+            && booking?.status === 'assigned'
+            && (booking?.planType === 'weekly' || booking?.planType === 'monthly')
+            && !booking?.isFlex
+            && (
+              <Button
+                variant="outline"
+                onClick={openFreezeDialog}
+                disabled={isFreezing || isLoading || isDiscarding}
+                className="flex-1 border-sky-200 text-sky-700 hover:bg-sky-50 hover:text-sky-800"
+              >
+                <Snowflake className="h-4 w-4 mr-2" />
+                Freeze plan
+              </Button>
+            )}
           {isExistingBooking && onShare && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -606,6 +763,50 @@ export default function BookingModal({
           Tip: Press Ctrl+Enter to save quickly
         </div>
       </DialogContent>
+
+      <AlertDialog open={freezeDialogOpen} onOpenChange={setFreezeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Snowflake className="h-5 w-5 text-sky-600" />
+              Freeze plan
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Days from this date onward will be banked and the desk released.
+              Earlier days stay active and counted as revenue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="freezeDate">Pause from</Label>
+            <Input
+              id="freezeDate"
+              type="date"
+              value={freezeDate}
+              min={booking?.startDate}
+              max={booking?.endDate}
+              onChange={(e) => setFreezeDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isFreezing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleFreezeConfirm}
+              disabled={isFreezing || !freezeDate}
+              className="bg-sky-600 hover:bg-sky-700 text-white"
+            >
+              {isFreezing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Freezing...
+                </>
+              ) : (
+                'Freeze'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

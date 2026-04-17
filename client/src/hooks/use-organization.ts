@@ -32,6 +32,8 @@ function mapOrg(row: Record<string, unknown>): Organization {
     contactWhatsappEnabled: (row.contact_whatsapp_enabled as boolean) ?? false,
     flexPlanDays: (row.flex_plan_days as number) ?? null,
     flexPlanPrice: (row.flex_plan_price as number) ?? null,
+    weeklyPlanPrice: (row.weekly_plan_price as number) ?? null,
+    monthlyPlanPrice: (row.monthly_plan_price as number) ?? null,
     groupId: (row.group_id as string) ?? null,
     floorPlanCombined: (row.floor_plan_combined as boolean) ?? false,
     stripePublishableKey: (row.stripe_publishable_key as string) ?? null,

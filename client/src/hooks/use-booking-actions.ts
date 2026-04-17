@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDataStore } from '@/contexts/DataStoreContext';
-import { DeskBooking, DeskStatus, Currency, Desk } from '@shared/schema';
+import { DeskBooking, DeskStatus, Currency, Desk, PlanType } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -94,6 +94,7 @@ export function useBookingActions(
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    planType?: PlanType;
     newDeskId?: string;
   }) => {
     if (!selectedBooking) return;
@@ -101,6 +102,42 @@ export function useBookingActions(
     const { deskId: originalDeskId, booking: existingBooking } = selectedBooking;
     const deskId = bookingData.newDeskId || originalDeskId;
     const newDateRange = generateDateRange(bookingData.startDate, bookingData.endDate);
+
+    // Auto-link/create a Client when the admin typed a name but didn't pick one
+    // from the autocomplete. Case-insensitive match against existing clients;
+    // create a minimal Client if no match. Single-day day-pass bookings without
+    // status='assigned' are treated as "walk-in" and keep clientId undefined.
+    let resolvedClientId = bookingData.clientId;
+    const isMultiDay = bookingData.startDate !== bookingData.endDate;
+    const shouldAutoLink = !resolvedClientId
+      && !!bookingData.personName.trim()
+      && !bookingData.isFlex
+      && (isMultiDay || bookingData.status === 'assigned');
+    if (shouldAutoLink && dataStore.searchClients && dataStore.saveClient) {
+      const normalized = bookingData.personName.trim().toLowerCase();
+      try {
+        const matches = await dataStore.searchClients(bookingData.personName.trim());
+        const exact = matches.find(c => c.name.trim().toLowerCase() === normalized);
+        if (exact) {
+          resolvedClientId = exact.id;
+        } else {
+          const created = await dataStore.saveClient({
+            id: 'new-' + Date.now(),
+            organizationId: '',
+            name: bookingData.personName.trim(),
+            flexActive: false,
+            flexTotalDays: 0,
+            flexUsedDays: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          resolvedClientId = created.id;
+          queryClient.invalidateQueries({ queryKey: ['clients'] });
+        }
+      } catch (err) {
+        console.warn('Auto-link client failed, continuing without link:', err);
+      }
+    }
 
     let oldDateRange: string[] = [];
     if (existingBooking) {
@@ -152,8 +189,9 @@ export function useBookingActions(
       title: bookingData.title,
       price: bookingData.price,
       currency: bookingData.currency || currentCurrency,
-      clientId: bookingData.clientId,
+      clientId: resolvedClientId,
       isFlex: bookingData.isFlex,
+      planType: bookingData.planType,
       createdAt: (existingBooking && oldDateRange.includes(date))
         ? existingBooking.createdAt
         : new Date().toISOString(),
@@ -162,16 +200,16 @@ export function useBookingActions(
     await dataStore.bulkUpdateBookings(bookingsToCreate);
 
     // Deduct flex days if this is a new flex booking
-    if (bookingData.isFlex && bookingData.clientId && !existingBooking && dataStore.deductFlexDay) {
+    if (bookingData.isFlex && resolvedClientId && !existingBooking && dataStore.deductFlexDay) {
       const newDaysCount = newDateRange.length;
       for (let i = 0; i < newDaysCount; i++) {
-        await dataStore.deductFlexDay(bookingData.clientId);
+        await dataStore.deductFlexDay(resolvedClientId);
       }
       // Fire-and-forget booking confirmation email for flex member
       supabaseClient.functions.invoke('flex-email', {
         body: {
           type: 'booking_confirmation',
-          clientId: parseInt(bookingData.clientId, 10),
+          clientId: parseInt(resolvedClientId, 10),
           organizationId: bookingsToCreate[0]?.organizationId,
           bookingDate: bookingData.startDate,
           deskLabel: desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId,
