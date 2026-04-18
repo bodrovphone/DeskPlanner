@@ -1,7 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { Expense, RecurringExpense, ExpenseCategory } from '@shared/schema';
 import { formatLocalDate, formatYMD } from '@/lib/dateUtils';
+
+function invalidateExpenseStats(queryClient: QueryClient): void {
+  queryClient.invalidateQueries({ queryKey: ['expenses'] });
+  queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
+  queryClient.invalidateQueries({ queryKey: ['date-range-stats'] });
+}
 
 export function useExpenses(startDate: string, endDate: string) {
   const dataStore = useDataStore();
@@ -39,11 +45,7 @@ export function useSaveExpense() {
       }
       return dataStore.saveExpense(expense);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['date-range-stats'] });
-    },
+    onSuccess: () => invalidateExpenseStats(queryClient),
   });
 }
 
@@ -58,11 +60,7 @@ export function useDeleteExpense() {
       }
       return dataStore.deleteExpense(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['date-range-stats'] });
-    },
+    onSuccess: () => invalidateExpenseStats(queryClient),
   });
 }
 
@@ -111,11 +109,7 @@ export function useGenerateRecurringExpenses() {
       }
       return dataStore.generateRecurringExpenses(year, month);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['date-range-stats'] });
-    },
+    onSuccess: () => invalidateExpenseStats(queryClient),
   });
 }
 
