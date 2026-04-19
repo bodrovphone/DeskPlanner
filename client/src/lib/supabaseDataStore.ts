@@ -16,7 +16,7 @@ import { IDataStore } from './dataStore';
 import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
 import { isNonWorkingDay } from './workingDays';
-import { formatLocalDate, formatYMD } from './dateUtils';
+import { formatLocalDate, formatYMD, generateDaysInRange } from './dateUtils';
 import { DEDICATED_PLAN_TYPES, addDays, daysBetweenInclusive } from './planDates';
 
 export class SupabaseDataStore implements IDataStore {
@@ -332,7 +332,7 @@ export class SupabaseDataStore implements IDataStore {
     const monthEnd = new Date(year, month + 1, 0);
 
     // Generate all calendar days in month
-    const daysInMonth = this.generateDateRange(monthStart, monthEnd);
+    const daysInMonth = generateDaysInRange(monthStart, monthEnd);
 
     const workingDayCount = workingDays
       ? daysInMonth.filter((d) => !isNonWorkingDay(d, workingDays)).length
@@ -370,19 +370,6 @@ export class SupabaseDataStore implements IDataStore {
         currency,
       };
     }
-  }
-
-  private generateDateRange(start: Date, end: Date): string[] {
-    const dates: string[] = [];
-    const current = new Date(start);
-    while (current <= end) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, '0');
-      const d = String(current.getDate()).padStart(2, '0');
-      dates.push(`${y}-${m}-${d}`);
-      current.setDate(current.getDate() + 1);
-    }
-    return dates;
   }
 
   private calculateStatsFromRows(
@@ -485,7 +472,7 @@ export class SupabaseDataStore implements IDataStore {
     const rangeStart = new Date(startDate + 'T00:00:00');
     const rangeEnd = new Date(endDate + 'T00:00:00');
 
-    const daysInRange = this.generateDateRange(rangeStart, rangeEnd);
+    const daysInRange = generateDaysInRange(rangeStart, rangeEnd);
 
     const workingDayCount = workingDays
       ? daysInRange.filter((d) => !isNonWorkingDay(d, workingDays)).length
