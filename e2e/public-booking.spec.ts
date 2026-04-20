@@ -16,11 +16,15 @@ import { test, expect } from './fixtures';
  * the reset_e2e_test_data RPC that runs at the start of each test suite.
  *
  * Selector notes:
- *   - Name and Phone fields use plain <label> + <input>, not shadcn Label/Input.
+ *   - Name and Phone fields use plain <label> + <input>.
  *     Use page.getByLabel() which resolves htmlFor associations.
- *   - "Today" and "Tomorrow" buttons are plain <button> elements with those exact texts.
+ *   - "Today" and "Tomorrow" buttons are plain <button> elements.
+ *   - "Change dates" (ChevronLeft) goes back to step 1 from step 2.
  *   - Error message renders inside a red div (not a dialog/alert role).
  *   - "You're booked!" is an <h1> heading.
+ *   - Step transition is explicit: user clicks "Continue with N date(s)" to move to step 2.
+ *     (Previously any selection auto-advanced, which broke multi-date flows.)
+ *   - Submit button: "Book Desk" (1 date) or "Book N Days" (N > 1).
  */
 
 const PUBLIC_URL = '/book/e2e-testspace/';
@@ -43,7 +47,6 @@ test.describe('Public Booking — page load', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PUBLIC_URL);
     await page.waitForLoadState('networkidle');
-    // Guard: skip if public booking is disabled on the test org
     const notAvailable = await page.getByText('Not available').isVisible().catch(() => false);
     if (notAvailable) {
       test.skip(true, 'Public booking not enabled on e2e-testspace — enable it in Settings first');
@@ -61,13 +64,11 @@ test.describe('Public Booking — page load', () => {
     await expect(page.getByText('Tomorrow')).toBeVisible();
   });
 
-  test('"Pick another date" button opens the calendar picker', async ({ page }) => {
-    await page.getByText('Pick another date').click();
-    // Calendar component renders — multiple rdp elements exist, just check first
+  test('"Pick more dates" button opens the calendar picker', async ({ page }) => {
+    await page.getByText('Pick more dates').click();
     await expect(page.locator('[class*="rdp"]').first()).toBeVisible({ timeout: 5_000 });
-    // Cancel closes the picker
-    await page.getByText('Cancel').click();
-    await expect(page.getByText('Pick another date')).toBeVisible();
+    await page.getByText('Done').click();
+    await expect(page.getByText('Pick more dates')).toBeVisible();
   });
 });
 
@@ -83,8 +84,7 @@ test.describe('Public Booking — date selection', () => {
     }
   });
 
-  test('selecting an available date reveals the contact form', async ({ page }) => {
-    // Use button locator (not span) so .disabled check works correctly
+  test('selecting an available date shows Continue button, then reveals form', async ({ page }) => {
     const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
     const isAvailable = await todayBtn.evaluate(
       (el) => !(el as HTMLButtonElement).disabled,
@@ -104,13 +104,17 @@ test.describe('Public Booking — date selection', () => {
       await tomorrowBtn.click();
     }
 
+    const continueBtn = page.getByRole('button', { name: /Continue with \d+ date/ });
+    await expect(continueBtn).toBeVisible({ timeout: 5_000 });
+    await continueBtn.click();
+
     await expect(page.getByText('Your details')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByPlaceholder('Your full name')).toBeVisible();
     await expect(page.locator('input[type="tel"]').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Book Desk' })).toBeVisible();
   });
 
-  test('"Change date" returns to date selection', async ({ page }) => {
+  test('"Change dates" returns to date selection', async ({ page }) => {
     const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
     const isAvailable = await todayBtn.evaluate(
       (el) => !(el as HTMLButtonElement).disabled,
@@ -121,9 +125,10 @@ test.describe('Public Booking — date selection', () => {
     }
 
     await todayBtn.click();
+    await page.getByRole('button', { name: /Continue with \d+ date/ }).click();
     await expect(page.getByText('Your details')).toBeVisible({ timeout: 5_000 });
 
-    await page.getByText('Change date').click();
+    await page.getByText('Change dates').click();
     await expect(page.getByText('When do you want to come?')).toBeVisible({ timeout: 5_000 });
   });
 });
@@ -131,10 +136,6 @@ test.describe('Public Booking — date selection', () => {
 // ── Contact form validation ───────────────────────────────────────────────────
 
 test.describe('Public Booking — form validation', () => {
-  /**
-   * Navigate to the contact form by selecting an available date.
-   * Returns true if we reached the form, false if no dates available.
-   */
   async function goToContactForm(page: Page): Promise<boolean> {
     const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
     const available = await todayBtn.evaluate(
@@ -142,19 +143,17 @@ test.describe('Public Booking — form validation', () => {
     ).catch(() => false);
     if (available) {
       await todayBtn.click();
-      await page.getByText('Your details').waitFor({ timeout: 5_000 });
-      return true;
-    }
-    const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
-    const tomorrowAvail = await tomorrowBtn.evaluate(
-      (el) => !(el as HTMLButtonElement).disabled,
-    ).catch(() => false);
-    if (tomorrowAvail) {
+    } else {
+      const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
+      const tomorrowAvail = await tomorrowBtn.evaluate(
+        (el) => !(el as HTMLButtonElement).disabled,
+      ).catch(() => false);
+      if (!tomorrowAvail) return false;
       await tomorrowBtn.click();
-      await page.getByText('Your details').waitFor({ timeout: 5_000 });
-      return true;
     }
-    return false;
+    await page.getByRole('button', { name: /Continue with \d+ date/ }).click();
+    await page.getByText('Your details').waitFor({ timeout: 5_000 });
+    return true;
   }
 
   test.beforeEach(async ({ page }) => {
@@ -174,7 +173,6 @@ test.describe('Public Booking — form validation', () => {
     }
 
     await page.getByPlaceholder('Your full name').fill('E2E Validator');
-    // Phone input auto-prepends '+', so provide a short sequence to trigger the < 7 digits check
     await page.locator('input[type="tel"]').first().fill('+4');
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
@@ -213,7 +211,6 @@ test.describe('Public Booking — successful booking', () => {
       return;
     }
 
-    // Select an available date
     const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
     const todayAvail = await todayBtn.evaluate(
       (el) => !(el as HTMLButtonElement).disabled,
@@ -233,18 +230,63 @@ test.describe('Public Booking — successful booking', () => {
       await tomorrowBtn.click();
     }
 
+    await page.getByRole('button', { name: /Continue with \d+ date/ }).click();
     await page.getByText('Your details').waitFor({ timeout: 5_000 });
-
     await page.getByPlaceholder('Your full name').fill(`E2E Visitor ${Date.now()}`);
-    // Valid phone with country code
     await page.locator('input[type="tel"]').first().fill('+359888123456');
-
     await page.getByRole('button', { name: 'Book Desk' }).click();
 
-    // Success screen
     await expect(page.getByRole('heading', { name: "You're booked!" })).toBeVisible({
       timeout: 15_000,
     });
+  });
+});
+
+// ── Multi-day booking ─────────────────────────────────────────────────────────
+
+test.describe('Public Booking — multi-day booking', () => {
+  test('books two days at once and sees success with both listed', { timeout: 60_000 }, async ({ page }) => {
+    await page.goto(PUBLIC_URL);
+    await page.waitForLoadState('networkidle');
+
+    const notAvailable = await page.getByText('Not available').isVisible().catch(() => false);
+    if (notAvailable) {
+      test.skip(true, 'Public booking not enabled on e2e-testspace');
+      return;
+    }
+
+    const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
+    const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
+
+    const todayAvail = await todayBtn.evaluate(
+      (el) => !(el as HTMLButtonElement).disabled,
+    ).catch(() => false);
+    const tomorrowAvail = await tomorrowBtn.evaluate(
+      (el) => !(el as HTMLButtonElement).disabled,
+    ).catch(() => false);
+
+    if (!todayAvail || !tomorrowAvail) {
+      test.skip(true, 'Need both Today and Tomorrow available for multi-day test');
+      return;
+    }
+
+    await todayBtn.click();
+    await tomorrowBtn.click();
+
+    await expect(page.getByRole('button', { name: 'Continue with 2 dates' })).toBeVisible({ timeout: 5_000 });
+    await page.getByRole('button', { name: 'Continue with 2 dates' }).click();
+
+    await page.getByText('Your details').waitFor({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'Book 2 Days' })).toBeVisible();
+
+    await page.getByPlaceholder('Your full name').fill(`E2E Multi Visitor ${Date.now()}`);
+    await page.locator('input[type="tel"]').first().fill('+359888123456');
+    await page.getByRole('button', { name: 'Book 2 Days' }).click();
+
+    await expect(page.getByRole('heading', { name: "You're booked!" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText('2 desks')).toBeVisible();
   });
 });
 

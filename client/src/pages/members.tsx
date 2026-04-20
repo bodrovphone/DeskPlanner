@@ -102,11 +102,14 @@ function BalanceCell({
         </div>
       )}
       {flexConfigured && !client.flexActive && !hasActivePlan && !hasBankedPlan && (
-        <Checkbox
-          checked={false}
-          onCheckedChange={() => onActivateFlex(client)}
-          className="data-[state=unchecked]:border-gray-300"
-        />
+        <button
+          type="button"
+          onClick={() => onActivateFlex(client)}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 transition-colors"
+        >
+          <Package className="h-3 w-3" />
+          Activate Flex
+        </button>
       )}
     </div>
   );
@@ -350,7 +353,7 @@ export default function MembersPage() {
           {flexConfigured && (
             <div className="flex items-center gap-2 mb-3 px-1 text-xs text-gray-400">
               <Package className="h-3.5 w-3.5 text-amber-500" />
-              <span>Flex plan: {currentOrg?.flexPlanDays} days for {currentOrg?.currency} {currentOrg?.flexPlanPrice}. Activate via the checkbox, then share the booking link with the member.</span>
+              <span>Flex plan: {currentOrg?.flexPlanDays} days for {currentOrg?.currency} {currentOrg?.flexPlanPrice}. Click "Activate Flex" next to a member, then share the booking link with them.</span>
             </div>
           )}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

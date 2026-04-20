@@ -78,9 +78,9 @@ npm run lint
 
 Deployment is automatic — Cloudflare Pages auto-builds and deploys on every push to `main` via the GitHub integration.
 
-## Routing — trailing slash required
+## Routing — trailing slash convention
 
-`astro.config.mjs` sets `trailingSlash: 'always'`. **Every internal href in this project must end with `/`** or the page 404s (Astro responds: "Your site is configured with trailingSlash set to always. Do you want to go to /features/ instead?").
+`astro.config.mjs` sets `trailingSlash: 'ignore'`. Both `/path` and `/path/` work. **All internal hrefs should consistently use a trailing slash** (e.g. `href="/features/"`) — this keeps refresh-safety explicit and avoids active-nav comparison bugs.
 
 - Static hrefs: `href="/features/"`, `href="/pricing/"`, `href="/signup/"`, `href="/login/"`, `href="/podcast/"`, `href="/compare/"`
 - Dynamic hrefs: `href={`/features/${slug}/`}`, `href={`/compare/${slug}/`}`

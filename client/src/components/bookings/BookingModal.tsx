@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,6 +94,7 @@ export default function BookingModal({
   const [loadingDesks, setLoadingDesks] = useState(false);
   const [planKey, setPlanKey] = useState<PlanType>('day_pass');
   const [busyDeskIds, setBusyDeskIds] = useState<Set<string>>(new Set());
+  const planChangedByUser = useRef(false);
 
   const weeklyEnabled = !!(currentOrg?.weeklyPlanPrice && currentOrg.weeklyPlanPrice > 0);
   const monthlyEnabled = !!(currentOrg?.monthlyPlanPrice && currentOrg.monthlyPlanPrice > 0);
@@ -144,9 +145,11 @@ export default function BookingModal({
     }
   }, [isOpen, booking, date]);
 
-  // When the user switches plan, reset the auto-price. End-date sync is handled
-  // by the shared plan/startDate effect below.
+  // When the user manually switches plan, reset the auto-price. Skip during
+  // modal initialization (planKey set from existing booking on open).
   useEffect(() => {
+    if (!planChangedByUser.current) return;
+    planChangedByUser.current = false;
     if (!isOpen) return;
     if (planKey === 'custom' || planKey === 'flex') return;
     const auto = planAutoPrice(planKey, currentOrg);
@@ -431,7 +434,7 @@ export default function BookingModal({
                       key={key}
                       type="button"
                       disabled={!enabled}
-                      onClick={() => setPlanKey(key)}
+                      onClick={() => { planChangedByUser.current = true; setPlanKey(key); }}
                       className={`flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
                         !enabled ? 'opacity-40 cursor-not-allowed border-gray-200 text-gray-400' :
                         selected

@@ -19,9 +19,10 @@ import { test, expect } from './fixtures';
  *
  * Selector notes:
  *   - No contact form — member is already known from the URL.
- *   - Today/Tomorrow buttons are the same pattern as public-booking.
- *   - "Confirm Booking" is a <button> (not "Book Desk").
+ *   - Today/Tomorrow buttons are in a 2-column grid.
+ *   - Confirm button label: "Confirm N Day Booking" or "Confirm N Days Booking".
  *   - Success heading: "You're in, {name}!" as an <h1>.
+ *   - Multi-date: UI is single-step; Today + Tomorrow can both be selected.
  */
 
 const FLEX_MEMBER_ID = '99901';
@@ -32,9 +33,9 @@ const EXHAUSTED_URL = `/book/${EXHAUSTED_MEMBER_ID}/${ORG_SLUG}/`;
 
 /**
  * Select an available date by clicking Today or Tomorrow.
- * Returns true if a date was selected, false if none available.
+ * Returns the date label clicked, or null if none available.
  */
-async function selectAvailableDate(page: Page): Promise<boolean> {
+async function selectAvailableDate(page: Page): Promise<string | null> {
   const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
   const todayAvail = await todayBtn.evaluate(
     (el) => !(el as HTMLButtonElement).disabled,
@@ -42,8 +43,8 @@ async function selectAvailableDate(page: Page): Promise<boolean> {
 
   if (todayAvail) {
     await todayBtn.click();
-    await page.getByRole('button', { name: 'Confirm Booking' }).waitFor({ timeout: 5_000 });
-    return true;
+    await page.getByRole('button', { name: /Confirm \d+ Days? Booking/ }).waitFor({ timeout: 5_000 });
+    return 'Today';
   }
 
   const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
@@ -53,11 +54,11 @@ async function selectAvailableDate(page: Page): Promise<boolean> {
 
   if (tomorrowAvail) {
     await tomorrowBtn.click();
-    await page.getByRole('button', { name: 'Confirm Booking' }).waitFor({ timeout: 5_000 });
-    return true;
+    await page.getByRole('button', { name: /Confirm \d+ Days? Booking/ }).waitFor({ timeout: 5_000 });
+    return 'Tomorrow';
   }
 
-  return false;
+  return null;
 }
 
 // ── Not found ─────────────────────────────────────────────────────────────────
@@ -94,16 +95,16 @@ test.describe('Member Booking — page load', () => {
   });
 
   test('date selection renders with Today and Tomorrow buttons', async ({ page }) => {
-    await expect(page.getByText('Pick a date')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Pick your dates')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('Today')).toBeVisible();
     await expect(page.getByText('Tomorrow')).toBeVisible();
   });
 
-  test('"Pick another date" button opens the calendar picker', async ({ page }) => {
-    await page.getByText('Pick another date').click();
+  test('"Pick more dates" button opens the calendar picker', async ({ page }) => {
+    await page.getByText('Pick more dates').click();
     await expect(page.locator('[class*="rdp"]').first()).toBeVisible({ timeout: 5_000 });
-    await page.getByText('Cancel').click();
-    await expect(page.getByText('Pick another date')).toBeVisible();
+    await page.getByText('Done').click();
+    await expect(page.getByText('Pick more dates')).toBeVisible();
   });
 });
 
@@ -119,26 +120,25 @@ test.describe('Member Booking — date selection', () => {
     }
   });
 
-  test('selecting an available date shows confirmation step', async ({ page }) => {
+  test('selecting an available date shows confirm button', async ({ page }) => {
     const selected = await selectAvailableDate(page);
     if (!selected) {
       test.skip(true, 'No available dates today or tomorrow — cannot test date selection');
       return;
     }
 
-    await expect(page.getByText('Change date')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Confirm Booking' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Confirm \d+ Days? Booking/ })).toBeVisible();
   });
 
-  test('"Change date" returns to date selection', async ({ page }) => {
+  test('selected date can be deselected via ✕ button', async ({ page }) => {
     const selected = await selectAvailableDate(page);
     if (!selected) {
-      test.skip(true, 'No available dates — skip back-button test');
+      test.skip(true, 'No available dates — skip deselect test');
       return;
     }
 
-    await page.getByText('Change date').click();
-    await expect(page.getByText('Pick a date')).toBeVisible({ timeout: 5_000 });
+    await page.locator('button').filter({ hasText: '✕' }).first().click();
+    await expect(page.getByText('Pick your dates')).toBeVisible({ timeout: 5_000 });
   });
 });
 
@@ -161,21 +161,58 @@ test.describe('Member Booking — successful booking', () => {
       return;
     }
 
-    await page.getByRole('button', { name: 'Confirm Booking' }).click();
+    await page.getByRole('button', { name: /Confirm \d+ Days? Booking/ }).click();
 
-    // Success screen — booking write + Supabase round-trip can be slow in production CI
     await expect(page.getByRole('heading', { name: "You're in, E2E Flex Member!" })).toBeVisible({
       timeout: 30_000,
     });
 
-    // Desk assignment shown (e.g. "Your desk at E2E Test Space is reserved.")
-    await expect(page.getByText('is reserved.')).toBeVisible();
-
-    // Updated flex balance
+    await expect(page.getByText(/is reserved\.|are reserved\./)).toBeVisible();
     await expect(page.getByText(/days remaining/)).toBeVisible();
-
-    // Book another day button
     await expect(page.getByRole('button', { name: 'Book another day' })).toBeVisible();
+  });
+});
+
+// ── Multi-day booking ─────────────────────────────────────────────────────────
+
+test.describe('Member Booking — multi-day booking', () => {
+  test('books two days at once and sees success with both', { timeout: 60_000 }, async ({ page }) => {
+    await page.goto(MEMBER_URL);
+    await page.waitForLoadState('networkidle');
+
+    const notFound = await page.getByText('Not found').isVisible().catch(() => false);
+    if (notFound) {
+      test.skip(true, 'Flex member not seeded');
+      return;
+    }
+
+    const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
+    const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
+
+    const todayAvail = await todayBtn.evaluate(
+      (el) => !(el as HTMLButtonElement).disabled,
+    ).catch(() => false);
+    const tomorrowAvail = await tomorrowBtn.evaluate(
+      (el) => !(el as HTMLButtonElement).disabled,
+    ).catch(() => false);
+
+    if (!todayAvail || !tomorrowAvail) {
+      test.skip(true, 'Need both Today and Tomorrow available for multi-day test');
+      return;
+    }
+
+    await todayBtn.click();
+    await tomorrowBtn.click();
+
+    const confirmBtn = page.getByRole('button', { name: /Confirm 2 Days Booking/ });
+    await expect(confirmBtn).toBeEnabled({ timeout: 5_000 });
+    await confirmBtn.click();
+
+    await expect(page.getByRole('heading', { name: "You're in, E2E Flex Member!" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByText('2 desks')).toBeVisible();
+    await expect(page.getByText(/days remaining/)).toBeVisible();
   });
 });
 
@@ -193,7 +230,6 @@ test.describe('Member Booking — zero balance', () => {
     }
 
     await expect(page.getByText('No flex days remaining')).toBeVisible({ timeout: 10_000 });
-    // Confirm Booking button should not be present
-    await expect(page.getByRole('button', { name: 'Confirm Booking' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: /Confirm \d+ Days? Booking/ })).not.toBeVisible();
   });
 });

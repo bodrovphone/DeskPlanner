@@ -30,10 +30,10 @@ export default function MemberBookingPage() {
   const [member, setMember] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [assignedDeskLabel, setAssignedDeskLabel] = useState('');
+  const [assignments, setAssignments] = useState<{ date: string; deskId: string; deskLabel: string }[]>([]);
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [updatedBalance, setUpdatedBalance] = useState<{ remaining: number; total: number } | null>(null);
@@ -140,7 +140,7 @@ export default function MemberBookingPage() {
   const noBalance = member.flexActive && flexRemaining <= 0;
 
   if (submitted) {
-    const balance = updatedBalance || { remaining: flexRemaining - 1, total: member.flexTotalDays };
+    const balance = updatedBalance || { remaining: flexRemaining - assignments.length, total: member.flexTotalDays };
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -150,21 +150,27 @@ export default function MemberBookingPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">You're in, {member.name}!</h1>
             <p className="text-gray-500 mt-3">
-              Your desk at <span className="font-medium">{availability.org.name}</span> is reserved.
+              {assignments.length === 1 ? 'Your desk' : `${assignments.length} desks`} at <span className="font-medium">{availability.org.name}</span> {assignments.length === 1 ? 'is' : 'are'} reserved.
             </p>
-            {assignedDeskLabel && (
-              <div className="mt-5 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
-                <MapPin className="h-4 w-4" />
-                {assignedDeskLabel}
-              </div>
-            )}
-            {floorPlan && (
+            <div className="mt-5 space-y-2 text-left">
+              {assignments.map(a => {
+                const d = new Date(a.date + 'T00:00:00');
+                const label = `${DAY_LABELS[getIsoDay(d)]}, ${d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
+                return (
+                  <div key={a.date} className="flex items-center justify-between bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+                    <span>{label}</span>
+                    <span className="flex items-center gap-1 text-blue-500"><MapPin className="h-3.5 w-3.5" />{a.deskLabel}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {floorPlan && assignments.length === 1 && (
               <div className="mt-4">
                 <FloorPlanReadOnly
                   positions={floorPlan.positions}
                   objects={floorPlan.objects}
                   highlightDeskId={floorPlan.highlightDeskId}
-                  highlightLabel={assignedDeskLabel}
+                  highlightLabel={assignments[0].deskLabel}
                 />
               </div>
             )}
@@ -178,16 +184,14 @@ export default function MemberBookingPage() {
               <button
                 onClick={() => {
                   setSubmitted(false);
-                  setSelectedDate(null);
+                  setSelectedDates([]);
                   setError('');
-                  setAssignedDeskLabel('');
+                  setAssignments([]);
                   setFloorPlan(null);
-                  // Update member state with new balance
                   setMember(prev => prev ? {
                     ...prev,
                     flexUsedDays: prev.flexTotalDays - balance.remaining,
                   } : prev);
-                  // Refresh availability to exclude newly booked slot
                   if (orgSlug) {
                     SupabaseDataStore.getPublicAvailability(orgSlug).then(a => { if (a) setAvailability(a); });
                   }
@@ -232,8 +236,14 @@ export default function MemberBookingPage() {
     ? flexConfig.price / flexConfig.days
     : 0;
 
+  const toggleDate = (dateStr: string) => {
+    setSelectedDates(prev =>
+      prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]
+    );
+  };
+
   const handleSubmit = async () => {
-    if (!selectedDate) return;
+    if (selectedDates.length === 0) return;
 
     if (noBalance) {
       setError('Your flex balance is empty. Please contact the space manager.');
@@ -244,21 +254,27 @@ export default function MemberBookingPage() {
     setError('');
 
     try {
-      const desk = pickRandomAvailableDesk(allDesks, bookedSet, selectedDate);
-      if (!desk) {
-        setError('Sorry, all desks just got booked. Please pick another date.');
-        setSubmitting(false);
-        return;
+      // Assign a desk for each selected date
+      const newAssignments: { date: string; deskId: string; deskLabel: string }[] = [];
+      for (const date of selectedDates) {
+        const desk = pickRandomAvailableDesk(allDesks, bookedSet, date);
+        if (!desk) {
+          setError(`Sorry, no desks are available on ${date}. Please adjust your selection.`);
+          setSubmitting(false);
+          return;
+        }
+        bookedSet.add(`${desk.deskId}:${date}`);
+        newAssignments.push({ date, deskId: desk.deskId, deskLabel: desk.label });
       }
 
-      // Create an assigned booking with flex flag
+      // Batch insert — atomic single Postgres statement
       const { error: insertError } = await supabaseClient
         .from('desk_bookings')
-        .insert({
-          desk_id: desk.deskId,
-          date: selectedDate,
-          start_date: selectedDate,
-          end_date: selectedDate,
+        .insert(newAssignments.map(a => ({
+          desk_id: a.deskId,
+          date: a.date,
+          start_date: a.date,
+          end_date: a.date,
           status: 'assigned',
           organization_id: org.id,
           person_name: member.name,
@@ -267,53 +283,55 @@ export default function MemberBookingPage() {
           price: Math.round((perVisitPrice || 0) * 100) / 100,
           currency: org.currency || 'EUR',
           created_at: new Date().toISOString(),
-        });
+        })));
 
       if (insertError) throw insertError;
 
-      // Deduct flex day
+      // Deduct N flex days in one update
+      const n = newAssignments.length;
       if (member.flexActive) {
-        await supabaseClient.rpc('increment_flex_used_days', {
-          p_client_id: parseInt(member.id, 10),
-        });
-        const newUsed = member.flexUsedDays + 1;
+        await supabaseClient
+          .from('clients')
+          .update({ flex_used_days: member.flexUsedDays + n })
+          .eq('id', parseInt(member.id, 10));
 
         setUpdatedBalance({
-          remaining: member.flexTotalDays - newUsed,
+          remaining: member.flexTotalDays - (member.flexUsedDays + n),
           total: member.flexTotalDays,
         });
       }
 
-      setAssignedDeskLabel(desk.label);
+      setAssignments(newAssignments);
       setSubmitted(true);
 
-      loadPublicFloorPlan(org.id, desk.deskId, availability.rooms)
+      // Load floor plan for the first assigned desk
+      loadPublicFloorPlan(org.id, newAssignments[0].deskId, availability.rooms)
         .then((data) => { if (data) setFloorPlan(data); })
         .catch(() => {});
 
-      // Fire-and-forget Telegram notification to space manager
+      // Fire-and-forget Telegram notification (first date only — summary)
       supabaseClient.functions.invoke('notify-public-booking', {
         body: {
           organization_id: org.id,
           visitor_name: member.name,
           visitor_phone: null,
-          desk_id: desk.deskId,
-          date: selectedDate,
-          notes: 'Flex plan self-booking',
+          desk_id: newAssignments[0].deskId,
+          date: newAssignments[0].date,
+          notes: n > 1 ? `Flex plan self-booking (${n} days)` : 'Flex plan self-booking',
         },
       }).catch(() => {});
 
-      // Fire-and-forget booking confirmation email (or last-day email if balance is now 0)
+      // ONE confirmation email listing all dates
       if (member.email) {
-        const newRemaining = member.flexTotalDays - (member.flexUsedDays + 1);
+        const newRemaining = member.flexTotalDays - (member.flexUsedDays + n);
         const emailType = newRemaining <= 0 ? 'last_day' : 'booking_confirmation';
         supabaseClient.functions.invoke('flex-email', {
           body: {
             type: emailType,
             clientId: parseInt(member.id, 10),
             organizationId: org.id,
-            bookingDate: selectedDate,
-            deskLabel: desk.label,
+            bookingDates: newAssignments.map(a => a.date),
+            deskLabels: newAssignments.map(a => a.deskLabel),
           },
         }).catch(() => {});
       }
@@ -356,7 +374,7 @@ export default function MemberBookingPage() {
           )}
 
           <div className="p-6">
-            {upcomingBookings.length > 0 && !selectedDate && (
+            {upcomingBookings.length > 0 && selectedDates.length === 0 && (
               <div className="mb-5">
                 <h2 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Your upcoming bookings</h2>
                 <div className="space-y-1.5">
@@ -388,39 +406,42 @@ export default function MemberBookingPage() {
                   className="mt-6 pt-4 border-t"
                 />
               </div>
-            ) : !selectedDate ? (
+            ) : (
               <div>
-                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Pick a date</h2>
+                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Pick your dates</h2>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <button
-                      disabled={!todayAvailable}
-                      onClick={() => setSelectedDate(todayStr)}
-                      className={`flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
-                        todayAvailable
-                          ? 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer'
-                          : 'border-gray-100 bg-gray-50 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className={`text-lg font-bold ${todayAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Today</span>
-                      <span className={`text-xs mt-0.5 ${todayAvailable ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {todayAvailable ? `${availabilityMap[todayStr]} free` : todayIsWorkingDay ? 'Full' : 'Closed'}
-                      </span>
-                    </button>
-                    <button
-                      disabled={!tomorrowAvailable}
-                      onClick={() => setSelectedDate(tomorrowStr)}
-                      className={`flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
-                        tomorrowAvailable
-                          ? 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer'
-                          : 'border-gray-100 bg-gray-50 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className={`text-lg font-bold ${tomorrowAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Tomorrow</span>
-                      <span className={`text-xs mt-0.5 ${tomorrowAvailable ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {tomorrowAvailable ? `${availabilityMap[tomorrowStr]} free` : tomorrowIsWorkingDay ? 'Full' : 'Closed'}
-                      </span>
-                    </button>
+                    {[{ dateStr: todayStr, label: 'Today', available: todayAvailable, isWorkingDay: todayIsWorkingDay },
+                      { dateStr: tomorrowStr, label: 'Tomorrow', available: tomorrowAvailable, isWorkingDay: tomorrowIsWorkingDay }]
+                      .map(({ dateStr, label, available, isWorkingDay }) => {
+                        const selected = selectedDates.includes(dateStr);
+                        const atCap = !selected && selectedDates.length >= flexRemaining;
+                        const disabled = !available || atCap;
+                        return (
+                          <button
+                            key={dateStr}
+                            disabled={disabled}
+                            onClick={() => available && !atCap && toggleDate(dateStr)}
+                            className={`relative flex flex-col items-center py-1.5 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
+                              selected
+                                ? 'border-amber-500 bg-amber-50 cursor-pointer'
+                                : disabled
+                                  ? 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                                  : 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer'
+                            }`}
+                          >
+                            {selected && (
+                              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500">
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              </span>
+                            )}
+                            <span className={`text-base font-bold ${disabled && !selected ? 'text-gray-300' : 'text-gray-900'}`}>{label}</span>
+                            <span className={`text-xs mt-0 ${disabled && !selected ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {available ? `${availabilityMap[dateStr]} free` : isWorkingDay ? 'Full' : 'Closed'}
+                            </span>
+                          </button>
+                        );
+                      })}
                   </div>
 
                   {!showCalendar ? (
@@ -429,7 +450,7 @@ export default function MemberBookingPage() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all text-sm font-medium text-gray-600 active:scale-[0.98]"
                     >
                       <CalendarDays className="h-4 w-4" />
-                      Pick another date
+                      Pick more dates
                     </button>
                   ) : (
                     <AvailabilityCalendar
@@ -437,58 +458,53 @@ export default function MemberBookingPage() {
                       maxDate={maxDate}
                       workingDays={org.workingDays}
                       availabilityMap={availabilityMap}
-                      onSelect={(dateStr) => {
-                        setSelectedDate(dateStr);
-                        setShowCalendar(false);
-                      }}
+                      onSelect={toggleDate}
                       onCancel={() => setShowCalendar(false)}
+                      multiple
+                      maxSelections={flexRemaining}
+                      selectedDates={selectedDates}
                     />
                   )}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={() => { setSelectedDate(null); setError(''); }}
-                  className="flex items-center gap-1 text-sm text-amber-600 hover:text-amber-800 mb-4 -mt-1"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  Change date
-                </button>
 
-                <div className="bg-amber-50 rounded-xl px-4 py-3 mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-amber-900">
-                      {(() => {
-                        const d = new Date(selectedDate + 'T00:00:00');
-                        return `${DAY_LABELS[getIsoDay(d)]}, ${d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
-                      })()}
-                    </p>
-                    <p className="text-xs text-amber-600 mt-0.5">A desk will be assigned for you</p>
-                  </div>
-                  <CalendarCheck className="h-5 w-5 text-amber-400" />
-                </div>
+                  {selectedDates.length > 0 && (
+                    <>
+                      <div className="space-y-1.5">
+                        {selectedDates.sort().map(dateStr => {
+                          const d = new Date(dateStr + 'T00:00:00');
+                          return (
+                            <div key={dateStr} className="flex items-center justify-between px-3 py-2 bg-amber-50 rounded-lg text-sm">
+                              <span className="text-amber-900 font-medium">
+                                {DAY_LABELS[getIsoDay(d)]}, {d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
+                              </span>
+                              <button onClick={() => toggleDate(dateStr)} className="text-amber-400 hover:text-amber-600 text-xs ml-2">✕</button>
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                )}
+                      {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                          <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                      )}
 
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-semibold rounded-xl transition-colors text-sm active:scale-[0.98]"
-                >
-                  {submitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Booking...
-                    </span>
-                  ) : (
-                    'Confirm Booking'
+                      <button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-semibold rounded-xl transition-colors text-sm active:scale-[0.98]"
+                      >
+                        {submitting ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Booking...
+                          </span>
+                        ) : (
+                          `Confirm ${selectedDates.length} Day${selectedDates.length > 1 ? 's' : ''} Booking`
+                        )}
+                      </button>
+                    </>
                   )}
-                </button>
+                </div>
               </div>
             )}
           </div>

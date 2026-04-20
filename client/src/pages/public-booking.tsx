@@ -21,7 +21,8 @@ export default function PublicBookingPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   // Form state
   const [visitorName, setVisitorName] = useState('');
@@ -29,7 +30,7 @@ export default function PublicBookingPage() {
   const [visitorNotes, setVisitorNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [assignedDeskLabel, setAssignedDeskLabel] = useState('');
+  const [bookingAssignments, setBookingAssignments] = useState<{ date: string; deskId: string; deskLabel: string }[]>([]);
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [floorPlan, setFloorPlan] = useState<FloorPlanData | null>(null);
@@ -88,6 +89,7 @@ export default function PublicBookingPage() {
   }
 
   if (submitted) {
+    const isPaid = bookingAssignments.length === 0; // Stripe redirect path sets submitted=true with no assignments
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -97,24 +99,35 @@ export default function PublicBookingPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">You're booked!</h1>
             <p className="text-gray-500 mt-3">
-              {assignedDeskLabel
-                ? <>Your desk at <span className="font-medium">{availability.org.name}</span> is reserved. We're looking forward to seeing you at the space!</>
-                : <>Your payment was successful and your desk at <span className="font-medium">{availability.org.name}</span> is reserved. Check your email for details!</>
+              {isPaid
+                ? <>Your payment was successful and your desk at <span className="font-medium">{availability.org.name}</span> is reserved. Check your email for details!</>
+                : bookingAssignments.length === 1
+                  ? <>Your desk at <span className="font-medium">{availability.org.name}</span> is reserved. We're looking forward to seeing you!</>
+                  : <>{bookingAssignments.length} desks at <span className="font-medium">{availability.org.name}</span> are reserved.</>
               }
             </p>
-            {assignedDeskLabel && (
-              <div className="mt-5 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
-                <MapPin className="h-4 w-4" />
-                {assignedDeskLabel}
+            {bookingAssignments.length > 0 && (
+              <div className="mt-5 space-y-2 text-left">
+                {bookingAssignments.map(a => {
+                  const d = new Date(a.date + 'T00:00:00');
+                  const dayLabel = DAY_LABELS[getIsoDay(d)];
+                  const dateLabel = d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                  return (
+                    <div key={a.date} className="flex items-center justify-between bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+                      <span>{dayLabel}, {dateLabel}</span>
+                      <span className="flex items-center gap-1 text-blue-500"><MapPin className="h-3.5 w-3.5" />{a.deskLabel}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {floorPlan && (
+            {floorPlan && bookingAssignments.length === 1 && (
               <div className="mt-4">
                 <FloorPlanReadOnly
                   positions={floorPlan.positions}
                   objects={floorPlan.objects}
                   highlightDeskId={floorPlan.highlightDeskId}
-                  highlightLabel={assignedDeskLabel}
+                  highlightLabel={bookingAssignments[0].deskLabel}
                 />
               </div>
             )}
@@ -151,7 +164,6 @@ export default function PublicBookingPage() {
   const todayIsWorkingDay = !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
 
-  // Generate dates list (still needed for selectedDateInfo)
   const dates: { date: string; dayLabel: string; dateLabel: string; available: number }[] = [];
   for (let i = 0; i <= org.maxDaysAhead; i++) {
     const d = new Date(today);
@@ -168,12 +180,17 @@ export default function PublicBookingPage() {
     });
   }
 
-  const selectedDateInfo = dates.find(d => d.date === selectedDate);
-  const step = selectedDate ? 2 : 1;
+  const toggleDate = (dateStr: string) => {
+    setSelectedDates(prev =>
+      prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]
+    );
+  };
+
+  const step = showContactForm ? 2 : 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDate || !visitorName.trim()) {
+    if (selectedDates.length === 0 || !visitorName.trim()) {
       setError('Please fill in your name.');
       return;
     }
@@ -189,12 +206,12 @@ export default function PublicBookingPage() {
     setPaymentCancelled(false);
 
     try {
-      if (availability.org.stripePublicBookingPayments) {
-        // Paid path — redirect to Stripe Checkout
+      if (availability.org.stripePublicBookingPayments && selectedDates.length === 1) {
+        // Paid path — single-date only (multi-date Stripe is a future task)
         const { data, error: fnError } = await supabaseClient.functions.invoke('stripe-checkout', {
           body: {
             orgSlug,
-            date: selectedDate,
+            date: selectedDates[0],
             visitorName: visitorName.trim(),
             visitorPhone: visitorPhone.trim(),
             visitorNotes: visitorNotes.trim() || undefined,
@@ -203,7 +220,7 @@ export default function PublicBookingPage() {
         });
         if (data?.error === 'no_desks_available') {
           setError('Sorry, all desks are now taken for this date. Please pick another.');
-          setSelectedDate(null);
+          setSelectedDates([]);
           return;
         }
         if (fnError || !data?.checkoutUrl) {
@@ -211,33 +228,73 @@ export default function PublicBookingPage() {
           return;
         }
         window.location.href = data.checkoutUrl;
-        return; // Don't setSubmitting(false) — we're navigating away
-      }
-
-      // Free path — existing behavior
-      const desk = pickRandomAvailableDesk(allDesks, bookedSet, selectedDate);
-      if (!desk) {
-        setError('Sorry, all desks just got booked for this date. Please pick another.');
-        setSubmitting(false);
         return;
       }
 
-      await SupabaseDataStore.submitPublicBooking({
-        organizationId: org.id,
-        deskId: desk.deskId,
-        date: selectedDate,
-        visitorName: visitorName.trim(),
-        visitorEmail: '',
-        visitorPhone: visitorPhone.trim(),
-        visitorNotes: visitorNotes.trim() || undefined,
-      });
+      // Free path — assign desk per date, batch insert, single owner email
+      const newAssignments: { date: string; deskId: string; deskLabel: string }[] = [];
+      for (const date of selectedDates) {
+        const desk = pickRandomAvailableDesk(allDesks, bookedSet, date);
+        if (!desk) {
+          setError(`Sorry, all desks are taken on ${date}. Please adjust your selection.`);
+          setSubmitting(false);
+          return;
+        }
+        bookedSet.add(`${desk.deskId}:${date}`);
+        newAssignments.push({ date, deskId: desk.deskId, deskLabel: desk.label });
+      }
 
-      setAssignedDeskLabel(desk.label);
+      const title = [visitorPhone.trim(), visitorNotes.trim()].filter(Boolean).join(' | ') || null;
+      const { error: insertError } = await supabaseClient.from('desk_bookings').insert(
+        newAssignments.map(a => ({
+          desk_id: a.deskId,
+          date: a.date,
+          start_date: a.date,
+          end_date: a.date,
+          status: 'booked',
+          organization_id: org.id,
+          visitor_name: visitorName.trim(),
+          visitor_email: '',
+          visitor_phone: visitorPhone.trim() || null,
+          visitor_notes: visitorNotes.trim() || null,
+          person_name: visitorName.trim(),
+          title,
+          created_at: new Date().toISOString(),
+        }))
+      );
+      if (insertError) throw insertError;
+
+      // ONE owner notification email listing all dates
+      supabaseClient.functions.invoke('notify-public-booking-email', {
+        body: {
+          organizationId: org.id,
+          visitorName: visitorName.trim(),
+          visitorPhone: visitorPhone.trim() || null,
+          dates: newAssignments.map(a => ({ date: a.date, deskLabel: a.deskLabel })),
+          notes: visitorNotes.trim() || null,
+        },
+      }).catch(() => {});
+
+      // Telegram notification for first date
+      supabaseClient.functions.invoke('notify-public-booking', {
+        body: {
+          organization_id: org.id,
+          visitor_name: visitorName.trim(),
+          visitor_phone: visitorPhone.trim() || null,
+          desk_id: newAssignments[0].deskId,
+          date: newAssignments[0].date,
+          notes: newAssignments.length > 1 ? `${newAssignments.length} days booked` : (visitorNotes.trim() || null),
+        },
+      }).catch(() => {});
+
+      setBookingAssignments(newAssignments);
       setSubmitted(true);
 
-      loadPublicFloorPlan(org.id, desk.deskId, availability.rooms)
-        .then((data) => { if (data) setFloorPlan(data); })
-        .catch(() => {});
+      if (newAssignments.length === 1) {
+        loadPublicFloorPlan(org.id, newAssignments[0].deskId, availability.rooms)
+          .then((data) => { if (data) setFloorPlan(data); })
+          .catch(() => {});
+      }
     } catch (err) {
       console.error('Public booking error:', err);
       setError('Failed to submit booking. Please try again.');
@@ -278,7 +335,7 @@ export default function PublicBookingPage() {
             )}
 
             {/* Step 1: Date selection */}
-            {!selectedDate && (
+            {!showContactForm && (
               <div>
                 <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">When do you want to come?</h2>
 
@@ -289,26 +346,25 @@ export default function PublicBookingPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Today & Tomorrow quick buttons */}
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         disabled={!todayAvailable}
-                        onClick={() => setSelectedDate(todayStr)}
-                        className={`relative flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
+                        onClick={() => todayAvailable && toggleDate(todayStr)}
+                        className={`relative flex flex-col items-center py-1.5 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
                           todayAvailable
                             ? 'border-blue-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer'
                             : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                         }`}
                       >
-                        <span className={`text-lg font-bold ${todayAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Today</span>
+                        <span className={`text-base font-bold ${todayAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Today</span>
                         {todayAvailable ? (
-                          <span className="text-xs text-gray-500 mt-0.5">
+                          <span className="text-xs text-gray-500 mt-0">
                             {(availabilityMap[todayStr] ?? 0) <= SCARCITY_THRESHOLD
                               ? `Only ${availabilityMap[todayStr]} left`
                               : `${availabilityMap[todayStr]} desks free`}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400 mt-0.5">
+                          <span className="text-xs text-gray-400 mt-0">
                             {todayIsWorkingDay ? 'Fully booked' : 'Closed'}
                           </span>
                         )}
@@ -316,36 +372,36 @@ export default function PublicBookingPage() {
 
                       <button
                         disabled={!tomorrowAvailable}
-                        onClick={() => setSelectedDate(tomorrowStr)}
-                        className={`relative flex flex-col items-center py-4 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
+                        onClick={() => tomorrowAvailable && toggleDate(tomorrowStr)}
+                        className={`relative flex flex-col items-center py-1.5 px-3 rounded-xl border-2 transition-all active:scale-[0.97] ${
                           tomorrowAvailable
                             ? 'border-blue-200 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer'
                             : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                         }`}
                       >
-                        <span className={`text-lg font-bold ${tomorrowAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Tomorrow</span>
+                        <span className={`text-base font-bold ${tomorrowAvailable ? 'text-gray-900' : 'text-gray-300'}`}>Tomorrow</span>
                         {tomorrowAvailable ? (
-                          <span className="text-xs text-gray-500 mt-0.5">
+                          <span className="text-xs text-gray-500 mt-0">
                             {(availabilityMap[tomorrowStr] ?? 0) <= SCARCITY_THRESHOLD
                               ? `Only ${availabilityMap[tomorrowStr]} left`
                               : `${availabilityMap[tomorrowStr]} desks free`}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400 mt-0.5">
+                          <span className="text-xs text-gray-400 mt-0">
                             {tomorrowIsWorkingDay ? 'Oops, we\'re full' : 'Closed'}
                           </span>
                         )}
                       </button>
                     </div>
 
-                    {/* Pick another date */}
+                    {/* Pick more dates from calendar */}
                     {!showCalendar ? (
                       <button
                         onClick={() => setShowCalendar(true)}
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-sm font-medium text-gray-600 active:scale-[0.98]"
                       >
                         <CalendarDays className="h-4 w-4" />
-                        Pick another date
+                        Pick more dates
                       </button>
                     ) : (
                       <AvailabilityCalendar
@@ -353,12 +409,35 @@ export default function PublicBookingPage() {
                         maxDate={maxDate}
                         workingDays={org.workingDays}
                         availabilityMap={availabilityMap}
-                        onSelect={(dateStr) => {
-                          setSelectedDate(dateStr);
-                          setShowCalendar(false);
-                        }}
+                        onSelect={toggleDate}
                         onCancel={() => setShowCalendar(false)}
+                        multiple
+                        selectedDates={selectedDates}
                       />
+                    )}
+
+                    {selectedDates.length > 0 && (
+                      <>
+                        <div className="space-y-1.5">
+                          {selectedDates.sort().map(dateStr => {
+                            const info = dates.find(d => d.date === dateStr);
+                            return (
+                              <div key={dateStr} className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg text-sm">
+                                <span className="text-blue-900 font-medium">
+                                  {info ? `${info.dayLabel}, ${info.dateLabel}` : dateStr}
+                                </span>
+                                <button onClick={() => toggleDate(dateStr)} className="text-blue-300 hover:text-blue-500 text-xs ml-2">✕</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={() => setShowContactForm(true)}
+                          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm active:scale-[0.98]"
+                        >
+                          Continue with {selectedDates.length} {selectedDates.length === 1 ? 'date' : 'dates'}
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
@@ -366,27 +445,32 @@ export default function PublicBookingPage() {
             )}
 
             {/* Step 2: Contact form (desk auto-assigned) */}
-            {selectedDate && (
+            {showContactForm && (
               <div>
                 <button
-                  onClick={() => { setSelectedDate(null); setError(''); }}
+                  onClick={() => { setShowContactForm(false); setError(''); }}
                   className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 mb-4 -mt-1"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Change date
+                  Change dates
                 </button>
 
-                {selectedDateInfo && (
-                  <div className="bg-blue-50 rounded-xl px-4 py-3 mb-5 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-blue-900">
-                        {selectedDateInfo.dayLabel}, {selectedDateInfo.dateLabel}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-0.5">A desk will be assigned for you</p>
-                    </div>
-                    <CalendarCheck className="h-5 w-5 text-blue-400" />
-                  </div>
-                )}
+                <div className="space-y-1.5 mb-5">
+                  {selectedDates.sort().map(dateStr => {
+                    const info = dates.find(d => d.date === dateStr);
+                    return (
+                      <div key={dateStr} className="bg-blue-50 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-blue-900 text-sm">
+                            {info ? `${info.dayLabel}, ${info.dateLabel}` : dateStr}
+                          </p>
+                          <p className="text-xs text-blue-600 mt-0.5">Desk will be assigned</p>
+                        </div>
+                        <button onClick={() => toggleDate(dateStr)} className="text-blue-300 hover:text-blue-500 text-xs ml-2">✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
 
                 <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Your details</h2>
 
@@ -454,10 +538,10 @@ export default function PublicBookingPage() {
                         <Loader2 className="h-4 w-4 animate-spin" />
                         {availability.org.stripePublicBookingPayments ? 'Redirecting to payment...' : 'Booking...'}
                       </span>
-                    ) : availability.org.stripePublicBookingPayments ? (
+                    ) : availability.org.stripePublicBookingPayments && selectedDates.length === 1 ? (
                       `Pay ${formatCurrency(availability.org.defaultPricePerDay, availability.org.currency)} & Book`
                     ) : (
-                      'Book Desk'
+                      selectedDates.length > 1 ? `Book ${selectedDates.length} Days` : 'Book Desk'
                     )}
                   </button>
                 </form>
