@@ -1,9 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization, Room, OrgDesk, OrgMemberRole } from '@shared/schema';
 
 const E2E_EMAILS = ['bodrovphone+e2e@gmail.com'];
+
+const ORG_QUERY_KEYS = {
+  organizations: ['user-organizations'] as const,
+  rooms: ['org-rooms'] as const,
+  desks: ['org-desks'] as const,
+} as const;
+
+function invalidateOrgCaches(
+  queryClient: QueryClient,
+  keys: Array<keyof typeof ORG_QUERY_KEYS>,
+): void {
+  for (const key of keys) {
+    queryClient.invalidateQueries({ queryKey: ORG_QUERY_KEYS[key] });
+  }
+}
 
 interface OrganizationMembership {
   organization: Organization;
@@ -267,7 +282,7 @@ export function useCreateOrganization() {
       return mapOrg(org);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['organizations']);
     },
   });
 }
@@ -285,8 +300,7 @@ export function useRenameRoom() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['rooms', 'organizations']);
     },
   });
 }
@@ -304,8 +318,7 @@ export function useRenameDesk() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['desks', 'organizations']);
     },
   });
 }
@@ -354,9 +367,7 @@ export function useAddRoom() {
       return mapRoom(room);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['rooms', 'desks', 'organizations']);
     },
   });
 }
@@ -427,8 +438,7 @@ export function useSetRoomDeskCount() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['desks', 'organizations']);
     },
   });
 }
@@ -470,9 +480,7 @@ export function useMergeRooms() {
       if (roomError) throw roomError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['org-desks'] });
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      invalidateOrgCaches(queryClient, ['rooms', 'desks', 'organizations']);
     },
   });
 }
