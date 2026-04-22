@@ -747,6 +747,12 @@ export class SupabaseDataStore implements IDataStore {
     return Math.abs(hash);
   }
 
+  // Parse a string ID to numeric: use the value directly if already numeric,
+  // otherwise hash it via stringToNumericId.
+  private parseNumericId(id: string): number {
+    return /^\d+$/.test(id) ? parseInt(id, 10) : this.stringToNumericId(id);
+  }
+
   // Expense operations
   async getExpenses(startDate: string, endDate: string): Promise<Expense[]> {
     try {
@@ -902,15 +908,9 @@ export class SupabaseDataStore implements IDataStore {
 
   // Expense mapping helpers
   private mapExpenseToDatabase(expense: Expense): any {
-    // If the ID is already numeric (from database), use it directly; otherwise hash it
-    const numericId = /^\d+$/.test(expense.id)
-      ? parseInt(expense.id, 10)
-      : this.stringToNumericId(expense.id);
-    // Same for recurring_expense_id
+    const numericId = this.parseNumericId(expense.id);
     const recurringId = expense.recurringExpenseId
-      ? /^\d+$/.test(expense.recurringExpenseId)
-        ? parseInt(expense.recurringExpenseId, 10)
-        : this.stringToNumericId(expense.recurringExpenseId)
+      ? this.parseNumericId(expense.recurringExpenseId)
       : null;
     const record: any = {
       id: numericId,
@@ -947,10 +947,7 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   private mapRecurringExpenseToDatabase(expense: RecurringExpense): any {
-    // If the ID is already numeric (from database), use it directly; otherwise hash it
-    const numericId = /^\d+$/.test(expense.id)
-      ? parseInt(expense.id, 10)
-      : this.stringToNumericId(expense.id);
+    const numericId = this.parseNumericId(expense.id);
     const record: any = {
       id: numericId,
       amount: expense.amount,
@@ -1348,9 +1345,7 @@ export class SupabaseDataStore implements IDataStore {
         .eq('date', date)
         .eq('organization_id', this.organizationId);
     } else {
-      const numericId = /^\d+$/.test(bookingId)
-        ? parseInt(bookingId, 10)
-        : this.stringToNumericId(bookingId);
+      const numericId = this.parseNumericId(bookingId);
       query = query.eq('id', numericId);
     }
 
