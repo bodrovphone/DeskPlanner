@@ -237,7 +237,14 @@ export default function BookingModal({
   const handleSave = async () => {
     const trimmedName = personName.trim();
     const trimmedTitle = title.trim();
-    const parsedPrice = parseFloat(price);
+    const typedPrice = parseFloat(price);
+    // Flex bookings must always carry the per-visit price. If the price
+    // field was left at 0 (e.g. client selected before org data loaded, or
+    // planKey effect wiped it), fall back to the computed flex rate so we
+    // never persist a 0 flex booking.
+    const parsedPrice = flexClient && flexPerVisit > 0 && (isNaN(typedPrice) || typedPrice === 0)
+      ? flexPerVisit
+      : typedPrice;
 
     if (trimmedName && parsedPrice >= 0 && startDate && endDate) {
       try {
