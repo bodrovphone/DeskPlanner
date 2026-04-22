@@ -199,22 +199,32 @@ export function useBookingActions(
 
     await dataStore.bulkUpdateBookings(bookingsToCreate);
 
-    // Deduct flex days if this is a new flex booking
-    if (bookingData.isFlex && resolvedClientId && !existingBooking && dataStore.deductFlexDay) {
-      const newDaysCount = newDateRange.length;
-      for (let i = 0; i < newDaysCount; i++) {
-        await dataStore.deductFlexDay(resolvedClientId);
+    // Reconcile flex balance based on delta between old and new state.
+    // Handles: new flex booking, toggling a non-flex booking to flex (or vice versa),
+    // and changing the date range of an existing flex booking.
+    if (resolvedClientId && dataStore.deductFlexDay && dataStore.restoreFlexDays) {
+      const oldFlexDays = existingBooking?.isFlex ? oldDateRange.length : 0;
+      const newFlexDays = bookingData.isFlex ? newDateRange.length : 0;
+      const delta = newFlexDays - oldFlexDays;
+      if (delta > 0) {
+        for (let i = 0; i < delta; i++) {
+          await dataStore.deductFlexDay(resolvedClientId);
+        }
+      } else if (delta < 0) {
+        await dataStore.restoreFlexDays(resolvedClientId, -delta);
       }
-      // Fire-and-forget booking confirmation email for flex member
-      supabaseClient.functions.invoke('flex-email', {
-        body: {
-          type: 'booking_confirmation',
-          clientId: parseInt(resolvedClientId, 10),
-          organizationId: bookingsToCreate[0]?.organizationId,
-          bookingDate: bookingData.startDate,
-          deskLabel: desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId,
-        },
-      }).catch(() => {});
+      if (bookingData.isFlex && !existingBooking) {
+        // Fire-and-forget booking confirmation email (only on fresh creation)
+        supabaseClient.functions.invoke('flex-email', {
+          body: {
+            type: 'booking_confirmation',
+            clientId: parseInt(resolvedClientId, 10),
+            organizationId: bookingsToCreate[0]?.organizationId,
+            bookingDate: bookingData.startDate,
+            deskLabel: desks.find(d => d.id === selectedBooking.deskId)?.label || selectedBooking.deskId,
+          },
+        }).catch(() => {});
+      }
     }
 
     invalidateBookingQueries(queryClient);

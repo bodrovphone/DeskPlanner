@@ -216,6 +216,61 @@ test.describe('Member Booking — multi-day booking', () => {
   });
 });
 
+// ── Flex balance accounting ──────────────────────────────────────────────────
+
+test.describe('Member Booking — flex balance accounting', () => {
+  test('balance decrements by number of dates booked and persists across reload', { timeout: 60_000 }, async ({ page }) => {
+    await page.goto(MEMBER_URL);
+    await page.waitForLoadState('networkidle');
+
+    const notFound = await page.getByText('Not found').isVisible().catch(() => false);
+    if (notFound) {
+      test.skip(true, 'Flex member not seeded');
+      return;
+    }
+
+    // Read initial balance from the header bar (e.g. "10/10 days")
+    const balanceBar = page.getByText(/^\d+\/\d+ days$/).first();
+    await expect(balanceBar).toBeVisible({ timeout: 10_000 });
+    const initialText = (await balanceBar.textContent()) ?? '';
+    const match = initialText.match(/^(\d+)\/(\d+) days$/);
+    if (!match) {
+      test.skip(true, `Could not parse initial balance: ${initialText}`);
+      return;
+    }
+    const initialRemaining = parseInt(match[1], 10);
+    const total = parseInt(match[2], 10);
+
+    // Book two days (Today + Tomorrow) — requires both to be available
+    const todayBtn = page.locator('button').filter({ hasText: /^Today/ });
+    const tomorrowBtn = page.locator('button').filter({ hasText: /^Tomorrow/ });
+    const todayAvail = await todayBtn.evaluate((el) => !(el as HTMLButtonElement).disabled).catch(() => false);
+    const tomorrowAvail = await tomorrowBtn.evaluate((el) => !(el as HTMLButtonElement).disabled).catch(() => false);
+    if (!todayAvail || !tomorrowAvail) {
+      test.skip(true, 'Need both Today and Tomorrow available for balance accounting test');
+      return;
+    }
+    if (initialRemaining < 2) {
+      test.skip(true, `Need at least 2 flex days remaining, have ${initialRemaining}`);
+      return;
+    }
+
+    await todayBtn.click();
+    await tomorrowBtn.click();
+    await page.getByRole('button', { name: /Confirm 2 Days Booking/ }).click();
+
+    // Success screen shows the new balance (initial - 2)
+    await expect(page.getByRole('heading', { name: "You're in, E2E Flex Member!" })).toBeVisible({ timeout: 30_000 });
+    const expectedRemaining = initialRemaining - 2;
+    await expect(page.getByText(`${expectedRemaining}/${total} days remaining`)).toBeVisible({ timeout: 10_000 });
+
+    // Reload and confirm the balance persisted in the DB (header bar shows the new value)
+    await page.goto(MEMBER_URL);
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(`${expectedRemaining}/${total} days`).first()).toBeVisible({ timeout: 10_000 });
+  });
+});
+
 // ── Zero balance ──────────────────────────────────────────────────────────────
 
 test.describe('Member Booking — zero balance', () => {
