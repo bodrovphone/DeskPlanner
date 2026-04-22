@@ -105,7 +105,7 @@ function BalanceCell({
         <button
           type="button"
           onClick={() => onActivateFlex(client)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-dashed border-gray-300 bg-white text-gray-500 text-xs font-medium hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
         >
           <Package className="h-3 w-3" />
           Activate Flex
