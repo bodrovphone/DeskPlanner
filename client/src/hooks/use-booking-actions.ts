@@ -94,6 +94,7 @@ export function useBookingActions(
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    isOngoing?: boolean;
     planType?: PlanType;
     newDeskId?: string;
   }) => {
@@ -144,10 +145,21 @@ export function useBookingActions(
       oldDateRange = generateDateRange(existingBooking.startDate, existingBooking.endDate);
     }
 
+    // Fetch the full range once rather than N sequential getBooking() calls.
+    // Matters most for ongoing contracts (DES-88) which span ~90 days.
+    const rangeBookings = await dataStore.getBookingsForDateRange(
+      bookingData.startDate,
+      bookingData.endDate,
+    );
+    const rangeByDate: Record<string, DeskBooking> = {};
+    for (const b of rangeBookings) {
+      if (b.deskId === deskId) rangeByDate[b.date] = b;
+    }
+
     const conflictDetails: string[] = [];
     for (const date of newDateRange) {
       if (existingBooking && oldDateRange.includes(date)) continue;
-      const existingBookingOnDate = await dataStore.getBooking(deskId, date);
+      const existingBookingOnDate = rangeByDate[date] ?? null;
       if (existingBookingOnDate && existingBookingOnDate.status !== 'available') {
         const dateObj = new Date(date + 'T00:00:00');
         const formattedDate = dateObj.toLocaleDateString('en-US', {
@@ -191,6 +203,7 @@ export function useBookingActions(
       currency: bookingData.currency || currentCurrency,
       clientId: resolvedClientId,
       isFlex: bookingData.isFlex,
+      isOngoing: bookingData.isOngoing,
       planType: bookingData.planType,
       createdAt: (existingBooking && oldDateRange.includes(date))
         ? existingBooking.createdAt

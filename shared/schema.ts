@@ -35,6 +35,7 @@ export const deskBookingSchema = z.object({
   clientId: z.string().optional(),
   isFlex: z.boolean().optional(),
   isFrozen: z.boolean().optional(),
+  isOngoing: z.boolean().optional(),
   pausedAt: z.string().nullable().optional(),
   planType: planTypeSchema.nullable().optional(),
   paymentStatus: z.enum(['pending', 'paid', 'refunded', 'failed']).nullable().optional(),

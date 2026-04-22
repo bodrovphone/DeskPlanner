@@ -79,6 +79,14 @@ export interface IDataStore {
   ): Promise<{ reactivatedCount: number }>;
   getClientPlanBookings?(clientId: string): Promise<DeskBooking[]>;
   getOrgPlanBookings?(): Promise<DeskBooking[]>;
+
+  // Open-ended desk contracts (DES-88)
+  endOngoingContract?(args: {
+    deskId: string;
+    clientId: string | null;
+    startDate: string;
+    newEndDate: string;
+  }): Promise<{ endedDate: string; rowsDeleted: number }>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';

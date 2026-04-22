@@ -3,7 +3,7 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon } from 'lucide-react';
 import { DeskBooking } from '@shared/schema';
 import { formatLocalDate } from '@/lib/dateUtils';
 import ReactivationModal from '@/components/members/ReactivationModal';
@@ -27,6 +27,7 @@ interface PlanState {
   activeEndDate: string | null;
   planType: 'weekly' | 'monthly' | null;
   isPaused: boolean;
+  isOngoing: boolean;
 }
 
 interface BalanceCellProps {
@@ -51,10 +52,11 @@ function BalanceCell({
   const hasFlex = flexConfigured && client.flexActive;
   const hasActivePlan = !!planState && planState.activeDaysLeft > 0;
   const hasBankedPlan = !!planState && planState.bankedDays > 0;
+  const isOngoingPlan = !!planState && planState.isOngoing;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {hasBankedPlan && (
+      {hasBankedPlan && !isOngoingPlan && (
         <div className="inline-flex items-center gap-2">
           <span className="text-sm text-gray-400">
             {planState!.bankedDays}d left
@@ -67,7 +69,13 @@ function BalanceCell({
           </button>
         </div>
       )}
-      {hasActivePlan && !hasBankedPlan && (
+      {isOngoingPlan && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-xs font-medium text-emerald-700">
+          <InfinityIcon className="h-3 w-3" />
+          Ongoing
+        </span>
+      )}
+      {hasActivePlan && !hasBankedPlan && !isOngoingPlan && (
         <span className="text-sm font-medium text-emerald-700">
           {planState!.activeDaysLeft} day{planState!.activeDaysLeft === 1 ? '' : 's'} left
         </span>
@@ -196,6 +204,7 @@ export default function MembersPage() {
         activeEndDate: null,
         planType: null,
         isPaused: false,
+        isOngoing: false,
       };
       const pt = b.planType === 'weekly' || b.planType === 'monthly' ? b.planType : null;
       if (pt && !entry.planType) entry.planType = pt;
@@ -208,6 +217,7 @@ export default function MembersPage() {
         if (!entry.activeEndDate || b.endDate > entry.activeEndDate) {
           entry.activeEndDate = b.endDate;
         }
+        if (b.isOngoing) entry.isOngoing = true;
       }
       map.set(b.clientId, entry);
     }

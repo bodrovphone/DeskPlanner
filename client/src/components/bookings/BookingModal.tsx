@@ -8,14 +8,16 @@ import { Desk, DeskBooking, DeskStatus, Currency, Client, PlanType } from '@shar
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, Share2, Package, ArrowRightLeft, Snowflake, CalendarDays, CalendarRange, Calendar } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, Share2, Package, ArrowRightLeft, Snowflake, CalendarDays, CalendarRange, Calendar, Infinity as InfinityIcon, StopCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { formatLocalDate } from '@/lib/dateUtils';
 import { Checkbox } from '@/components/ui/checkbox';
 import ClientAutocomplete from '@/components/members/ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { computePlanEnd, planAutoPrice, inferPlanFromBooking } from '@/lib/planDates';
+import { computePlanEnd, planAutoPrice, inferPlanFromBooking, addDays } from '@/lib/planDates';
+
+const ONGOING_HORIZON_DAYS = 90;
 
 const MAX_CONFLICT_SUGGESTIONS = 6;
 
@@ -45,11 +47,13 @@ interface BookingModalProps {
     currency: Currency;
     clientId?: string;
     isFlex?: boolean;
+    isOngoing?: boolean;
     planType?: PlanType;
     newDeskId?: string;
   }) => Promise<void>;
   onDiscard?: () => Promise<void>;
   onFreezePlan?: (pausedAt: string) => Promise<void>;
+  onEndContract?: (newEndDate: string) => Promise<void>;
   onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency; clientId?: string }) => void;
 }
 
@@ -64,6 +68,7 @@ export default function BookingModal({
   onSave,
   onDiscard,
   onFreezePlan,
+  onEndContract,
   onShare,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
@@ -89,6 +94,10 @@ export default function BookingModal({
   const [freezeDate, setFreezeDate] = useState('');
   const [isFreezing, setIsFreezing] = useState(false);
   const [shareOnSave, setShareOnSave] = useState(false);
+  const [isOngoing, setIsOngoing] = useState(false);
+  const [endContractDialogOpen, setEndContractDialogOpen] = useState(false);
+  const [endContractDate, setEndContractDate] = useState('');
+  const [isEndingContract, setIsEndingContract] = useState(false);
   const [newDeskId, setNewDeskId] = useState<string>(deskId);
   const [availableDesks, setAvailableDesks] = useState<Desk[]>([]);
   const [loadingDesks, setLoadingDesks] = useState(false);
@@ -142,6 +151,8 @@ export default function BookingModal({
       setShareOnSave(false);
       setEndDateTouched(isOpen && !!booking && booking.startDate !== booking.endDate);
       setPlanKey(booking ? inferPlanFromBooking(booking) : 'day_pass');
+      setIsOngoing(!!booking?.isOngoing);
+      setEndContractDialogOpen(false);
     }
   }, [isOpen, booking, date]);
 
@@ -159,13 +170,37 @@ export default function BookingModal({
 
   // Slave endDate to startDate for fixed-length plans; only setState if the
   // computed value actually differs to avoid needless re-renders.
+  // For ongoing contracts the horizon overrides the plan-based end date.
   useEffect(() => {
     if (!isOpen) return;
     if (planKey === 'custom' || planKey === 'flex') return;
     if (!startDate) return;
+    if (isOngoing) return;
     const nextEnd = computePlanEnd(planKey, startDate);
     if (nextEnd !== endDate) setEndDate(nextEnd);
-  }, [planKey, startDate]);
+  }, [planKey, startDate, isOngoing]);
+
+  // When ongoing is toggled on, extend endDate out to today + horizon so the
+  // conflict-scan effect sees the right range.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!isOngoing) return;
+    if (!startDate) return;
+    const today = formatLocalDate(new Date());
+    const base = startDate > today ? startDate : today;
+    const horizon = addDays(base, ONGOING_HORIZON_DAYS);
+    if (horizon !== endDate) setEndDate(horizon);
+  }, [isOngoing, startDate, isOpen]);
+
+  // Ongoing is only valid for monthly plans (rolling renewal) that are
+  // operator-assigned. Keeps revenue/member-reporting semantics simple since
+  // every ongoing booking flows through the same dedicated-plan query path.
+  const ongoingEligible = planKey === 'monthly'
+    && status === 'assigned'
+    && !flexClient;
+  useEffect(() => {
+    if (!ongoingEligible && isOngoing) setIsOngoing(false);
+  }, [ongoingEligible, isOngoing]);
 
   // Scan the current range for conflicts (applies to both new and existing
   // bookings — a plan can stretch dates beyond what the user clicked).
@@ -260,6 +295,7 @@ export default function BookingModal({
           currency: currency,
           clientId: clientId,
           isFlex: !!flexClient,
+          isOngoing: isOngoing && ongoingEligible,
           planType: flexClient ? 'flex' : planKey,
           newDeskId: newDeskId !== deskId ? newDeskId : undefined,
         });
@@ -322,6 +358,27 @@ export default function BookingModal({
     const defaultDate = booking && booking.startDate > today ? booking.startDate : today;
     setFreezeDate(defaultDate);
     setFreezeDialogOpen(true);
+  };
+
+  const openEndContractDialog = () => {
+    const today = formatLocalDate(new Date());
+    const defaultDate = booking && booking.startDate > today ? booking.startDate : today;
+    setEndContractDate(defaultDate);
+    setEndContractDialogOpen(true);
+  };
+
+  const handleEndContractConfirm = async () => {
+    if (!onEndContract || !endContractDate) return;
+    try {
+      setIsEndingContract(true);
+      await onEndContract(endContractDate);
+      setEndContractDialogOpen(false);
+      onClose();
+    } catch (error) {
+      setConflictError('Failed to end contract.');
+    } finally {
+      setIsEndingContract(false);
+    }
   };
 
   const handleFreezeConfirm = async () => {
@@ -459,7 +516,7 @@ export default function BookingModal({
             </div>
           )}
 
-          <div className={planKey === 'custom' || planKey === 'flex' ? 'grid grid-cols-2 gap-2 sm:gap-4' : ''}>
+          <div className={(planKey === 'custom' || planKey === 'flex') && !isOngoing ? 'grid grid-cols-2 gap-2 sm:gap-4' : ''}>
             <div>
               <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
                 {planKey === 'day_pass' ? 'Date *' : 'Start Date *'}
@@ -478,13 +535,19 @@ export default function BookingModal({
                 className="mt-1"
                 required
               />
-              {planKey !== 'custom' && planKey !== 'day_pass' && planKey !== 'flex' && endDate && (
+              {!isOngoing && planKey !== 'custom' && planKey !== 'day_pass' && planKey !== 'flex' && endDate && (
                 <p className="text-xs text-gray-500 mt-1">
                   Covers {startDate} → {endDate}
                 </p>
               )}
+              {isOngoing && (
+                <p className="text-xs text-emerald-700 mt-1 inline-flex items-center gap-1">
+                  <InfinityIcon className="h-3 w-3" />
+                  Until further notice
+                </p>
+              )}
             </div>
-            {(planKey === 'custom' || planKey === 'flex') && (
+            {(planKey === 'custom' || planKey === 'flex') && !isOngoing && (
               <div>
                 <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">
                   End Date *
@@ -504,6 +567,20 @@ export default function BookingModal({
               </div>
             )}
           </div>
+
+          {ongoingEligible && (
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+              <Checkbox
+                id="isOngoing"
+                checked={isOngoing}
+                onCheckedChange={(v) => setIsOngoing(!!v)}
+              />
+              <label htmlFor="isOngoing" className="text-sm text-gray-700 cursor-pointer select-none flex items-center gap-1.5 flex-1">
+                <InfinityIcon className="h-3.5 w-3.5 text-emerald-600" />
+                Ongoing — no end date (renews until manually ended)
+              </label>
+            </div>
+          )}
 
           {hasDeskConflict && (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm">
@@ -702,6 +779,7 @@ export default function BookingModal({
             && booking?.status === 'assigned'
             && (booking?.planType === 'weekly' || booking?.planType === 'monthly')
             && !booking?.isFlex
+            && !booking?.isOngoing
             && (
               <Button
                 variant="outline"
@@ -713,6 +791,17 @@ export default function BookingModal({
                 Freeze plan
               </Button>
             )}
+          {isExistingBooking && booking?.isOngoing && onEndContract && (
+            <Button
+              variant="outline"
+              onClick={openEndContractDialog}
+              disabled={isEndingContract || isLoading || isDiscarding}
+              className="flex-1 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+            >
+              <StopCircle className="h-4 w-4 mr-2" />
+              End contract
+            </Button>
+          )}
           {isExistingBooking && onShare && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -812,6 +901,49 @@ export default function BookingModal({
                 </>
               ) : (
                 'Freeze'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={endContractDialogOpen} onOpenChange={setEndContractDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <StopCircle className="h-5 w-5 text-amber-600" />
+              End contract
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Ongoing bookings renew until manually ended. Choose the final day
+              for this contract — days after will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="endContractDate">Final day</Label>
+            <Input
+              id="endContractDate"
+              type="date"
+              value={endContractDate}
+              min={booking?.startDate}
+              onChange={(e) => setEndContractDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isEndingContract}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEndContractConfirm}
+              disabled={isEndingContract || !endContractDate}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isEndingContract ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ending...
+                </>
+              ) : (
+                'End contract'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
