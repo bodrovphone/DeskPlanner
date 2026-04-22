@@ -1,29 +1,19 @@
 import { DeskBooking, MonthlyStats, Currency } from '@shared/schema';
 import { DESK_COUNT } from './deskConfig';
 import { isNonWorkingDay } from './workingDays';
-import { formatLocalDate } from './dateUtils';
+import { generateDaysInRange } from './dateUtils';
 
 function createLocalDate(source: Date): Date {
   return new Date(source.getFullYear(), source.getMonth(), source.getDate());
 }
+
+export { generateDaysInRange };
 
 export function countCalendarDays(start: Date, end: Date): number {
   const s = createLocalDate(start);
   const e = createLocalDate(end);
   const diffMs = e.getTime() - s.getTime();
   return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
-}
-
-export function generateDaysInRange(start: Date, end: Date): string[] {
-  const days: string[] = [];
-  const current = createLocalDate(start);
-  const endDate = createLocalDate(end);
-
-  while (current <= endDate) {
-    days.push(formatLocalDate(current));
-    current.setDate(current.getDate() + 1);
-  }
-  return days;
 }
 
 export function getMonthBoundaries(year: number, month: number): { start: Date; end: Date } {

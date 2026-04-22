@@ -142,12 +142,23 @@ export function generateDateRange(startDate: string, endDate: string): string[] 
   const start = dayjs(startDate);
   const end = dayjs(endDate);
   const dates: string[] = [];
-  
+
   let current = start;
   while (current.isBefore(end) || current.isSame(end, 'day')) {
     dates.push(current.format('YYYY-MM-DD'));
     current = current.add(1, 'day');
   }
-  
+
   return dates;
+}
+
+export function generateDaysInRange(start: Date, end: Date): string[] {
+  const days: string[] = [];
+  const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endNorm = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  while (current <= endNorm) {
+    days.push(formatLocalDate(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
 }
