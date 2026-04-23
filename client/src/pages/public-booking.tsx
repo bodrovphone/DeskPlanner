@@ -394,14 +394,16 @@ export default function PublicBookingPage() {
                       </button>
                     </div>
 
-                    {/* Pick more dates from calendar */}
+                    {/* Pick more dates from calendar — label switches to
+                        "See available dates" when both quick shortcuts are
+                        blocked, since then it's the only path forward. */}
                     {!showCalendar ? (
                       <button
                         onClick={() => setShowCalendar(true)}
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-sm font-medium text-gray-600 active:scale-[0.98]"
                       >
                         <CalendarDays className="h-4 w-4" />
-                        Pick more dates
+                        {!todayAvailable && !tomorrowAvailable ? 'See available dates' : 'Pick more dates'}
                       </button>
                     ) : (
                       <AvailabilityCalendar

@@ -450,7 +450,7 @@ export default function MemberBookingPage() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all text-sm font-medium text-gray-600 active:scale-[0.98]"
                     >
                       <CalendarDays className="h-4 w-4" />
-                      Pick more dates
+                      {!todayAvailable && !tomorrowAvailable ? 'See available dates' : 'Pick more dates'}
                     </button>
                   ) : (
                     <AvailabilityCalendar
