@@ -17,7 +17,7 @@ import { supabaseClient } from './supabaseClient';
 import { DESK_COUNT } from './deskConfig';
 import { isNonWorkingDay } from './workingDays';
 import { formatLocalDate, formatYMD } from './dateUtils';
-import { DEDICATED_PLAN_TYPES, addDays, daysBetweenInclusive } from './planDates';
+import { DEDICATED_PLAN_TYPES, addDays, addMonths, daysBetweenInclusive } from './planDates';
 
 export class SupabaseDataStore implements IDataStore {
   public client: SupabaseClient; // Made public for metadata access
@@ -123,12 +123,6 @@ export class SupabaseDataStore implements IDataStore {
     endDate?: string,
   ): Promise<Record<string, DeskBooking>> {
     try {
-      // Materialize ongoing contracts through the requested window before we
-      // read. Cheap no-op when no ongoing contract's horizon trails endDate.
-      if (endDate) {
-        await this.extendOngoingContracts(endDate);
-      }
-
       let query = this.scopeBookingsQuery(
         this.client.from('desk_bookings').select('*'),
       );
@@ -1173,132 +1167,85 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   /**
-   * Lazy horizon extension for ongoing contracts (DES-88).
-   * Finds contracts whose end_date lags the requested horizon, generates
-   * daily rows up to max(throughDate + 30d, today + 90d), and bumps end_date
-   * on all surviving rows. Silent no-op when there is no ongoing contract
-   * to extend. Conflicts on (desk_id, date) are skipped — the operator took
-   * priority by booking someone else on that day.
+   * Mark an unpaid ongoing cycle as paid (DES-88). Flips the target block's
+   * rows from booked → assigned AND appends a fresh booked cycle for the
+   * following month, keeping the 1-month runway ahead of the paid block.
+   *
+   * Contract key: desk_id + client_id + is_ongoing. Each block's rows share
+   * (start_date, end_date), which we use to identify the specific cycle.
    */
-  private async extendOngoingContracts(throughDate: string): Promise<void> {
-    const today = formatLocalDate(new Date());
-    const targetHorizon = throughDate > addDays(today, 90)
-      ? addDays(throughDate, 30)
-      : addDays(today, 90);
+  async markOngoingCyclePaid(args: {
+    deskId: string;
+    clientId: string | null;
+    startDate: string;
+    endDate: string;
+  }): Promise<{ paidDays: number; nextCycleStart: string; nextCycleEnd: string }> {
+    const numericClientId = args.clientId ? parseInt(args.clientId, 10) : null;
 
-    try {
-      const contractQuery = this.scopeQuery(
-        this.client
-          .from('desk_bookings')
-          .select('*')
-          .eq('is_ongoing', true)
-          .lt('end_date', targetHorizon),
-      );
-      const { data: trailingRows, error: fetchError } = await contractQuery;
-      if (fetchError) {
-        console.warn('extendOngoingContracts: fetch failed', fetchError);
-        return;
-      }
-      if (!trailingRows || trailingRows.length === 0) return;
-
-      // Group rows by contract key (desk_id + client_id + start_date). The
-      // fetched set is already filtered to is_ongoing=true; we use it both
-      // to find contracts needing extension and as a template for new rows.
-      type ContractKey = string;
-      const contracts = new Map<ContractKey, {
-        deskId: string;
-        clientId: number | null;
-        startDate: string;
-        templateRow: any;
-        lastDate: string;
-      }>();
-      for (const row of trailingRows) {
-        const key = `${row.desk_id}|${row.client_id ?? 'null'}|${row.start_date}`;
-        const current = contracts.get(key);
-        if (!current) {
-          contracts.set(key, {
-            deskId: row.desk_id,
-            clientId: row.client_id,
-            startDate: row.start_date,
-            templateRow: row,
-            lastDate: row.date,
-          });
-        } else if (row.date > current.lastDate) {
-          current.lastDate = row.date;
-          current.templateRow = row;
-        }
-      }
-
-      for (const contract of contracts.values()) {
-        const fromDate = addDays(contract.lastDate, 1);
-        if (fromDate > targetHorizon) continue;
-
-        const newRows: any[] = [];
-        let cursor = fromDate;
-        while (cursor <= targetHorizon) {
-          const template = contract.templateRow;
-          // Deterministic per-day ID so retries idempotent.
-          const idSource = this.organizationId
-            ? `${this.organizationId}:${template.desk_id}-${cursor}`
-            : `${template.desk_id}-${cursor}`;
-          newRows.push({
-            id: this.stringToNumericId(idSource),
-            desk_id: template.desk_id,
-            date: cursor,
-            start_date: template.start_date,
-            end_date: targetHorizon,
-            status: template.status,
-            person_name: template.person_name,
-            title: template.title,
-            price: template.price,
-            currency: template.currency,
-            created_at: template.created_at,
-            client_id: template.client_id,
-            is_flex: template.is_flex ?? false,
-            is_frozen: false,
-            is_ongoing: true,
-            paused_at: null,
-            plan_type: template.plan_type,
-            organization_id: template.organization_id,
-          });
-          cursor = addDays(cursor, 1);
-        }
-
-        if (newRows.length === 0) continue;
-
-        const { error: insertError } = await this.client
-          .from('desk_bookings')
-          .upsert(newRows, { onConflict: 'id', ignoreDuplicates: true });
-        if (insertError) {
-          console.warn('extendOngoingContracts: insert failed', insertError);
-          continue;
-        }
-
-        // Bump end_date on all existing rows for this contract so the horizon
-        // is consistent across the materialized range.
-        let updateFilter = this.client
-          .from('desk_bookings')
-          .update({ end_date: targetHorizon })
-          .eq('desk_id', contract.deskId)
-          .eq('start_date', contract.startDate)
-          .eq('is_ongoing', true);
-        updateFilter = contract.clientId !== null
-          ? updateFilter.eq('client_id', contract.clientId)
-          : updateFilter.is('client_id', null);
-        const { error: updateError } = await updateFilter;
-        if (updateError) {
-          console.warn('extendOngoingContracts: update end_date failed', updateError);
-        }
-      }
-    } catch (error) {
-      console.warn('extendOngoingContracts: unexpected error', error);
+    // 1. Flip the paid block to assigned.
+    let flipQuery = this.client
+      .from('desk_bookings')
+      .update({ status: 'assigned' })
+      .eq('desk_id', args.deskId)
+      .eq('start_date', args.startDate)
+      .eq('end_date', args.endDate)
+      .eq('is_ongoing', true)
+      .eq('status', 'booked');
+    flipQuery = numericClientId !== null
+      ? flipQuery.eq('client_id', numericClientId)
+      : flipQuery.is('client_id', null);
+    const { data: flippedRows, error: flipError } = await flipQuery.select('*');
+    if (flipError) throw flipError;
+    if (!flippedRows || flippedRows.length === 0) {
+      throw new Error('No booked ongoing cycle matches this block');
     }
+
+    // 2. Generate the next booked cycle: day after endDate → that + 1mo − 1d.
+    const nextStart = addDays(args.endDate, 1);
+    const nextEnd = addDays(addMonths(nextStart, 1), -1);
+    const template = flippedRows[0];
+
+    const newRows: any[] = [];
+    let cursor = nextStart;
+    while (cursor <= nextEnd) {
+      const idSource = this.organizationId
+        ? `${this.organizationId}:${template.desk_id}-${cursor}`
+        : `${template.desk_id}-${cursor}`;
+      newRows.push({
+        id: this.stringToNumericId(idSource),
+        desk_id: template.desk_id,
+        date: cursor,
+        start_date: nextStart,
+        end_date: nextEnd,
+        status: 'booked',
+        person_name: template.person_name,
+        title: template.title,
+        price: template.price,
+        currency: template.currency,
+        created_at: new Date().toISOString(),
+        client_id: template.client_id,
+        is_flex: false,
+        is_frozen: false,
+        is_ongoing: true,
+        paused_at: null,
+        plan_type: template.plan_type,
+        organization_id: template.organization_id,
+      });
+      cursor = addDays(cursor, 1);
+    }
+
+    const { error: insertError } = await this.client
+      .from('desk_bookings')
+      .upsert(newRows, { onConflict: 'id', ignoreDuplicates: true });
+    if (insertError) throw insertError;
+
+    return { paidDays: flippedRows.length, nextCycleStart: nextStart, nextCycleEnd: nextEnd };
   }
 
   /**
    * End an ongoing contract on a chosen date (DES-88). Deletes rows past
-   * newEndDate, flips is_ongoing=false on surviving rows, and sets their
-   * end_date to newEndDate.
+   * newEndDate across ALL ongoing blocks for this desk+client, then clears
+   * is_ongoing on the surviving rows.
    */
   async endOngoingContract(args: {
     deskId: string;
@@ -1308,11 +1255,13 @@ export class SupabaseDataStore implements IDataStore {
   }): Promise<{ endedDate: string; rowsDeleted: number }> {
     const numericClientId = args.clientId ? parseInt(args.clientId, 10) : null;
 
+    // Delete any future rows belonging to THIS contract's ongoing blocks.
+    // Match on desk+client+is_ongoing; start_date is ignored because the
+    // runway has two separate blocks with different start_dates.
     let deleteQuery = this.client
       .from('desk_bookings')
       .delete({ count: 'exact' })
       .eq('desk_id', args.deskId)
-      .eq('start_date', args.startDate)
       .eq('is_ongoing', true)
       .gt('date', args.newEndDate);
     deleteQuery = numericClientId !== null
@@ -1321,11 +1270,12 @@ export class SupabaseDataStore implements IDataStore {
     const { error: deleteError, count: rowsDeleted } = await deleteQuery;
     if (deleteError) throw deleteError;
 
+    // Clear is_ongoing on remaining rows and trim their end_date. start_date
+    // stays block-local so revenue proration still works.
     let updateQuery = this.client
       .from('desk_bookings')
       .update({ is_ongoing: false, end_date: args.newEndDate })
       .eq('desk_id', args.deskId)
-      .eq('start_date', args.startDate)
       .eq('is_ongoing', true);
     updateQuery = numericClientId !== null
       ? updateQuery.eq('client_id', numericClientId)

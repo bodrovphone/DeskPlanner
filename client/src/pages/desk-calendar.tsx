@@ -25,6 +25,7 @@ import { useGenerateRecurringExpenses } from '@/hooks/use-expenses';
 import { useBookingActions } from '@/hooks/use-booking-actions';
 import { usePlanFreeze } from '@/hooks/use-plan-freeze';
 import { useEndOngoingContract } from '@/hooks/use-end-ongoing-contract';
+import { useMarkOngoingPaid } from '@/hooks/use-mark-ongoing-paid';
 import { DEFAULT_WORKING_DAYS, isNonWorkingDay } from '@/lib/workingDays';
 
 const MOBILE_BREAKPOINT = 1024;
@@ -172,6 +173,7 @@ export default function DeskCalendar() {
 
   const { freeze: freezePlanMutation } = usePlanFreeze();
   const endOngoingContractMutation = useEndOngoingContract();
+  const markOngoingPaidMutation = useMarkOngoingPaid();
 
   const rangeString = viewMode === 'week' ? weekRangeString : monthRangeString;
 
@@ -292,6 +294,17 @@ export default function DeskCalendar() {
             clientId: b.clientId ?? null,
             startDate: b.startDate,
             newEndDate,
+            personName: b.personName ?? 'member',
+          });
+        }}
+        onMarkOngoingPaid={async () => {
+          const b = selectedBooking?.booking;
+          if (!b) return;
+          await markOngoingPaidMutation.mutateAsync({
+            deskId: b.deskId,
+            clientId: b.clientId ?? null,
+            startDate: b.startDate,
+            endDate: b.endDate,
             personName: b.personName ?? 'member',
           });
         }}

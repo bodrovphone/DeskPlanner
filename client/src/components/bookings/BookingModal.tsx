@@ -8,16 +8,14 @@ import { Desk, DeskBooking, DeskStatus, Currency, Client, PlanType } from '@shar
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { currencySymbols } from '@/lib/settings';
-import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, Share2, Package, ArrowRightLeft, Snowflake, CalendarDays, CalendarRange, Calendar, Infinity as InfinityIcon, StopCircle } from 'lucide-react';
+import { Armchair, CalendarX, User, AlertCircle, Loader2, Check, Trash2, X, Share2, Package, ArrowRightLeft, Snowflake, CalendarDays, CalendarRange, Calendar, Infinity as InfinityIcon, StopCircle, BadgeCheck, Info } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { formatLocalDate } from '@/lib/dateUtils';
 import { Checkbox } from '@/components/ui/checkbox';
 import ClientAutocomplete from '@/components/members/ClientAutocomplete';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { computePlanEnd, planAutoPrice, inferPlanFromBooking, addDays } from '@/lib/planDates';
-
-const ONGOING_HORIZON_DAYS = 90;
+import { computePlanEnd, planAutoPrice, inferPlanFromBooking } from '@/lib/planDates';
 
 const MAX_CONFLICT_SUGGESTIONS = 6;
 
@@ -54,6 +52,7 @@ interface BookingModalProps {
   onDiscard?: () => Promise<void>;
   onFreezePlan?: (pausedAt: string) => Promise<void>;
   onEndContract?: (newEndDate: string) => Promise<void>;
+  onMarkOngoingPaid?: () => Promise<void>;
   onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency; clientId?: string }) => void;
 }
 
@@ -69,6 +68,7 @@ export default function BookingModal({
   onDiscard,
   onFreezePlan,
   onEndContract,
+  onMarkOngoingPaid,
   onShare,
 }: BookingModalProps) {
   const { currentOrg } = useOrganization();
@@ -98,6 +98,7 @@ export default function BookingModal({
   const [endContractDialogOpen, setEndContractDialogOpen] = useState(false);
   const [endContractDate, setEndContractDate] = useState('');
   const [isEndingContract, setIsEndingContract] = useState(false);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
   const [newDeskId, setNewDeskId] = useState<string>(deskId);
   const [availableDesks, setAvailableDesks] = useState<Desk[]>([]);
   const [loadingDesks, setLoadingDesks] = useState(false);
@@ -170,27 +171,13 @@ export default function BookingModal({
 
   // Slave endDate to startDate for fixed-length plans; only setState if the
   // computed value actually differs to avoid needless re-renders.
-  // For ongoing contracts the horizon overrides the plan-based end date.
   useEffect(() => {
     if (!isOpen) return;
     if (planKey === 'custom' || planKey === 'flex') return;
     if (!startDate) return;
-    if (isOngoing) return;
     const nextEnd = computePlanEnd(planKey, startDate);
     if (nextEnd !== endDate) setEndDate(nextEnd);
-  }, [planKey, startDate, isOngoing]);
-
-  // When ongoing is toggled on, extend endDate out to today + horizon so the
-  // conflict-scan effect sees the right range.
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!isOngoing) return;
-    if (!startDate) return;
-    const today = formatLocalDate(new Date());
-    const base = startDate > today ? startDate : today;
-    const horizon = addDays(base, ONGOING_HORIZON_DAYS);
-    if (horizon !== endDate) setEndDate(horizon);
-  }, [isOngoing, startDate, isOpen]);
+  }, [planKey, startDate]);
 
   // Ongoing is only valid for monthly plans (rolling renewal) that are
   // operator-assigned. Keeps revenue/member-reporting semantics simple since
@@ -381,6 +368,19 @@ export default function BookingModal({
     }
   };
 
+  const handleMarkOngoingPaid = async () => {
+    if (!onMarkOngoingPaid) return;
+    try {
+      setIsMarkingPaid(true);
+      await onMarkOngoingPaid();
+      onClose();
+    } catch (error) {
+      setConflictError('Failed to mark as paid.');
+    } finally {
+      setIsMarkingPaid(false);
+    }
+  };
+
   const handleFreezeConfirm = async () => {
     if (!onFreezePlan || !freezeDate) return;
     try {
@@ -516,7 +516,7 @@ export default function BookingModal({
             </div>
           )}
 
-          <div className={(planKey === 'custom' || planKey === 'flex') && !isOngoing ? 'grid grid-cols-2 gap-2 sm:gap-4' : ''}>
+          <div className={planKey === 'custom' || planKey === 'flex' ? 'grid grid-cols-2 gap-2 sm:gap-4' : ''}>
             <div>
               <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">
                 {planKey === 'day_pass' ? 'Date *' : 'Start Date *'}
@@ -535,19 +535,13 @@ export default function BookingModal({
                 className="mt-1"
                 required
               />
-              {!isOngoing && planKey !== 'custom' && planKey !== 'day_pass' && planKey !== 'flex' && endDate && (
+              {planKey !== 'custom' && planKey !== 'day_pass' && planKey !== 'flex' && endDate && (
                 <p className="text-xs text-gray-500 mt-1">
                   Covers {startDate} → {endDate}
                 </p>
               )}
-              {isOngoing && (
-                <p className="text-xs text-emerald-700 mt-1 inline-flex items-center gap-1">
-                  <InfinityIcon className="h-3 w-3" />
-                  Until further notice
-                </p>
-              )}
             </div>
-            {(planKey === 'custom' || planKey === 'flex') && !isOngoing && (
+            {(planKey === 'custom' || planKey === 'flex') && (
               <div>
                 <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">
                   End Date *
@@ -568,7 +562,7 @@ export default function BookingModal({
             )}
           </div>
 
-          {ongoingEligible && (
+          {ongoingEligible && !booking && (
             <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
               <Checkbox
                 id="isOngoing"
@@ -577,8 +571,22 @@ export default function BookingModal({
               />
               <label htmlFor="isOngoing" className="text-sm text-gray-700 cursor-pointer select-none flex items-center gap-1.5 flex-1">
                 <InfinityIcon className="h-3.5 w-3.5 text-emerald-600" />
-                Ongoing — no end date (renews until manually ended)
+                Ongoing
               </label>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-gray-400 hover:text-gray-600" aria-label="About ongoing contracts">
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[240px] text-center">
+                    <p className="text-xs leading-relaxed">
+                      Auto-books the next monthly cycle. Mark each as paid to extend by another month.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
 
@@ -791,11 +799,30 @@ export default function BookingModal({
                 Freeze plan
               </Button>
             )}
+          {isExistingBooking && booking?.isOngoing && booking?.status === 'booked' && onMarkOngoingPaid && (
+            <Button
+              onClick={handleMarkOngoingPaid}
+              disabled={isMarkingPaid || isLoading || isDiscarding || isEndingContract}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isMarkingPaid ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Marking...
+                </>
+              ) : (
+                <>
+                  <BadgeCheck className="h-4 w-4 mr-2" />
+                  Mark as paid
+                </>
+              )}
+            </Button>
+          )}
           {isExistingBooking && booking?.isOngoing && onEndContract && (
             <Button
               variant="outline"
               onClick={openEndContractDialog}
-              disabled={isEndingContract || isLoading || isDiscarding}
+              disabled={isEndingContract || isLoading || isDiscarding || isMarkingPaid}
               className="flex-1 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
             >
               <StopCircle className="h-4 w-4 mr-2" />

@@ -87,6 +87,12 @@ export interface IDataStore {
     startDate: string;
     newEndDate: string;
   }): Promise<{ endedDate: string; rowsDeleted: number }>;
+  markOngoingCyclePaid?(args: {
+    deskId: string;
+    clientId: string | null;
+    startDate: string;
+    endDate: string;
+  }): Promise<{ paidDays: number; nextCycleStart: string; nextCycleEnd: string }>;
 }
 
 import { SupabaseDataStore } from './supabaseDataStore';

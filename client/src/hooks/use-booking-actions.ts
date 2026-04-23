@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useDataStore } from '@/contexts/DataStoreContext';
 import { DeskBooking, DeskStatus, Currency, Desk, PlanType } from '@shared/schema';
 import { generateDateRange } from '@/lib/dateUtils';
+import { addDays, addMonths } from '@/lib/planDates';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { currencySymbols } from '@/lib/settings';
@@ -145,19 +146,29 @@ export function useBookingActions(
       oldDateRange = generateDateRange(existingBooking.startDate, existingBooking.endDate);
     }
 
-    // Fetch the full range once rather than N sequential getBooking() calls.
-    // Matters most for ongoing contracts (DES-88) which span ~90 days.
+    // Ongoing contracts (DES-88): on fresh creation we also materialize the
+    // next month as a booked runway. Scan the full 2-month range for conflicts.
+    const createRunway = !!bookingData.isOngoing && !existingBooking;
+    const runwayStart = createRunway ? addDays(bookingData.endDate, 1) : null;
+    const runwayEnd = createRunway && runwayStart
+      ? addDays(addMonths(runwayStart, 1), -1)
+      : null;
+    const scanEndDate = runwayEnd ?? bookingData.endDate;
+
     const rangeBookings = await dataStore.getBookingsForDateRange(
       bookingData.startDate,
-      bookingData.endDate,
+      scanEndDate,
     );
     const rangeByDate: Record<string, DeskBooking> = {};
     for (const b of rangeBookings) {
       if (b.deskId === deskId) rangeByDate[b.date] = b;
     }
 
+    const scanRange = createRunway
+      ? generateDateRange(bookingData.startDate, scanEndDate)
+      : newDateRange;
     const conflictDetails: string[] = [];
-    for (const date of newDateRange) {
+    for (const date of scanRange) {
       if (existingBooking && oldDateRange.includes(date)) continue;
       const existingBookingOnDate = rangeByDate[date] ?? null;
       if (existingBookingOnDate && existingBookingOnDate.status !== 'available') {
@@ -211,6 +222,28 @@ export function useBookingActions(
     }));
 
     await dataStore.bulkUpdateBookings(bookingsToCreate);
+
+    // Ongoing runway: append block 2 (next month, booked) after block 1 saves.
+    if (createRunway && runwayStart && runwayEnd) {
+      const runwayDates = generateDateRange(runwayStart, runwayEnd);
+      const runwayBookings: DeskBooking[] = runwayDates.map(date => ({
+        id: `${deskId}-${date}`,
+        deskId,
+        date,
+        startDate: runwayStart,
+        endDate: runwayEnd,
+        status: 'booked',
+        personName: bookingData.personName,
+        title: bookingData.title,
+        price: bookingData.price,
+        currency: bookingData.currency || currentCurrency,
+        clientId: resolvedClientId,
+        isOngoing: true,
+        planType: bookingData.planType,
+        createdAt: new Date().toISOString(),
+      }));
+      await dataStore.bulkUpdateBookings(runwayBookings);
+    }
 
     // Reconcile flex balance based on delta between old and new state.
     // Handles: new flex booking, toggling a non-flex booking to flex (or vice versa),
