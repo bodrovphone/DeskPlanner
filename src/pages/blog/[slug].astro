@@ -1,0 +1,278 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MarketingNav from '../../components/MarketingNav.astro';
+import MarketingFooter from '../../components/MarketingFooter.astro';
+import { getCollection, render } from 'astro:content';
+import '../../styles/marketing.css';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => {
+    return import.meta.env.PROD ? data.draft !== true : true;
+  });
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const canonical = `https://ohmydesk.app/blog/${post.id}/`;
+const dateFmt = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+const publishedISO = post.data.publishDate.toISOString();
+const modifiedISO = (post.data.updatedDate ?? post.data.publishDate).toISOString();
+
+const blogPostingSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: publishedISO,
+  dateModified: modifiedISO,
+  author: {
+    '@type': 'Person',
+    name: post.data.author,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'OhMyDesk',
+    url: 'https://ohmydesk.app',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://ohmydesk.app/favicon.svg',
+    },
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonical,
+  },
+  keywords: post.data.tags.join(', '),
+};
+---
+
+<BaseLayout
+  title={`${post.data.title} — OhMyDesk Blog`}
+  description={post.data.description}
+  canonical={canonical}
+  defaultStructuredData={false}
+>
+  <script
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(blogPostingSchema)}
+  />
+  <MarketingNav />
+  <main>
+    <article class="post">
+      <header class="post-header">
+        <a href="/blog/" class="back-link">← All posts</a>
+        <div class="meta">
+          <time datetime={publishedISO}>{dateFmt.format(post.data.publishDate)}</time>
+          {post.data.updatedDate && (
+            <span class="updated">· Updated {dateFmt.format(post.data.updatedDate)}</span>
+          )}
+          <span class="author">· by {post.data.author}</span>
+        </div>
+        <h1>{post.data.title}</h1>
+        {post.data.tags.length > 0 && (
+          <div class="tags">
+            {post.data.tags.map((t) => <span class="tag">{t}</span>)}
+          </div>
+        )}
+      </header>
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <footer class="post-footer">
+        <a href="/blog/" class="back-link">← All posts</a>
+        <a href="/signup/" class="cta-btn">Try OhMyDesk free</a>
+      </footer>
+    </article>
+
+    <MarketingFooter />
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .post {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 0 48px;
+  }
+
+  .post-header {
+    margin-bottom: 40px;
+  }
+  .back-link {
+    display: inline-block;
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-bottom: 32px;
+    transition: color 0.2s ease;
+  }
+  .back-link:hover { color: var(--green); }
+
+  .meta {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .meta .updated,
+  .meta .author { margin-left: 4px; }
+
+  .post-header h1 {
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.8px;
+    margin: 0 0 20px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tag {
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--green);
+    background: var(--green-faint);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .prose {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-primary);
+  }
+  .prose :global(p) {
+    margin: 0 0 20px;
+  }
+  .prose :global(h2) {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.25;
+    margin: 48px 0 16px;
+    color: var(--text-primary);
+  }
+  .prose :global(h3) {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+    margin: 36px 0 12px;
+    color: var(--text-primary);
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    list-style: revert;
+    padding-left: 24px;
+    margin: 0 0 20px;
+  }
+  .prose :global(li) {
+    margin-bottom: 8px;
+  }
+  .prose :global(a) {
+    color: var(--green);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .prose :global(a:hover) {
+    color: var(--green-dim);
+  }
+  .prose :global(strong) {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+  .prose :global(em) {
+    color: var(--text-secondary);
+  }
+  .prose :global(blockquote) {
+    margin: 24px 0;
+    padding: 12px 20px;
+    border-left: 3px solid var(--green);
+    background: var(--green-faint);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+  .prose :global(code) {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .prose :global(pre) {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 24px 0;
+  }
+  .prose :global(pre code) {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+  .prose :global(hr) {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  .post-footer {
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .cta-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: var(--green);
+    color: var(--bg);
+    border-radius: 8px;
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cta-btn:hover {
+    background: var(--green-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--green-glow);
+  }
+</style>
