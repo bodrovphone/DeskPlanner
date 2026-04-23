@@ -300,13 +300,25 @@ export default function DeskCalendar() {
         onMarkOngoingPaid={async () => {
           const b = selectedBooking?.booking;
           if (!b) return;
-          await markOngoingPaidMutation.mutateAsync({
+          const result = await markOngoingPaidMutation.mutateAsync({
             deskId: b.deskId,
             clientId: b.clientId ?? null,
             startDate: b.startDate,
             endDate: b.endDate,
             personName: b.personName ?? 'member',
           });
+          // Jump the calendar to the newly-booked runway so the operator sees
+          // the fresh orange block immediately without having to scroll.
+          const today = new Date(formatLocalDate(new Date()) + 'T00:00:00');
+          const nextStart = new Date(result.nextCycleStart + 'T00:00:00');
+          const daysAhead = Math.round((nextStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (viewMode === 'week') {
+            setWeekOffset(Math.floor(daysAhead / 7));
+          } else if (viewMode === 'month') {
+            const currentMonth = today.getMonth() + today.getFullYear() * 12;
+            const targetMonth = nextStart.getMonth() + nextStart.getFullYear() * 12;
+            setMonthOffset(targetMonth - currentMonth);
+          }
         }}
         onShare={(savedData) => {
           // Ensure selectedBooking has a booking object (needed for new bookings)

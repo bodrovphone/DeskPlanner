@@ -1181,6 +1181,26 @@ export class SupabaseDataStore implements IDataStore {
     endDate: string;
   }): Promise<{ paidDays: number; nextCycleStart: string; nextCycleEnd: string }> {
     const numericClientId = args.clientId ? parseInt(args.clientId, 10) : null;
+    const nextStart = addDays(args.endDate, 1);
+    const nextEnd = addDays(addMonths(nextStart, 1), -1);
+
+    // 0. Pre-flight conflict check on the dates the new booked runway will
+    // occupy. If anything non-ongoing is already there, abort before we flip
+    // the paid block — otherwise we'd leave the contract half-advanced.
+    const { data: conflicts, error: conflictError } = await this.scopeBookingsQuery(
+      this.client
+        .from('desk_bookings')
+        .select('date, person_name, status, is_ongoing')
+        .eq('desk_id', args.deskId)
+        .gte('date', nextStart)
+        .lte('date', nextEnd),
+    );
+    if (conflictError) throw conflictError;
+    const blockers = (conflicts ?? []).filter((r) => !r.is_ongoing);
+    if (blockers.length > 0) {
+      const sample = blockers.slice(0, 3).map((r) => `${r.date}: ${r.person_name ?? r.status}`).join(', ');
+      throw new Error(`Next cycle overlaps existing bookings (${sample}). Move or cancel them before marking paid.`);
+    }
 
     // 1. Flip the paid block to assigned.
     let flipQuery = this.client
@@ -1201,10 +1221,7 @@ export class SupabaseDataStore implements IDataStore {
     }
 
     // 2. Generate the next booked cycle: day after endDate → that + 1mo − 1d.
-    const nextStart = addDays(args.endDate, 1);
-    const nextEnd = addDays(addMonths(nextStart, 1), -1);
     const template = flippedRows[0];
-
     const newRows: any[] = [];
     let cursor = nextStart;
     while (cursor <= nextEnd) {
@@ -1234,9 +1251,13 @@ export class SupabaseDataStore implements IDataStore {
       cursor = addDays(cursor, 1);
     }
 
+    // Upsert on id (default ignoreDuplicates=false). Any id collision UPDATEs
+    // the row — safer than silently skipping. If the template carries
+    // matching is_ongoing rows (e.g. retry after partial failure) they get
+    // refreshed to the new cycle's state.
     const { error: insertError } = await this.client
       .from('desk_bookings')
-      .upsert(newRows, { onConflict: 'id', ignoreDuplicates: true });
+      .upsert(newRows, { onConflict: 'id' });
     if (insertError) throw insertError;
 
     return { paidDays: flippedRows.length, nextCycleStart: nextStart, nextCycleEnd: nextEnd };

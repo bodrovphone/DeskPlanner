@@ -52,7 +52,7 @@ interface BookingModalProps {
   onDiscard?: () => Promise<void>;
   onFreezePlan?: (pausedAt: string) => Promise<void>;
   onEndContract?: (newEndDate: string) => Promise<void>;
-  onMarkOngoingPaid?: () => Promise<void>;
+  onMarkOngoingPaid?: () => Promise<unknown>;
   onShare?: (savedData: { personName: string; startDate: string; endDate: string; status: DeskStatus; title: string; price: number; currency: Currency; clientId?: string }) => void;
 }
 
