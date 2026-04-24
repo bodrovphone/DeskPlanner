@@ -146,9 +146,11 @@ export function useBookingActions(
       oldDateRange = generateDateRange(existingBooking.startDate, existingBooking.endDate);
     }
 
-    // Ongoing contracts (DES-88): on fresh creation we also materialize the
-    // next month as a booked runway. Scan the full 2-month range for conflicts.
-    const createRunway = !!bookingData.isOngoing && !existingBooking;
+    // Ongoing contracts (DES-88): on fresh creation — or when promoting an
+    // existing non-ongoing booking to ongoing — we materialize the next month
+    // as a booked runway. Scan the full 2-month range for conflicts.
+    const createRunway = !!bookingData.isOngoing
+      && (!existingBooking || !existingBooking.isOngoing);
     const runwayStart = createRunway ? addDays(bookingData.endDate, 1) : null;
     const runwayEnd = createRunway && runwayStart
       ? addDays(addMonths(runwayStart, 1), -1)

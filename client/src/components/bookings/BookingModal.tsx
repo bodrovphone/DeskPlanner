@@ -205,8 +205,16 @@ export default function BookingModal({
 
       const busy = new Set<string>();
       for (const b of allBookings) {
-        // Ignore the booking being edited (it already occupies this slot)
-        if (booking && b.id === booking.id) continue;
+        // Ignore every row that belongs to the booking being edited. Bookings
+        // are stored one row per day (id = `${deskId}-${date}`) so matching by
+        // id only excludes the clicked day — the other days of a multi-day
+        // plan would otherwise flag the desk as busy against itself.
+        if (
+          booking &&
+          b.deskId === booking.deskId &&
+          b.date >= booking.startDate &&
+          b.date <= booking.endDate
+        ) continue;
         if (b.status !== 'available') {
           busy.add(b.deskId);
         }
@@ -562,7 +570,7 @@ export default function BookingModal({
             )}
           </div>
 
-          {ongoingEligible && !booking && (
+          {ongoingEligible && (!booking || !booking.isOngoing) && (
             <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
               <Checkbox
                 id="isOngoing"
