@@ -122,6 +122,16 @@ export const organizationSchema = z.object({
   floorPlanCombined: z.boolean().default(false),
   stripePublishableKey: z.string().nullable().optional(),
   stripePublicBookingPayments: z.boolean().default(false),
+  billingLegalName: z.string().nullable().optional(),
+  billingTaxId: z.string().nullable().optional(),
+  billingVatId: z.string().nullable().optional(),
+  billingAddress: z.string().nullable().optional(),
+  billingMol: z.string().nullable().optional(),
+  billingCompiledBy: z.string().nullable().optional(),
+  billingBankDetails: z.string().nullable().optional(),
+  defaultVatRate: z.number().default(0),
+  invoiceNumberNext: z.number().default(1),
+  invoiceNumberPadding: z.number().default(10),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -193,6 +203,9 @@ export const clientSchema = z.object({
   phone: z.string().nullable().optional(),
   billingAddress: z.string().nullable().optional(),
   paymentMethodType: paymentMethodTypeSchema.nullable().optional(),
+  representativeName: z.string().nullable().optional(),
+  taxId: z.string().nullable().optional(),
+  vatId: z.string().nullable().optional(),
   flexActive: z.boolean().default(false),
   flexTotalDays: z.number().default(0),
   flexUsedDays: z.number().default(0),
@@ -203,6 +216,74 @@ export const clientSchema = z.object({
 });
 
 export type Client = z.infer<typeof clientSchema>;
+
+export const invoiceStatusSchema = z.enum(['draft', 'sent', 'paid', 'void']);
+export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
+
+// Frozen snapshots of org / client at invoice-issue time so historical
+// invoices never mutate even if the underlying record changes.
+export const invoiceSellerSnapshotSchema = z.object({
+  legalName: z.string().nullable().optional(),
+  taxId: z.string().nullable().optional(),
+  vatId: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  mol: z.string().nullable().optional(),
+  bankDetails: z.string().nullable().optional(),
+});
+export type InvoiceSellerSnapshot = z.infer<typeof invoiceSellerSnapshotSchema>;
+
+export const invoiceBuyerSnapshotSchema = z.object({
+  name: z.string(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  billingAddress: z.string().nullable().optional(),
+  taxId: z.string().nullable().optional(),
+  vatId: z.string().nullable().optional(),
+  representativeName: z.string().nullable().optional(),
+  paymentMethodType: paymentMethodTypeSchema.nullable().optional(),
+});
+export type InvoiceBuyerSnapshot = z.infer<typeof invoiceBuyerSnapshotSchema>;
+
+export const invoiceLineItemSchema = z.object({
+  id: z.string().optional(),
+  invoiceId: z.string().optional(),
+  bookingId: z.string().nullable().optional(),
+  description: z.string(),
+  quantity: z.number().default(1),
+  unit: z.string().nullable().optional(),
+  unitPrice: z.number().default(0),
+  vatRate: z.number().default(0),
+  lineTotal: z.number().default(0),
+  sortOrder: z.number().default(0),
+});
+export type InvoiceLineItem = z.infer<typeof invoiceLineItemSchema>;
+
+export const invoiceSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  clientId: z.string().nullable().optional(),
+  invoiceNumber: z.string(),
+  sequence: z.number(),
+  issueDate: z.string(),
+  dueDate: z.string().nullable().optional(),
+  status: invoiceStatusSchema,
+  subtotal: z.number(),
+  vatRate: z.number(),
+  vatAmount: z.number(),
+  total: z.number(),
+  currency: z.string(),
+  notes: z.string().nullable().optional(),
+  compiledBy: z.string().nullable().optional(),
+  signedBy: z.string().nullable().optional(),
+  sellerSnapshot: invoiceSellerSnapshotSchema,
+  buyerSnapshot: invoiceBuyerSnapshotSchema,
+  pdfStoragePath: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  sentAt: z.string().nullable().optional(),
+  paidAt: z.string().nullable().optional(),
+});
+export type Invoice = z.infer<typeof invoiceSchema>;
 
 export interface MonthlyStats {
   totalRevenue: number;

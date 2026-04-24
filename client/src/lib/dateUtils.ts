@@ -107,6 +107,10 @@ export function getMonthRangeString(monthOffset: number = 0): string {
   return today.format('MMMM YYYY');
 }
 
+export function formatInvoiceDate(iso: string): string {
+  return dayjs(iso).format('DD MMM YYYY');
+}
+
 export function formatDateRange(startDate: string, endDate: string): string {
   const start = dayjs(startDate);
   const end = dayjs(endDate);

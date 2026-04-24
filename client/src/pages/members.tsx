@@ -3,11 +3,13 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon, CreditCard } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon, CreditCard, FileText } from 'lucide-react';
 import { DeskBooking, PaymentMethodType } from '@shared/schema';
 import { formatLocalDate } from '@/lib/dateUtils';
 import ReactivationModal from '@/components/members/ReactivationModal';
 import MemberProfileDialog from '@/components/members/MemberProfileDialog';
+import InvoiceEditorDialog from '@/components/invoices/InvoiceEditorDialog';
+import MemberInvoicesDialog from '@/components/invoices/MemberInvoicesDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -175,6 +177,10 @@ export default function MembersPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [reactivateTarget, setReactivateTarget] = useState<{ client: Client; banked: DeskBooking[] } | null>(null);
   const [profileTarget, setProfileTarget] = useState<Client | null>(null);
+  // FileText button opens the per-member invoices list. From there, "+ New invoice"
+  // closes the list and opens the editor on the same client.
+  const [invoicesListTarget, setInvoicesListTarget] = useState<Client | null>(null);
+  const [invoiceEditorTarget, setInvoiceEditorTarget] = useState<Client | null>(null);
   const newNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = formatLocalDate(new Date());
@@ -468,6 +474,13 @@ export default function MembersPage() {
                           <CreditCard className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => setInvoicesListTarget(client)}
+                          className="p-1.5 rounded transition-colors text-gray-300 hover:text-blue-500 hover:bg-blue-50"
+                          title="Invoices"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => setDeleteTarget(client)}
                           disabled={deletingId === client.id}
                           className="p-1.5 rounded transition-colors text-gray-300 hover:text-red-500 hover:bg-red-50"
@@ -599,17 +612,43 @@ export default function MembersPage() {
         bankedBookings={reactivateTarget?.banked ?? []}
       />
 
+      {currentOrg && (
+        <MemberInvoicesDialog
+          isOpen={!!invoicesListTarget}
+          onClose={() => setInvoicesListTarget(null)}
+          client={invoicesListTarget}
+          organization={currentOrg}
+          onCreateNew={() => {
+            const target = invoicesListTarget;
+            setInvoicesListTarget(null);
+            // Small delay so the closing animation doesn't collide with the editor opening.
+            setTimeout(() => setInvoiceEditorTarget(target), 120);
+          }}
+        />
+      )}
+      {currentOrg && (
+        <InvoiceEditorDialog
+          isOpen={!!invoiceEditorTarget}
+          onClose={() => setInvoiceEditorTarget(null)}
+          client={invoiceEditorTarget}
+          organization={currentOrg}
+        />
+      )}
+
       <MemberProfileDialog
         isOpen={!!profileTarget}
         onClose={() => setProfileTarget(null)}
         client={profileTarget}
-        onSave={async ({ billingAddress, paymentMethodType }) => {
+        onSave={async ({ billingAddress, paymentMethodType, representativeName, taxId, vatId }) => {
           if (!profileTarget || !dataStore.saveClient) return;
           try {
             const updated: Client = {
               ...profileTarget,
               billingAddress,
               paymentMethodType: paymentMethodType as PaymentMethodType | null,
+              representativeName,
+              taxId,
+              vatId,
             };
             const saved = await dataStore.saveClient(updated);
             setLocalClients(prev => prev.map(c => c.id === saved.id ? saved : c));

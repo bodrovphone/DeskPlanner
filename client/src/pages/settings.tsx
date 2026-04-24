@@ -3,6 +3,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRenameRoom, useRenameDesk, useAddRoom, useSetRoomDeskCount, useMergeRooms } from '@/hooks/use-organization';
 import { useTelegramSettings, useConnectTelegram, useDisconnectTelegram, useToggleNotifications, useManualConnect, useToggleEmailNotifications } from '@/hooks/use-telegram';
 import { useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from '@/hooks/use-meeting-rooms';
-import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, CalendarDays, CalendarRange, Users, Shield, UserMinus, Loader2, AlertTriangle } from 'lucide-react';
+import { Building2, LayoutGrid, Save, Pencil, Plus, X, Bell, Send, Unplug, ChevronDown, Globe, Copy, Check, Upload, Trash2, RefreshCw, ImageIcon, DoorOpen, Mail, Phone, Package, CalendarDays, CalendarRange, Users, Shield, UserMinus, Loader2, AlertTriangle, FileText } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Organization } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
@@ -207,6 +208,258 @@ function OrgSettingsCard() {
           <Save className="mr-2 h-4 w-4" />
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BillingSettingsCard() {
+  const { currentOrg, currentRole } = useOrganization();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+
+  const [legalName, setLegalName] = useState(currentOrg?.billingLegalName ?? '');
+  const [taxId, setTaxId] = useState(currentOrg?.billingTaxId ?? '');
+  const [vatId, setVatId] = useState(currentOrg?.billingVatId ?? '');
+  const [address, setAddress] = useState(currentOrg?.billingAddress ?? '');
+  const [mol, setMol] = useState(currentOrg?.billingMol ?? '');
+  const [compiledBy, setCompiledBy] = useState(currentOrg?.billingCompiledBy ?? '');
+  const [bankDetails, setBankDetails] = useState(currentOrg?.billingBankDetails ?? '');
+  const [vatRate, setVatRate] = useState(String(currentOrg?.defaultVatRate ?? 0));
+  const [nextNumber, setNextNumber] = useState(String(currentOrg?.invoiceNumberNext ?? 1));
+  const [padding, setPadding] = useState(String(currentOrg?.invoiceNumberPadding ?? 10));
+
+  useEffect(() => {
+    if (!currentOrg) return;
+    setLegalName(currentOrg.billingLegalName ?? '');
+    setTaxId(currentOrg.billingTaxId ?? '');
+    setVatId(currentOrg.billingVatId ?? '');
+    setAddress(currentOrg.billingAddress ?? '');
+    setMol(currentOrg.billingMol ?? '');
+    setCompiledBy(currentOrg.billingCompiledBy ?? '');
+    setBankDetails(currentOrg.billingBankDetails ?? '');
+    setVatRate(String(currentOrg.defaultVatRate ?? 0));
+    setNextNumber(String(currentOrg.invoiceNumberNext ?? 1));
+    setPadding(String(currentOrg.invoiceNumberPadding ?? 10));
+  }, [currentOrg]);
+
+  if (!currentOrg) return null;
+
+  const parsedVat = Number(vatRate);
+  const parsedNext = Number(nextNumber);
+  const parsedPadding = Number(padding);
+
+  const vatValid = Number.isFinite(parsedVat) && parsedVat >= 0 && parsedVat <= 100;
+  const nextValid = Number.isInteger(parsedNext) && parsedNext >= 1;
+  const paddingValid = Number.isInteger(parsedPadding) && parsedPadding >= 1 && parsedPadding <= 20;
+
+  const hasChanges =
+    legalName !== (currentOrg.billingLegalName ?? '') ||
+    taxId !== (currentOrg.billingTaxId ?? '') ||
+    vatId !== (currentOrg.billingVatId ?? '') ||
+    address !== (currentOrg.billingAddress ?? '') ||
+    mol !== (currentOrg.billingMol ?? '') ||
+    compiledBy !== (currentOrg.billingCompiledBy ?? '') ||
+    bankDetails !== (currentOrg.billingBankDetails ?? '') ||
+    parsedVat !== (currentOrg.defaultVatRate ?? 0) ||
+    parsedNext !== (currentOrg.invoiceNumberNext ?? 1) ||
+    parsedPadding !== (currentOrg.invoiceNumberPadding ?? 10);
+
+  const canSave = isAdmin && hasChanges && vatValid && nextValid && paddingValid;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      const { error } = await supabaseClient
+        .from('organizations')
+        .update({
+          billing_legal_name: legalName.trim() || null,
+          billing_tax_id: taxId.trim() || null,
+          billing_vat_id: vatId.trim() || null,
+          billing_address: address.trim() || null,
+          billing_mol: mol.trim() || null,
+          billing_compiled_by: compiledBy.trim() || null,
+          billing_bank_details: bankDetails.trim() || null,
+          default_vat_rate: parsedVat,
+          invoice_number_next: parsedNext,
+          invoice_number_padding: parsedPadding,
+        })
+        .eq('id', currentOrg.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      toast({ title: 'Billing details saved', description: 'Invoice settings updated.', duration: 1800 });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save billing details.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const previewNumber = nextValid && paddingValid
+    ? String(parsedNext).padStart(parsedPadding, '0')
+    : '—';
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <CardTitle>Billing</CardTitle>
+        </div>
+        <CardDescription>
+          Seller details and invoice numbering. Shown on every invoice you generate.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <Label htmlFor="billingLegalName">Legal name</Label>
+              <Input
+                id="billingLegalName"
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                placeholder="Acme Coworking Ltd."
+                disabled={!isAdmin}
+              />
+            </div>
+            <div>
+              <Label htmlFor="billingTaxId">Tax / company ID</Label>
+              <Input
+                id="billingTaxId"
+                value={taxId}
+                onChange={(e) => setTaxId(e.target.value)}
+                placeholder="123456789"
+                disabled={!isAdmin}
+              />
+            </div>
+            <div>
+              <Label htmlFor="billingVatId">VAT ID <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Input
+                id="billingVatId"
+                value={vatId}
+                onChange={(e) => setVatId(e.target.value)}
+                placeholder="VAT0000000"
+                disabled={!isAdmin}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="billingAddress">Address</Label>
+            <Textarea
+              id="billingAddress"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={'123 Main Street\nCity, Country'}
+              rows={3}
+              disabled={!isAdmin}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="billingMol">Signed by</Label>
+              <Input
+                id="billingMol"
+                value={mol}
+                onChange={(e) => setMol(e.target.value)}
+                placeholder="Full name"
+                disabled={!isAdmin}
+              />
+              <p className="text-xs text-gray-500 mt-1">Name of the person who signs invoices on behalf of the company.</p>
+            </div>
+            <div>
+              <Label htmlFor="billingCompiledBy">Compiled by <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Input
+                id="billingCompiledBy"
+                value={compiledBy}
+                onChange={(e) => setCompiledBy(e.target.value)}
+                placeholder="Accountant's name"
+                disabled={!isAdmin}
+              />
+              <p className="text-xs text-gray-500 mt-1">Default; editable per invoice.</p>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="billingBankDetails">Bank details <span className="text-gray-400 font-normal">(optional)</span></Label>
+            <Textarea
+              id="billingBankDetails"
+              value={bankDetails}
+              onChange={(e) => setBankDetails(e.target.value)}
+              placeholder={'Bank Name\nBIC: ABCDEFGH\nIBAN: XX00 0000 0000 0000 0000 00'}
+              rows={3}
+              disabled={!isAdmin}
+            />
+          </div>
+
+          <div className="pt-2 border-t">
+            <p className="text-sm font-medium text-gray-700 mb-3">Invoice numbering & VAT</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="defaultVatRate">Default VAT rate %</Label>
+                <Input
+                  id="defaultVatRate"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={vatRate}
+                  onChange={(e) => setVatRate(e.target.value)}
+                  disabled={!isAdmin}
+                />
+                {!vatValid && <p className="text-xs text-red-600 mt-1">Must be 0–100.</p>}
+              </div>
+              <div>
+                <Label htmlFor="invoiceNumberNext">Next invoice #</Label>
+                <Input
+                  id="invoiceNumberNext"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
+                  value={nextNumber}
+                  onChange={(e) => setNextNumber(e.target.value)}
+                  disabled={!isAdmin}
+                />
+                {!nextValid && <p className="text-xs text-red-600 mt-1">Must be ≥ 1.</p>}
+              </div>
+              <div>
+                <Label htmlFor="invoiceNumberPadding">Zero-padding</Label>
+                <Input
+                  id="invoiceNumberPadding"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={padding}
+                  onChange={(e) => setPadding(e.target.value)}
+                  disabled={!isAdmin}
+                />
+                {!paddingValid && <p className="text-xs text-red-600 mt-1">1–20 digits.</p>}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Next invoice will be issued as <span className="font-mono text-gray-700">{previewNumber}</span>.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t">
+          <Button onClick={handleSave} disabled={saving || !canSave}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -586,6 +839,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         <OrgSettingsCard />
         <SpaceContactCard orgId={currentOrg.id} org={currentOrg} isAdmin={isAdmin} />
+        <BillingSettingsCard />
       </div>
     </div>
   );

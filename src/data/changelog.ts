@@ -17,10 +17,10 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     date: '2026-04-24',
-    title: 'Billing details on member profiles',
+    title: 'Invoicing with per-member PDF generation',
     description:
-      "Ready for invoicing. Each member now has a billing address and a payment method (credit card, cash, or bank transfer), tucked behind a card icon in the Members table. The icon goes blue when a member has their details filled — so you can see at a glance who's ready to invoice and who still needs a chase. Groundwork for automated invoices, coming next.",
-    tags: ['Members', 'Billing'],
+      "Stop opening Word or DocuSign to bill your members. Set your space's legal name, tax ID, bank details, and starting invoice number in Settings → Billing (editable per space if you run more than one). On any member, save their company details once — legal name, tax ID, VAT ID, billing address, payment method — and every future invoice auto-fills. Click the invoice icon to see past invoices for that member and create a new one with a live PDF preview as you type. Download the generated PDF in one click. Works in any currency, English labels, Cyrillic / Greek / accented Latin supported for international clients.",
+    tags: ['Billing', 'Invoicing', 'Members'],
   },
   {
     date: '2026-04-17',
