@@ -181,6 +181,9 @@ export type OrgMemberRole = z.infer<typeof orgMemberRoleSchema>;
 //   - balance (numeric) — for flex package day tracking
 //   - preferred_desk (text) — desk they usually sit at
 //   - membership_type (text) — e.g. "fix", "flexy", "day-pass"
+export const paymentMethodTypeSchema = z.enum(['credit_card', 'cash', 'bank_transfer']);
+export type PaymentMethodType = z.infer<typeof paymentMethodTypeSchema>;
+
 export const clientSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
@@ -188,6 +191,8 @@ export const clientSchema = z.object({
   contact: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
+  billingAddress: z.string().nullable().optional(),
+  paymentMethodType: paymentMethodTypeSchema.nullable().optional(),
   flexActive: z.boolean().default(false),
   flexTotalDays: z.number().default(0),
   flexUsedDays: z.number().default(0),

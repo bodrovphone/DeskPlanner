@@ -3,10 +3,11 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon } from 'lucide-react';
-import { DeskBooking } from '@shared/schema';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon, CreditCard } from 'lucide-react';
+import { DeskBooking, PaymentMethodType } from '@shared/schema';
 import { formatLocalDate } from '@/lib/dateUtils';
 import ReactivationModal from '@/components/members/ReactivationModal';
+import MemberProfileDialog from '@/components/members/MemberProfileDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -173,6 +174,7 @@ export default function MembersPage() {
   const [flexActivatedLink, setFlexActivatedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [reactivateTarget, setReactivateTarget] = useState<{ client: Client; banked: DeskBooking[] } | null>(null);
+  const [profileTarget, setProfileTarget] = useState<Client | null>(null);
   const newNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = formatLocalDate(new Date());
@@ -449,18 +451,35 @@ export default function MembersPage() {
                       />
                     </td>
                     <td className="px-2 py-1.5">
-                      <button
-                        onClick={() => setDeleteTarget(client)}
-                        disabled={deletingId === client.id}
-                        className="p-1.5 rounded transition-colors text-gray-300 hover:text-red-500 hover:bg-red-50"
-                        title="Delete member"
-                      >
-                        {deletingId === client.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => setProfileTarget(client)}
+                          className={`p-1.5 rounded transition-colors ${
+                            client.billingAddress || client.paymentMethodType
+                              ? 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                              : 'text-gray-300 hover:text-blue-500 hover:bg-blue-50'
+                          }`}
+                          title={
+                            client.billingAddress || client.paymentMethodType
+                              ? 'Billing details'
+                              : 'Add billing details'
+                          }
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(client)}
+                          disabled={deletingId === client.id}
+                          className="p-1.5 rounded transition-colors text-gray-300 hover:text-red-500 hover:bg-red-50"
+                          title="Delete member"
+                        >
+                          {deletingId === client.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -578,6 +597,28 @@ export default function MembersPage() {
         onClose={() => setReactivateTarget(null)}
         client={reactivateTarget?.client ?? null}
         bankedBookings={reactivateTarget?.banked ?? []}
+      />
+
+      <MemberProfileDialog
+        isOpen={!!profileTarget}
+        onClose={() => setProfileTarget(null)}
+        client={profileTarget}
+        onSave={async ({ billingAddress, paymentMethodType }) => {
+          if (!profileTarget || !dataStore.saveClient) return;
+          try {
+            const updated: Client = {
+              ...profileTarget,
+              billingAddress,
+              paymentMethodType: paymentMethodType as PaymentMethodType | null,
+            };
+            const saved = await dataStore.saveClient(updated);
+            setLocalClients(prev => prev.map(c => c.id === saved.id ? saved : c));
+            queryClient.invalidateQueries({ queryKey: ['clients'] });
+            toast({ title: 'Saved', description: 'Billing details updated.', duration: 1500 });
+          } catch {
+            toast({ title: 'Failed', description: 'Could not update billing details.', variant: 'destructive' });
+          }
+        }}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-24',
+    title: 'Billing details on member profiles',
+    description:
+      "Ready for invoicing. Each member now has a billing address and a payment method (credit card, cash, or bank transfer), tucked behind a card icon in the Members table. The icon goes blue when a member has their details filled — so you can see at a glance who's ready to invoice and who still needs a chase. Groundwork for automated invoices, coming next.",
+    tags: ['Members', 'Billing'],
+  },
+  {
     date: '2026-04-17',
     title: 'Dedicated desk plans with freeze option',
     description:

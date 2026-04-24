@@ -47,6 +47,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. High-level summary at each milestone
 5. Capture lessons in memory after corrections
 
+### 8. Always Update the Changelog on Ship
+- **Every time a feature or user-visible improvement ships**, add an entry to the public changelog (`/changelog/`).
+- **Source of truth:** `src/data/changelog.ts` — the Astro page `src/pages/changelog.astro` renders this array. Add new entries at the TOP of the array (newest first). The page groups by month automatically.
+- **Entry shape** (`ChangelogEntry`): `date` (absolute ISO `YYYY-MM-DD`), `title` (user-facing, not Linear-ID-style), `description` (1–3 sentences, benefit-first, written for space operators not engineers), `tags?` (short chips), `linkedFeature?` (slug under `/features/<slug>/` if one exists).
+- **Applies to:** new features, UX improvements, user-visible bug fixes, billing/plan changes, new integrations.
+- **Does NOT apply to:** internal refactors, type-only changes, silent infra work, doc/wiki-only edits, SEO/marketing page tweaks.
+- **Verify before reporting the task done** — check that the entry renders by scanning `src/data/changelog.ts`. The changelog update is part of "Verification Before Done" (§4).
+- **Never assume the page doesn't exist because Linear says "Backlog"** — the codebase is the source of truth, Linear lags. Check `src/data/changelog.ts` and `src/pages/changelog.astro` directly.
+- **Read the whole changelog before adding an entry** — dedupe against existing items. If the capability is already covered under a broader entry (e.g. "freeze" under "Dedicated desk plans"), UPDATE that entry instead of adding a new one. Same rule for any static data array (`features.ts`, `competitors.ts`).
+
 ### Core Principles
 - **Simplicity First**: Make every change as simple as possible. Minimal code impact
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards
