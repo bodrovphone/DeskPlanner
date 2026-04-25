@@ -18,6 +18,29 @@ const dateFmt = new Intl.DateTimeFormat('en', {
   month: 'long',
   day: 'numeric',
 });
+
+const blogSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  name: 'OhMyDesk Blog',
+  description: 'Practical guides for independent coworking operators.',
+  url: 'https://ohmydesk.app/blog/',
+  publisher: {
+    '@type': 'Organization',
+    name: 'OhMyDesk',
+    url: 'https://ohmydesk.app',
+    logo: 'https://ohmydesk.app/favicon.svg',
+  },
+  blogPost: posts.map((post) => ({
+    '@type': 'BlogPosting',
+    headline: post.data.title,
+    description: post.data.description,
+    url: `https://ohmydesk.app/blog/${post.id}/`,
+    datePublished: post.data.publishDate.toISOString(),
+    dateModified: (post.data.updatedDate ?? post.data.publishDate).toISOString(),
+    author: { '@type': 'Person', name: post.data.author },
+  })),
+};
 ---
 
 <BaseLayout
@@ -25,6 +48,7 @@ const dateFmt = new Intl.DateTimeFormat('en', {
   description="Practical guides for independent coworking operators: how to manage dedicated desks, handle member freezes, collect payments, and stop running your space on a spreadsheet."
   canonical="https://ohmydesk.app/blog/"
 >
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(blogSchema)} />
   <MarketingNav />
   <main>
     <section class="hero">

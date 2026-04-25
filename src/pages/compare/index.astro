@@ -4,6 +4,19 @@ import MarketingNav from '../../components/MarketingNav.astro';
 import MarketingFooter from '../../components/MarketingFooter.astro';
 import { competitors } from '../../data/competitors.ts';
 import '../../styles/marketing.css';
+
+const compareListSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'OhMyDesk vs Coworking Software Alternatives',
+  description: 'Side-by-side comparisons of OhMyDesk vs major coworking management tools.',
+  itemListElement: competitors.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: `OhMyDesk vs ${c.name}`,
+    url: `https://ohmydesk.app/compare/${c.slug}/`,
+  })),
+};
 ---
 
 <BaseLayout
@@ -11,6 +24,7 @@ import '../../styles/marketing.css';
   description="Honest side-by-side comparisons of OhMyDesk vs the major coworking software tools. Real pricing, real feature differences, no inflated claims."
   canonical="https://ohmydesk.app/compare/"
 >
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(compareListSchema)} />
   <MarketingNav />
   <main>
 

@@ -19,6 +19,6 @@ export function getStaticPaths() {
 }
 ---
 
-<BaseLayout title="OhMyDesk">
+<BaseLayout title="OhMyDesk" noindex={true} defaultStructuredData={false}>
   <App client:only="react" />
 </BaseLayout>

@@ -6,6 +6,8 @@ interface Props {
   ogImage?: string;
   /** Set false to omit the default SoftwareApplication JSON-LD (e.g. when the page provides its own schema in the `head` slot) */
   defaultStructuredData?: boolean;
+  /** Set true to emit `<meta name="robots" content="noindex,nofollow">` (SPA shells, app routes). */
+  noindex?: boolean;
 }
 
 const {
@@ -14,6 +16,7 @@ const {
   canonical = 'https://ohmydesk.app/',
   ogImage = 'https://ohmydesk.app/og-image.png',
   defaultStructuredData = true,
+  noindex = false,
 } = Astro.props;
 ---
 
@@ -24,8 +27,8 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href={canonical} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+    {!noindex && <link rel="canonical" href={canonical} />}
 
     <!-- Open Graph -->
     <meta property="og:title" content={title} />

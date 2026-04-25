@@ -20,6 +20,7 @@
   "dependencies": {
     "@astrojs/check": "^0.9.8",
     "@astrojs/react": "^5.0.2",
+    "@astrojs/sitemap": "^3.7.2",
     "@astrojs/tailwind": "^6.0.2",
     "@fontsource/roboto": "^5.2.10",
     "@hookform/resolvers": "^3.10.0",

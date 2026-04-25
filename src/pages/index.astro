@@ -68,7 +68,11 @@ const faqSchema = {
 };
 ---
 
-<BaseLayout>
+<BaseLayout
+  title="OhMyDesk — Coworking Desk Booking & Management Software"
+  description="Coworking desk booking and management software. Visual calendar, revenue tracking, waiting lists, and meeting room scheduling. 3 months free, set up in under 2 minutes."
+  canonical="https://ohmydesk.app/"
+>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   <MarketingNav />
   <LandingPage client:load />

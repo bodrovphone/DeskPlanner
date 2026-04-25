@@ -6,6 +6,20 @@ import { Picture } from 'astro:assets';
 import '../styles/marketing.css';
 import heroCalendar from '../assets/screenshots/hero-calendar.png';
 import { features } from '../data/features.ts';
+
+const featureListSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'OhMyDesk Features',
+  description: 'Every feature OhMyDesk offers for coworking space operators.',
+  itemListElement: features.map((f, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: f.title,
+    description: f.intro,
+    url: `https://ohmydesk.app/features/${f.slug}/`,
+  })),
+};
 ---
 
 <BaseLayout
@@ -13,6 +27,7 @@ import { features } from '../data/features.ts';
   description="Visual booking calendar, member management, flex plans, public booking, multi-location, revenue tracking, and more. Every feature OhMyDesk offers, in one place."
   canonical="https://ohmydesk.app/features/"
 >
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(featureListSchema)} />
   <MarketingNav />
   <main>
 
