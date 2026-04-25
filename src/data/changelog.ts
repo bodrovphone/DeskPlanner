@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-25',
+    title: 'Email invoices, mark as paid, and void',
+    description:
+      "One-click Send on any draft invoice — the PDF is generated, attached to a polite email, and delivered to the member. Status flips from draft to sent automatically and the PDF is archived for re-download. From the same dialog you can now mark an invoice as paid (with a paid-on timestamp) or void one you sent by mistake — the invoice number is preserved, never reused. Resend a sent invoice anytime if a member misplaces it.",
+    tags: ['Billing', 'Invoicing', 'Email'],
+  },
+  {
     date: '2026-04-24',
     title: 'Invoicing with per-member PDF generation',
     description:

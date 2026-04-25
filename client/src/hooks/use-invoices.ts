@@ -182,6 +182,71 @@ export function useClientInvoices(clientId: string | undefined) {
   });
 }
 
+// Send / mark paid / void ────────────────────────────────────
+
+interface SendInvoiceInput {
+  invoiceId: string;
+  pdfBase64: string;
+}
+
+export function useSendInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: SendInvoiceInput): Promise<void> => {
+      const { data, error } = await supabaseClient.functions.invoke('send-invoice', {
+        body: { invoiceId: input.invoiceId, pdfBase64: input.pdfBase64 },
+      });
+      if (error) {
+        const detail = (data as { error?: string } | null)?.error;
+        throw new Error(detail ?? error.message);
+      }
+      const result = data as { sent?: boolean; error?: string } | null;
+      if (!result?.sent) throw new Error(result?.error ?? 'Send failed');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['invoices'] });
+    },
+  });
+}
+
+export function useMarkInvoicePaid() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string): Promise<Invoice> => {
+      const { data, error } = await supabaseClient
+        .from('invoices')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', invoiceId)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return mapInvoiceRow(data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['invoices'] });
+    },
+  });
+}
+
+export function useVoidInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string): Promise<Invoice> => {
+      const { data, error } = await supabaseClient
+        .from('invoices')
+        .update({ status: 'void' })
+        .eq('id', invoiceId)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return mapInvoiceRow(data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['invoices'] });
+    },
+  });
+}
+
 // Line items for an invoice ───────────────────────────────────
 
 export function useInvoiceLineItems(invoiceId: string | undefined) {

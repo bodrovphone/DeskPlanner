@@ -51,6 +51,21 @@ function blankLine(defaultVatRate: number, currency: string): EditorLine {
   };
 }
 
+// Empty qty input → treat as 1 so users who only type a description don't get
+// silently blocked by "qty > 0". Empty price → 0 (free line).
+function parseQty(s: string): number {
+  const t = s.trim();
+  if (t === '') return 1;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : 0;
+}
+function parsePrice(s: string): number {
+  const t = s.trim();
+  if (t === '') return 0;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export default function InvoiceEditorDialog({
   isOpen,
   onClose,
@@ -135,8 +150,8 @@ export default function InvoiceEditorDialog({
   }, [client, buyerName, buyerAddress, buyerTaxId, buyerVatId, buyerRepresentative, buyerPaymentMethod]);
 
   const previewLines = useMemo(() => lines.map(l => {
-    const qty = Number(l.quantity) || 0;
-    const price = Number(l.unitPrice) || 0;
+    const qty = parseQty(l.quantity);
+    const price = parsePrice(l.unitPrice);
     return {
       description: l.description || '(no description)',
       quantity: qty,
@@ -164,16 +179,26 @@ export default function InvoiceEditorDialog({
     ? PAYMENT_METHOD_LABEL[buyerSnapshot.paymentMethodType]
     : null;
 
-  const hasValidLine = lines.some(
-    l => l.description.trim() && Number(l.quantity) > 0 && Number(l.unitPrice) >= 0,
-  );
+  const lineDiagnostics = lines.map((l, idx) => {
+    const hasDesc = !!l.description.trim();
+    const qty = parseQty(l.quantity);
+    const validQty = qty > 0;
+    if (!hasDesc && !validQty) return { idx, reason: 'empty' as const };
+    if (!hasDesc) return { idx, reason: 'missing description' as const };
+    if (!validQty) return { idx, reason: 'quantity must be greater than zero' as const };
+    return null;
+  });
+  const hasValidLine = lineDiagnostics.some(d => d === null);
+  const firstBadFilledLine = lineDiagnostics.find(d => d !== null && d.reason !== 'empty');
 
   const cantSaveReason: string | null = !client
     ? 'No member selected.'
     : !issueDate
       ? 'Set an issue date.'
       : !hasValidLine
-        ? 'Add at least one line with a description and qty > 0.'
+        ? firstBadFilledLine
+          ? `Line ${firstBadFilledLine.idx + 1}: ${firstBadFilledLine.reason}.`
+          : 'Add at least one line with a description.'
         : null;
 
   const canSave = !cantSaveReason && !createInvoice.isPending;
@@ -202,12 +227,12 @@ export default function InvoiceEditorDialog({
         sellerSnapshot,
         buyerSnapshot,
         lineItems: lines
-          .filter(l => l.description.trim() && Number(l.quantity) > 0)
+          .filter(l => l.description.trim() && parseQty(l.quantity) > 0)
           .map(l => ({
             description: l.description.trim(),
-            quantity: Number(l.quantity),
+            quantity: parseQty(l.quantity),
             unit: l.unit.trim() ? l.unit.trim() : null,
-            unitPrice: Number(l.unitPrice) || 0,
+            unitPrice: parsePrice(l.unitPrice),
             vatRate: Number(l.vatRate) || 0,
             bookingId: null,
           })),
@@ -449,6 +474,10 @@ export default function InvoiceEditorDialog({
                         placeholder="Qty"
                         value={l.quantity}
                         onChange={(e) => updateLine(idx, { quantity: e.target.value })}
+                        onBlur={() => {
+                          const n = parseQty(l.quantity);
+                          if (String(n) !== l.quantity.trim()) updateLine(idx, { quantity: String(n) });
+                        }}
                         className="text-right border-gray-300 bg-white"
                       />
                       <Input
@@ -464,6 +493,10 @@ export default function InvoiceEditorDialog({
                         placeholder="Price"
                         value={l.unitPrice}
                         onChange={(e) => updateLine(idx, { unitPrice: e.target.value })}
+                        onBlur={() => {
+                          const n = parsePrice(l.unitPrice);
+                          if (String(n) !== l.unitPrice.trim()) updateLine(idx, { unitPrice: String(n) });
+                        }}
                         className="text-right border-gray-300 bg-white"
                       />
                       <div
