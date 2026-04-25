@@ -101,10 +101,13 @@ test.describe('Member Booking — page load', () => {
   });
 
   test('"Pick more dates" button opens the calendar picker', async ({ page }) => {
-    await page.getByText('Pick more dates').click();
+    // Label switches to "See available dates" when today+tomorrow are both blocked
+    // (e.g. weekend test runs against a Mon–Fri working-days fixture).
+    const trigger = page.getByText(/Pick more dates|See available dates/);
+    await trigger.click();
     await expect(page.locator('[class*="rdp"]').first()).toBeVisible({ timeout: 5_000 });
     await page.getByText('Done').click();
-    await expect(page.getByText('Pick more dates')).toBeVisible();
+    await expect(trigger).toBeVisible();
   });
 });
 
