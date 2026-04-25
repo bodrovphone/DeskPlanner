@@ -5,15 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import { RecurringExpense, Currency } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -25,9 +16,8 @@ import {
   useCreateExpenseCategory,
 } from '@/hooks/use-expenses';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Trash2, Plus, Edit2, Repeat, Loader2, Check, Tag, ChevronsUpDown,
-} from 'lucide-react';
+import { Trash2, Plus, Edit2, Repeat, Loader2, Check, Tag } from 'lucide-react';
+import { CategoryCombobox } from './CategoryCombobox';
 
 interface RecurringExpenseModalProps {
   isOpen: boolean;
@@ -43,8 +33,6 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
   const [dayOfMonth, setDayOfMonth] = useState('1');
   const [isActive, setIsActive] = useState(true);
   const [currency, setCurrency] = useState<Currency>('EUR');
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [categorySearch, setCategorySearch] = useState('');
 
   const { toast } = useToast();
   const { currentOrg } = useOrganization();
@@ -76,7 +64,6 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
     setDayOfMonth('1');
     setIsActive(true);
     setCurrency(currentOrg?.currency || 'EUR');
-    setCategorySearch('');
   };
 
   const handleEdit = (expense: RecurringExpense) => {
@@ -88,37 +75,9 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
     setDayOfMonth(expense.dayOfMonth.toString());
     setIsActive(expense.isActive);
     setCurrency(expense.currency);
-    setCategorySearch('');
   };
 
   const selectedCategoryName = categories.find(c => c.id === categoryId)?.name ?? '';
-
-  const filteredCategories = categories.filter(c =>
-    c.name.toLowerCase().includes(categorySearch.toLowerCase())
-  );
-
-  const showCreateOption =
-    categorySearch.trim().length > 0 &&
-    !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase());
-
-  const handleSelectCategory = (id: string) => {
-    setCategoryId(id);
-    setCategoryOpen(false);
-    setCategorySearch('');
-  };
-
-  const handleCreateCategory = async () => {
-    const name = categorySearch.trim();
-    if (!name) return;
-    try {
-      const created = await createCategory.mutateAsync(name);
-      setCategoryId(created.id);
-      setCategoryOpen(false);
-      setCategorySearch('');
-    } catch {
-      toast({ title: 'Error', description: 'Failed to create category', variant: 'destructive' });
-    }
-  };
 
   const handleSave = async () => {
     const parsedAmount = parseFloat(amount);
@@ -269,59 +228,12 @@ export default function RecurringExpenseModal({ isOpen, onClose }: RecurringExpe
 
             <div>
               <Label className="text-sm font-medium text-gray-700">Category *</Label>
-              <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={categoryOpen}
-                    className="mt-1 w-full justify-between font-normal"
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <Tag className="h-4 w-4 text-gray-500 shrink-0" />
-                      {selectedCategoryName || 'Select category...'}
-                    </span>
-                    <ChevronsUpDown className="h-4 w-4 text-gray-400 shrink-0" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      placeholder="Search or create..."
-                      value={categorySearch}
-                      onValueChange={setCategorySearch}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {showCreateOption ? null : 'No categories found.'}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {filteredCategories.map(cat => (
-                          <CommandItem
-                            key={cat.id}
-                            value={cat.name}
-                            onSelect={() => handleSelectCategory(cat.id)}
-                          >
-                            <Tag className="h-4 w-4 mr-2 text-gray-400" />
-                            {cat.name}
-                            {cat.id === categoryId && <Check className="h-4 w-4 ml-auto text-green-600" />}
-                          </CommandItem>
-                        ))}
-                        {showCreateOption && (
-                          <CommandItem
-                            value={`__create__${categorySearch}`}
-                            onSelect={handleCreateCategory}
-                            className="text-blue-600"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create "{categorySearch.trim()}"
-                          </CommandItem>
-                        )}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <CategoryCombobox
+                value={categoryId}
+                onChange={setCategoryId}
+                categories={categories}
+                onCreateCategory={createCategory.mutateAsync}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
