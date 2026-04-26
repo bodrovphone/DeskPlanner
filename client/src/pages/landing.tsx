@@ -587,7 +587,7 @@ export default function LandingPage() {
         "publisher": {
           "@type": "Organization",
           "name": "OhMyDesk",
-          "url": "https://ohmydesk.app"
+          "url": "https://ohmydesk.app/"
         }
       }) }} />
 
