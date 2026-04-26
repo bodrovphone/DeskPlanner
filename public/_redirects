@@ -15,6 +15,17 @@
 # astro.config makes internal hrefs end with `/`. Without the `/` variant
 # the URL falls through and Cloudflare serves the marketing index.html.
 
+# Marketing pass-through — these MUST come before the /:org/<route> rules
+# below. Without them, paths like /features/members collide with /:org/members
+# (where :org placeholder matches the literal "features"), causing the SPA
+# shell with noindex to be served instead of the marketing feature page.
+# Cloudflare _redirects is first-match — so we claim /features/*, /blog/*,
+# /compare/* up front. Each rule rewrites to itself (no-op) which lets
+# Cloudflare's standard static-file lookup serve the built directory index.
+/features/*   /features/:splat   200
+/blog/*       /blog/:splat       200
+/compare/*    /compare/:splat    200
+
 # /app resolver
 /app          /spa/  200
 /app/         /spa/  200
