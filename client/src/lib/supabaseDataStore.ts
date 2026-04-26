@@ -1150,6 +1150,66 @@ export class SupabaseDataStore implements IDataStore {
     if (error) throw error;
   }
 
+  async bulkCreateClients(
+    clients: Array<
+      Pick<
+        Client,
+        | 'name'
+        | 'email'
+        | 'phone'
+        | 'contact'
+        | 'billingAddress'
+        | 'taxId'
+        | 'vatId'
+        | 'representativeName'
+      >
+    >,
+  ): Promise<{ created: number; failed: number; firstError: string | null }> {
+    if (!this.organizationId) {
+      throw new Error('Organization context required for bulk client import');
+    }
+    if (clients.length === 0) {
+      return { created: 0, failed: 0, firstError: null };
+    }
+
+    const now = new Date().toISOString();
+    const records = clients.map((c) => ({
+      organization_id: this.organizationId,
+      group_id: this.groupId || null,
+      name: c.name,
+      contact: c.contact || null,
+      email: c.email || null,
+      phone: c.phone || null,
+      billing_address: c.billingAddress || null,
+      representative_name: c.representativeName || null,
+      tax_id: c.taxId || null,
+      vat_id: c.vatId || null,
+      flex_active: false,
+      flex_total_days: 0,
+      flex_used_days: 0,
+      created_at: now,
+      updated_at: now,
+    }));
+
+    const CHUNK_SIZE = 100;
+    let created = 0;
+    let failed = 0;
+    let firstError: string | null = null;
+
+    for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+      const chunk = records.slice(i, i + CHUNK_SIZE);
+      const { data, error } = await this.client.from('clients').insert(chunk).select('id');
+      if (error) {
+        failed += chunk.length;
+        if (!firstError) firstError = error.message;
+        continue;
+      }
+      created += data?.length ?? chunk.length;
+    }
+
+    return { created, failed, firstError };
+  }
+
   async getClientById(id: string): Promise<Client | null> {
     const { data, error } = await this.client
       .from('clients')

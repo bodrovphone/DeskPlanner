@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -d docs/wiki ] && { { git diff --name-only HEAD 2>/dev/null; git log --since='1 hour ago' --name-only --pretty=format: 2>/dev/null; } | grep -E '^(client/src/|supabase/(functions|migrations)/|shared/|src/pages/|src/components/|src/data/(changelog|features|competitors)\\.ts)' | head -1 | grep -q . && echo 'WIKI_SYNC_NEEDED: Source code changed this session in client/src, supabase/(functions|migrations), shared, src/pages, src/components, or src/data. Before ending this turn, update the Obsidian vault: (1) append a [YYYY-MM-DD] entry to docs/wiki/log.md summarizing what shipped + the Linear ticket if any; (2) if a feature shipped, update docs/wiki/domains/product/features/<slug>.md (set status: shipped, add ship date); (3) refresh docs/wiki/hot.md so the next session has fresh context. Use absolute dates. Skip silently if changes were trivial (typo fixes, comment-only).'; } || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__supabase__apply_migration|mcp__supabase__deploy_edge_function|mcp__supabase__run_sql_transaction",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f docs/now.md ] && printf '\\n- %s: Supabase change applied via MCP — verify wiki feature page + changelog entry\\n' \"$(date '+%Y-%m-%d %H:%M')\" >> docs/now.md || true"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__linear-server__save_issue|mcp__linear-server__save_comment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f docs/now.md ] && printf '\\n- %s: Linear issue/comment updated — verify wiki feature page reflects new state\\n' \"$(date '+%Y-%m-%d %H:%M')\" >> docs/now.md || true"
+          }
+        ]
+      }
+    ]
+  }
+}

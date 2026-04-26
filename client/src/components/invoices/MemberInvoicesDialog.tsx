@@ -21,7 +21,14 @@ import {
 import { FileText, Loader2, Download, Plus, MoreVertical, Send, CheckCircle2, Ban } from 'lucide-react';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { pdf } from '@react-pdf/renderer';
-import type { Client, Organization, Invoice, InvoiceStatus, PaymentMethodType } from '@shared/schema';
+import type {
+  Client,
+  Organization,
+  Invoice,
+  InvoiceStatus,
+  PaymentMethodType,
+  InvoiceBuyerSnapshot,
+} from '@shared/schema';
 import {
   useClientInvoices,
   useSendInvoice,
@@ -93,6 +100,37 @@ async function renderInvoicePdf(invoice: Invoice, organization: Organization): P
   ).toBlob();
 }
 
+// Returns a refreshed buyer snapshot if any null/empty fields can be
+// filled from the live client, else null (no patch needed). Non-empty
+// snapshot fields are preserved — operators may have customized them.
+function backfillSnapshotFromClient(
+  snap: InvoiceBuyerSnapshot | null,
+  client: Client,
+): InvoiceBuyerSnapshot | null {
+  const current = snap ?? ({ name: client.name } as InvoiceBuyerSnapshot);
+  const next: InvoiceBuyerSnapshot = {
+    name: current.name || client.name,
+    email: current.email || client.email || null,
+    phone: current.phone || client.phone || null,
+    billingAddress: current.billingAddress || client.billingAddress || null,
+    taxId: current.taxId || client.taxId || null,
+    vatId: current.vatId || client.vatId || null,
+    representativeName:
+      current.representativeName || client.representativeName || null,
+    paymentMethodType: current.paymentMethodType || client.paymentMethodType || null,
+  };
+  const changed =
+    next.name !== current.name ||
+    next.email !== current.email ||
+    next.phone !== current.phone ||
+    next.billingAddress !== current.billingAddress ||
+    next.taxId !== current.taxId ||
+    next.vatId !== current.vatId ||
+    next.representativeName !== current.representativeName ||
+    next.paymentMethodType !== current.paymentMethodType;
+  return changed ? next : null;
+}
+
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -150,7 +188,35 @@ export default function MemberInvoicesDialog({
   };
 
   const handleSend = async (invoice: Invoice) => {
-    if (!invoice.buyerSnapshot?.email) {
+    let workingInvoice = invoice;
+
+    // Drafts: backfill any null snapshot fields from the live client record so
+    // operators don't have to re-open the editor just because they added an
+    // email after creating the draft. Non-null snapshot values are preserved
+    // (the operator may have customized them on purpose). Sent/paid/void
+    // invoices stay immutable and are skipped here.
+    if (invoice.status === 'draft' && client) {
+      const refreshed = backfillSnapshotFromClient(invoice.buyerSnapshot, client);
+      if (refreshed) {
+        const { data, error } = await supabaseClient
+          .from('invoices')
+          .update({ buyer_snapshot: refreshed })
+          .eq('id', invoice.id)
+          .select('*')
+          .single();
+        if (error) {
+          toast({
+            title: 'Send failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+        workingInvoice = { ...invoice, buyerSnapshot: data.buyer_snapshot as InvoiceBuyerSnapshot };
+      }
+    }
+
+    if (!workingInvoice.buyerSnapshot?.email) {
       toast({
         title: 'No email on file',
         description: 'Add a contact email to the member profile before sending invoices.',
@@ -158,14 +224,14 @@ export default function MemberInvoicesDialog({
       });
       return;
     }
-    setBusyId(invoice.id);
+    setBusyId(workingInvoice.id);
     try {
-      const blob = await renderInvoicePdf(invoice, organization);
+      const blob = await renderInvoicePdf(workingInvoice, organization);
       const pdfBase64 = await blobToBase64(blob);
-      await sendMutation.mutateAsync({ invoiceId: invoice.id, pdfBase64 });
+      await sendMutation.mutateAsync({ invoiceId: workingInvoice.id, pdfBase64 });
       toast({
         title: 'Invoice sent',
-        description: `Emailed to ${invoice.buyerSnapshot.email}.`,
+        description: `Emailed to ${workingInvoice.buyerSnapshot.email}.`,
       });
     } catch (err) {
       toast({

@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-26',
+    title: 'Bulk import members from a CSV',
+    description:
+      "Bring your existing member list over in one go. On the Members page, click Import, drop in a CSV (or paste it), and OhMyDesk auto-detects which columns are names, emails, phones, billing details, and tax IDs. A preview highlights any rows with errors, flags duplicates against your current members, and shows what will be skipped before you commit. Up to 500 rows at a time — perfect for switching from Google Sheets or Excel without retyping anything.",
+    tags: ['Members', 'Import'],
+  },
+  {
     date: '2026-04-25',
     title: 'Email invoices, mark as paid, and void',
     description:

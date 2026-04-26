@@ -3,7 +3,8 @@ import { useDataStore } from '@/contexts/DataStoreContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Client } from '@shared/schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon, CreditCard, FileText } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, Search, X, Copy, Check, Link as LinkIcon, Package, Play, Snowflake, Infinity as InfinityIcon, CreditCard, FileText, Upload } from 'lucide-react';
+import ImportMembersDialog from '@/components/members/ImportMembersDialog';
 import { DeskBooking, PaymentMethodType } from '@shared/schema';
 import { formatLocalDate } from '@/lib/dateUtils';
 import ReactivationModal from '@/components/members/ReactivationModal';
@@ -181,6 +182,7 @@ export default function MembersPage() {
   // closes the list and opens the editor on the same client.
   const [invoicesListTarget, setInvoicesListTarget] = useState<Client | null>(null);
   const [invoiceEditorTarget, setInvoiceEditorTarget] = useState<Client | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const newNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = formatLocalDate(new Date());
@@ -314,20 +316,37 @@ export default function MembersPage() {
             <span className="text-sm text-gray-400">({localClients.length})</span>
           )}
         </div>
-        <Button
-          onClick={handleAddNew}
-          disabled={addingNew}
-          size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          {addingNew ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <UserPlus className="h-4 w-4 mr-1.5" />
-          )}
-          Add Member
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setImportOpen(true)}
+            size="sm"
+            variant="outline"
+            className="hidden md:inline-flex"
+          >
+            <Upload className="h-4 w-4 mr-1.5" />
+            Import
+          </Button>
+          <Button
+            onClick={handleAddNew}
+            disabled={addingNew}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {addingNew ? (
+              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            ) : (
+              <UserPlus className="h-4 w-4 mr-1.5" />
+            )}
+            Add Member
+          </Button>
+        </div>
       </div>
+
+      <ImportMembersDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        existingClients={localClients}
+      />
 
       {!isLoading && localClients.length > 0 && (
         <div className="relative mb-4">

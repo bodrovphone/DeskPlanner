@@ -61,6 +61,21 @@ export interface IDataStore {
   getClients?(): Promise<Client[]>;
   searchClients?(query: string): Promise<Client[]>;
   saveClient?(client: Client): Promise<Client>;
+  bulkCreateClients?(
+    clients: Array<
+      Pick<
+        Client,
+        | 'name'
+        | 'email'
+        | 'phone'
+        | 'contact'
+        | 'billingAddress'
+        | 'taxId'
+        | 'vatId'
+        | 'representativeName'
+      >
+    >,
+  ): Promise<{ created: number; failed: number; firstError: string | null }>;
   deleteClient?(id: string): Promise<void>;
   getClientById?(id: string): Promise<Client | null>;
   deductFlexDay?(clientId: string): Promise<Client>;
