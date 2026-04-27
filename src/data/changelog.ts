@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-27',
+    title: 'New blog post: Nexudus alternatives for small spaces',
+    description:
+      "An honest 2026 comparison of OhMyDesk, OfficeRnD, Cobot, and Spacebring for operators who run 5-50 desks and don't need enterprise-grade tooling. Includes a quick-comparison table, a section per alternative, and an honest 'OhMyDesk is the right fit when…' filter. Live at /blog/nexudus-alternatives-2026/.",
+    tags: ['Blog', 'Comparisons'],
+  },
+  {
     date: '2026-04-26',
     title: 'Bulk import members from a CSV',
     description:
