@@ -17,6 +17,13 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     date: '2026-04-27',
+    title: 'Local landing page: Coworking in Burgas',
+    description:
+      "A dedicated landing page at /coworking-burgas/ for digital nomads searching for a coworking space in Burgas, Bulgaria — and for operators running spaces in BG who want the software side. Features Codeburg (the 8-desk space behind OhMyDesk), why Burgas works for remote workers, and a soft pointer to OhMyDesk for other BG operators. LocalBusiness schema included.",
+    tags: ['Marketing', 'Local'],
+  },
+  {
+    date: '2026-04-27',
     title: 'New blog post: Nexudus alternatives for small spaces',
     description:
       "An honest 2026 comparison of OhMyDesk, OfficeRnD, Cobot, and Spacebring for operators who run 5-50 desks and don't need enterprise-grade tooling. Includes a quick-comparison table, a section per alternative, and an honest 'OhMyDesk is the right fit when…' filter. Live at /blog/nexudus-alternatives-2026/.",

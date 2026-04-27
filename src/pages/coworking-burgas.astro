@@ -1,0 +1,388 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketingNav from '../components/MarketingNav.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import '../styles/marketing.css';
+
+const canonical = 'https://ohmydesk.app/coworking-burgas/';
+
+// LocalBusiness schema for Codeburg — the anchor coworking space behind OhMyDesk.
+// Address + opening hours intentionally omitted until verified; codeburg.bg is the
+// canonical pointer for current details. Adding fake/unverified location data would
+// hurt local SEO more than help.
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': 'https://codeburg.bg/#localbusiness',
+  name: 'Codeburg',
+  url: 'https://codeburg.bg',
+  description: 'Independent 8-desk coworking space in Burgas, Bulgaria. Quiet, fast internet, full waiting list. Run by Alex Bodrov.',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Burgas',
+    addressCountry: 'BG',
+  },
+  areaServed: {
+    '@type': 'City',
+    name: 'Burgas',
+  },
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'OhMyDesk',
+    url: 'https://ohmydesk.app/',
+  },
+  sameAs: ['https://codeburg.bg'],
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'OhMyDesk', item: 'https://ohmydesk.app/' },
+    { '@type': 'ListItem', position: 2, name: 'Coworking in Burgas', item: canonical },
+  ],
+};
+---
+
+<BaseLayout
+  title="Coworking in Burgas — Codeburg & the OhMyDesk Story (2026)"
+  description="Looking for a coworking space in Burgas, Bulgaria? Codeburg is an 8-desk independent space that's also the testbed for OhMyDesk, the coworking software. Honest local guide for digital nomads and operators."
+  canonical={canonical}
+  defaultStructuredData={false}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
+  <MarketingNav />
+  <main>
+
+    <section class="hero">
+      <span class="eyebrow-chip">Burgas, Bulgaria</span>
+      <h1>Coworking in Burgas</h1>
+      <p class="lede">
+        Burgas is the Black Sea city most digital nomads still haven't put on their map —
+        a 230k-population coastal town with cheap rent, fast internet, and weather that
+        beats Sofia from April through October. The dedicated coworking scene is small
+        (which is the point). Here's what's actually here.
+      </p>
+    </section>
+
+    <!-- Codeburg — the anchor space -->
+    <section class="space-card">
+      <header>
+        <span class="card-eyebrow">Featured space</span>
+        <h2>Codeburg</h2>
+        <p class="space-tagline">8 desks · independent · full waiting list</p>
+      </header>
+
+      <p>
+        Codeburg is the coworking space I built for myself in 2025 after working from
+        cafés got old. Eight desks, one room, fast internet, free coffee, no foosball
+        table. Within seven months it was fully booked with a waiting list. Most members
+        are remote engineers and product folks — quiet by default, social by request.
+      </p>
+
+      <p>
+        It's also the production testbed for <a href="/">OhMyDesk</a>, the coworking
+        management software you're on right now. Every feature ships at Codeburg first.
+        If a member can't book a desk on a Saturday morning, I find out before lunch.
+      </p>
+
+      <ul class="quick-facts">
+        <li><strong>Location:</strong> Burgas, Bulgaria</li>
+        <li><strong>Capacity:</strong> 8 desks (dedicated + flex)</li>
+        <li><strong>Open since:</strong> early 2025</li>
+        <li><strong>Run by:</strong> Alex Bodrov (founder of OhMyDesk)</li>
+        <li><strong>Status:</strong> Full — waiting list active</li>
+      </ul>
+
+      <p class="space-cta">
+        Live pricing, hours, address, and the waiting list signup live at the official
+        Codeburg site:&nbsp;
+        <a href="https://codeburg.bg" target="_blank" rel="noopener noreferrer">codeburg.bg →</a>
+      </p>
+    </section>
+
+    <!-- Why Burgas — local context -->
+    <section class="cmp-section">
+      <h2>Why Burgas works for remote workers</h2>
+      <p>
+        A few honest reasons people end up working from Burgas (and why we built a
+        coworking space for it instead of moving to Sofia):
+      </p>
+      <ul class="bullet-list">
+        <li><strong>Cost.</strong> Apartment rent is roughly half of Sofia's. Coffee is
+          ~3 BGN. A working lunch is under 15 BGN.</li>
+        <li><strong>Internet.</strong> Bulgaria consistently ranks top-15 globally for
+          fixed-line speed. 1 Gbit/s fibre is widely available and cheap.</li>
+        <li><strong>Climate.</strong> 300+ sunny days a year. The Black Sea moderates
+          summers; winters are mild compared to inland Bulgaria.</li>
+        <li><strong>EU + non-Euro.</strong> Bulgaria is in the EU with full freedom of
+          movement. Until very recently, the lev (BGN) made cost-of-living noticeably
+          cheaper than the eurozone — Bulgaria has now adopted EUR but local prices
+          haven't caught up yet.</li>
+        <li><strong>Underrated.</strong> The "digital nomad in Eastern Europe" map still
+          stops at Sofia, Belgrade, Tbilisi, Lisbon. Burgas is quieter on purpose.</li>
+      </ul>
+    </section>
+
+    <!-- For operators -->
+    <section class="operator-card">
+      <h2>Run a coworking space in Burgas (or anywhere in BG)?</h2>
+      <p>
+        If you're operating a coworking space — in Burgas, Sofia, Plovdiv, Varna, or
+        anywhere else — and you're tired of running it on a spreadsheet, OhMyDesk
+        is the software side of what Codeburg uses every day. Built by an operator,
+        for operators.
+      </p>
+      <p>
+        Independent spaces under 50 desks pay $18/month flat. Three months free, no
+        credit card, no demo required.
+      </p>
+      <div class="operator-cta-row">
+        <a href="/pricing/" class="cta-btn cta-btn--ghost">See pricing →</a>
+        <a href="/compare/" class="cta-btn cta-btn--ghost">Compare to Nexudus, Cobot, OfficeRnD →</a>
+        <a href="/signup/" class="cta-btn">Start free trial</a>
+      </div>
+    </section>
+
+    <!-- Honest disclosure -->
+    <p class="disclosure">
+      This page is editorial — I run Codeburg and built OhMyDesk, so I'm not a
+      neutral local-guide site. Last verified: April 27, 2026. If a fact about Burgas or
+      Codeburg here is out of date, email
+      <a href="mailto:hello@ohmydesk.app">hello@ohmydesk.app</a>.
+    </p>
+
+    <MarketingFooter />
+  </main>
+</BaseLayout>
+
+<style is:global>
+  main {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 96px 0 56px;
+    max-width: 760px;
+  }
+  .hero .eyebrow-chip {
+    display: inline-block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    padding: 4px 14px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 60px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0 0 24px;
+    letter-spacing: -1px;
+  }
+  .hero .lede {
+    max-width: 680px;
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Featured space card */
+  .space-card {
+    margin: 32px 0 64px;
+    padding: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  @media (max-width: 640px) {
+    .space-card { padding: 24px; }
+  }
+  .space-card .card-eyebrow {
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--green);
+  }
+  .space-card h2 {
+    font-size: clamp(28px, 4vw, 36px);
+    font-weight: 700;
+    margin: 8px 0 6px;
+    letter-spacing: -0.4px;
+  }
+  .space-card .space-tagline {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+    letter-spacing: 0.3px;
+  }
+  .space-card p {
+    font-size: 16px;
+    color: var(--text-primary);
+    line-height: 1.65;
+    margin: 0 0 16px;
+  }
+  .space-card a {
+    color: var(--green);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  .space-card a:hover { color: var(--green-dim); }
+  .space-card .quick-facts {
+    margin: 24px 0;
+    padding: 20px 24px;
+    background: rgba(52, 211, 153, 0.04);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    list-style: none;
+  }
+  .space-card .quick-facts li {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+  .space-card .quick-facts strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: inline-block;
+    min-width: 110px;
+  }
+  .space-card .space-cta {
+    margin: 24px 0 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  /* Generic content section */
+  .cmp-section {
+    margin-bottom: 64px;
+    max-width: 760px;
+  }
+  .cmp-section h2 {
+    font-size: clamp(24px, 3.5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin: 0 0 20px;
+  }
+  .cmp-section p {
+    font-size: 16px;
+    color: var(--text-primary);
+    line-height: 1.65;
+    margin: 0 0 16px;
+  }
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bullet-list li {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-left: 22px;
+    position: relative;
+  }
+  .bullet-list li::before {
+    content: '·';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.4;
+  }
+  .bullet-list strong { color: var(--text-secondary); font-weight: 600; }
+
+  /* Operator CTA card */
+  .operator-card {
+    margin: 0 0 56px;
+    padding: 36px;
+    background: linear-gradient(180deg, rgba(52,211,153,0.06) 0%, transparent 100%);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 14px;
+  }
+  @media (max-width: 640px) {
+    .operator-card { padding: 24px; }
+  }
+  .operator-card h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 700;
+    margin: 0 0 16px;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+  }
+  .operator-card p {
+    font-size: 16px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 0 0 14px;
+  }
+  .operator-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .cta-btn {
+    display: inline-block;
+    padding: 12px 22px;
+    background: var(--green);
+    color: var(--bg);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cta-btn:hover {
+    background: var(--green-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--green-glow);
+  }
+  .cta-btn--ghost {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    font-weight: 600;
+  }
+  .cta-btn--ghost:hover {
+    background: rgba(52, 211, 153, 0.08);
+    border-color: var(--green);
+    color: var(--green);
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Disclosure */
+  .disclosure {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0 0 64px;
+    text-align: center;
+  }
+  .disclosure a {
+    color: var(--green);
+  }
+  .disclosure a:hover { text-decoration: underline; }
+</style>
