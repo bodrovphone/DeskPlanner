@@ -69,8 +69,8 @@ export const competitors: Competitor[] = [
       'Cobot has a mature member-facing portal with community tools. OhMyDesk focuses on the operator workflow.',
     ],
     pricingSource: `Cobot public pricing page, ${VERIFIED}`,
-    metaTitle: 'Cobot Alternative — OhMyDesk vs Cobot Pricing & Features',
-    metaDescription: 'Honest comparison of OhMyDesk vs Cobot. $18/mo flat with zero booking fees, vs Cobot\'s per-member pricing plus 3-9% processing fees. Same core features, a fraction of the cost.',
+    metaTitle: 'OhMyDesk vs Cobot — pricing, features, who it\'s for (2026)',
+    metaDescription: 'Cobot starts €54/mo + 3-9% booking fees and grows per member. OhMyDesk is $18/mo flat, zero fees. Best for 10-50 desk independent spaces (2026).',
   },
   {
     slug: 'officernd',
@@ -106,8 +106,8 @@ export const competitors: Competitor[] = [
       'OfficeRnD\'s Growth Hub has dynamic pricing and promo codes. OhMyDesk doesn\'t — yet.',
     ],
     pricingSource: `OfficeRnD public pricing page, ${VERIFIED} (no prices published — estimates sourced from their site)`,
-    metaTitle: 'OfficeRnD Alternative — OhMyDesk vs OfficeRnD',
-    metaDescription: 'OhMyDesk vs OfficeRnD. $18/mo self-serve with published pricing, vs OfficeRnD\'s demo-gated quotes estimated at $149+/mo. No sales call required.',
+    metaTitle: 'OhMyDesk vs OfficeRnD: pricing, features compared (2026)',
+    metaDescription: 'OfficeRnD is demo-gated at ~$149+/mo, built for chains. OhMyDesk is $18/mo with published pricing, self-serve, no demo. Side-by-side comparison (2026).',
   },
   {
     slug: 'nexudus',
@@ -143,8 +143,8 @@ export const competitors: Competitor[] = [
       'Nexudus has ledger-grade accounting with ACH and direct-debit. OhMyDesk integrates with Stripe only.',
     ],
     pricingSource: `Nexudus public pricing page, ${VERIFIED}`,
-    metaTitle: 'Nexudus Alternative — OhMyDesk vs Nexudus',
-    metaDescription: 'OhMyDesk vs Nexudus. $18/mo for independent spaces, vs Nexudus starting at $150/mo built for enterprise coworking chains. Core booking & billing, none of the enterprise complexity.',
+    metaTitle: 'OhMyDesk vs Nexudus — pricing, features, who it\'s for (2026)',
+    metaDescription: 'Nexudus starts $150/mo, built for 100+ desk operators. OhMyDesk is $18/mo, built for 5-50 desk independent spaces. Pricing, features, side-by-side (2026).',
   },
   {
     slug: 'spacebring',
@@ -179,8 +179,8 @@ export const competitors: Competitor[] = [
       'Spacebring has 10+ interface languages with AI translation. OhMyDesk is English-only for now.',
     ],
     pricingSource: `Spacebring public pricing page, ${VERIFIED}`,
-    metaTitle: 'Spacebring Alternative — OhMyDesk vs Spacebring',
-    metaDescription: 'OhMyDesk vs Spacebring. $18/mo month-to-month, vs Spacebring\'s $187/mo with 6-month commitment and stacked add-ons. Simple price, no minimums.',
+    metaTitle: 'OhMyDesk vs Spacebring: pricing, features compared (2026)',
+    metaDescription: 'Spacebring is $187/mo with a 6-month commitment and stacked add-ons. OhMyDesk is $18/mo, month-to-month, no minimums. Real pricing, real features (2026).',
   },
   {
     slug: 'archie',
@@ -214,8 +214,8 @@ export const competitors: Competitor[] = [
       'Archie has won G2 awards for usability. OhMyDesk is young and rough in places.',
     ],
     pricingSource: `Archie public pricing page, ${VERIFIED}`,
-    metaTitle: 'Archie Alternative — OhMyDesk vs Archie for Coworking',
-    metaDescription: 'OhMyDesk vs Archie. Archie is built for corporate hot-desking with Microsoft Teams; OhMyDesk is built for independent coworking with member billing, flex plans, and public booking.',
+    metaTitle: 'OhMyDesk vs Archie — pricing, features, who it\'s for (2026)',
+    metaDescription: 'Archie is $165/mo, built for corporate hot-desking on Microsoft Teams. OhMyDesk is $18/mo with member billing, flex plans, and public booking (2026).',
   },
 ];
 

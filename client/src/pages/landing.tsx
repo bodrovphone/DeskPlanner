@@ -922,7 +922,7 @@ export default function LandingPage() {
             <PricingCard key={tier.name} tier={tier} index={i} />
           ))}
         </div>
-        <div style={{ textAlign: 'center', marginTop: 40 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 40 }}>
           <a
             href="/pricing/"
             style={{
@@ -940,6 +940,24 @@ export default function LandingPage() {
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${T.green}33`; }}
           >
             See full pricing details &amp; FAQ →
+          </a>
+          <a
+            href="/compare/"
+            style={{
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              fontSize: 13,
+              color: T.green,
+              textDecoration: 'none',
+              padding: '10px 20px',
+              border: `1px solid ${T.green}33`,
+              borderRadius: 6,
+              transition: 'all 0.2s ease',
+              display: 'inline-block',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.greenFaint; e.currentTarget.style.borderColor = T.green; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${T.green}33`; }}
+          >
+            Compare to Nexudus, Cobot, OfficeRnD →
           </a>
         </div>
       </section>
