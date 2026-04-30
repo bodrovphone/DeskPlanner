@@ -18,7 +18,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Organization } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
-import { useManagerCalendarToken, useRegenerateManagerCalendarToken, buildCalendarFeedUrl, buildCalendarWebcalUrl } from '@/hooks/use-calendar-sync';
+import { useManagerCalendarToken, useRegenerateManagerCalendarToken, buildCalendarFeedUrl, buildCalendarWebcalUrl, type CalendarFeedMode } from '@/hooks/use-calendar-sync';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import telegramIcon from '@/assets/telegram.svg?url';
 import viberIcon from '@/assets/viber.svg?url';
 import whatsappIcon from '@/assets/whatsapp.svg?url';
@@ -2342,9 +2343,10 @@ function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }
   const regenerate = useRegenerateManagerCalendarToken();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<CalendarFeedMode>('arrivals');
 
-  const url = token ? buildCalendarFeedUrl(token) : null;
-  const webcalUrl = token ? buildCalendarWebcalUrl(token) : null;
+  const url = token ? buildCalendarFeedUrl(token, mode) : null;
+  const webcalUrl = token ? buildCalendarWebcalUrl(token, mode) : null;
 
   const handleCopy = async () => {
     if (!url) return;
@@ -2383,9 +2385,8 @@ function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }
           <CardTitle>Calendar sync</CardTitle>
         </div>
         <CardDescription>
-          Subscribe to a live read-only feed of all bookings at <strong>{orgName}</strong> in
-          Google Calendar, Apple Calendar, Outlook, or any iCal-compatible app. Updates roughly
-          every hour.
+          Subscribe to a live read-only feed of <strong>{orgName}</strong> bookings in Google
+          Calendar, Apple Calendar, Outlook, or any iCal-compatible app. Updates roughly every hour.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col flex-1 space-y-4">
@@ -2395,6 +2396,30 @@ function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }
           <p className="text-sm text-gray-500">No calendar token yet — try refreshing.</p>
         ) : (
           <>
+            <div>
+              <Label className="text-xs uppercase tracking-wide text-gray-500">What to show</Label>
+              <RadioGroup
+                value={mode}
+                onValueChange={(v) => setMode(v as CalendarFeedMode)}
+                className="mt-2 space-y-2"
+              >
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <RadioGroupItem value="arrivals" id="cal-mode-arrivals" className="mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Arrivals & departures only</p>
+                    <p className="text-xs text-gray-500">Two events per booking: <span className="text-emerald-700">→ arrives</span> on the first day, <span className="text-rose-700">✕ ends</span> on the last day. Recommended.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <RadioGroupItem value="all" id="cal-mode-all" className="mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">All booked days</p>
+                    <p className="text-xs text-gray-500">One event per person per booked day. Useful for full coverage but cluttered.</p>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
+
             <div>
               <Label className="text-xs uppercase tracking-wide text-gray-500">Your iCal URL</Label>
               <div className="mt-1 flex items-center gap-2">

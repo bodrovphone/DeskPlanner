@@ -4,12 +4,16 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SUPABASE_FUNCTIONS_URL = 'https://rvvunwqizlzlqrhmmera.supabase.co/functions/v1/calendar-feed';
 
-export function buildCalendarFeedUrl(token: string): string {
-  return `${SUPABASE_FUNCTIONS_URL}?token=${token}`;
+export type CalendarFeedMode = 'arrivals' | 'all';
+
+export function buildCalendarFeedUrl(token: string, mode: CalendarFeedMode = 'arrivals'): string {
+  const base = `${SUPABASE_FUNCTIONS_URL}?token=${token}`;
+  // 'arrivals' is the server default; only append when overriding.
+  return mode === 'all' ? `${base}&mode=all` : base;
 }
 
-export function buildCalendarWebcalUrl(token: string): string {
-  return buildCalendarFeedUrl(token).replace(/^https:/, 'webcal:');
+export function buildCalendarWebcalUrl(token: string, mode: CalendarFeedMode = 'arrivals'): string {
+  return buildCalendarFeedUrl(token, mode).replace(/^https:/, 'webcal:');
 }
 
 export function useManagerCalendarToken(orgId: string | undefined) {

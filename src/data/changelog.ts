@@ -17,9 +17,9 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     date: '2026-04-30',
-    title: 'Calendar sync — see all bookings in Google Calendar, Outlook, or Apple Calendar',
+    title: 'Calendar sync — arrivals & departures in Google, Outlook, or Apple Calendar',
     description:
-      "Subscribe to a live read-only feed of every booking at your space from any calendar app. Settings → Integrations → Calendar sync gives you a personal iCal URL — paste it into Google Calendar's 'From URL', click it for instant Apple Calendar subscription, or add it as a web calendar in Outlook. Updates every hour automatically. Includes both desk bookings (all-day) and meeting room reservations (timed). Token is rotatable from the Advanced section if you ever need to revoke access.",
+      "Subscribe your personal calendar to a live feed of bookings at your space. Default \"Arrivals & departures\" mode collapses each booking run into two markers — → arrives on day one, ✕ ends on the last day — so a 30-day plan is two calendar entries, not 30 stacked banners. Toggle to \"All booked days\" if you want the full grid. Meeting room reservations always come through as proper time-bound events. Updates every hour automatically; token rotatable from Advanced.",
     tags: ['Integrations', 'Calendar', 'Google Calendar', 'Outlook', 'Apple Calendar'],
   },
   {
