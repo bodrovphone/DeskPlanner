@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Organization } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
+import { useManagerCalendarToken, useRegenerateManagerCalendarToken, buildCalendarFeedUrl, buildCalendarWebcalUrl } from '@/hooks/use-calendar-sync';
 import telegramIcon from '@/assets/telegram.svg?url';
 import viberIcon from '@/assets/viber.svg?url';
 import whatsappIcon from '@/assets/whatsapp.svg?url';
@@ -2333,12 +2334,158 @@ const COMING_SOON_INTEGRATIONS = [
     description: 'Get booking notifications and daily summaries delivered straight to your Slack channel.',
     svgPath: 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.527 2.527 0 0 1 2.52-2.52h6.315A2.528 2.528 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z',
   },
-  {
-    name: 'Google Calendar',
-    description: "Sync all desk bookings to Google Calendar so your team always knows who's in.",
-    svgPath: 'M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM0 5.684v12.632h5.684V5.684H0zM5.684 0v5.684h12.632V0H5.684zM18.316 0v5.684H24V0h-5.684zM0 0v5.684h5.684V0H0zM0 18.316V24h5.684v-5.684H0zM18.316 18.316V24H24v-5.684h-5.684z',
-  },
 ];
+
+function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }) {
+  const { toast } = useToast();
+  const { data: token, isLoading } = useManagerCalendarToken(orgId);
+  const regenerate = useRegenerateManagerCalendarToken();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const url = token ? buildCalendarFeedUrl(token) : null;
+  const webcalUrl = token ? buildCalendarWebcalUrl(token) : null;
+
+  const handleCopy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast({ title: 'Copied', description: 'Calendar feed URL copied to clipboard.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Select and copy manually.', variant: 'destructive' });
+    }
+  };
+
+  const handleRegenerate = () => {
+    regenerate.mutate(
+      { orgId },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'New URL generated',
+            description: 'The old URL is now invalid. Re-subscribe in your calendar app.',
+          });
+        },
+        onError: () => {
+          toast({ title: 'Failed', description: 'Could not rotate the token.', variant: 'destructive' });
+        },
+      },
+    );
+  };
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-emerald-600" />
+          <CardTitle>Calendar sync</CardTitle>
+        </div>
+        <CardDescription>
+          Subscribe to a live read-only feed of all bookings at <strong>{orgName}</strong> in
+          Google Calendar, Apple Calendar, Outlook, or any iCal-compatible app. Updates roughly
+          every hour.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1 space-y-4">
+        {isLoading ? (
+          <p className="text-sm text-gray-500">Loading…</p>
+        ) : !url ? (
+          <p className="text-sm text-gray-500">No calendar token yet — try refreshing.</p>
+        ) : (
+          <>
+            <div>
+              <Label className="text-xs uppercase tracking-wide text-gray-500">Your iCal URL</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Input readOnly value={url} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+                <Button type="button" variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Keep this URL private. Anyone with the link can read your bookings.</p>
+            </div>
+
+            <details className="text-sm">
+              <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
+                How to subscribe →
+              </summary>
+              <div className="mt-3 space-y-3 text-sm text-gray-700">
+                <div>
+                  <p className="font-semibold">Google Calendar</p>
+                  <ol className="list-decimal pl-5 text-gray-600 space-y-0.5">
+                    <li>Open Google Calendar on the web</li>
+                    <li>Left sidebar → <em>Other calendars</em> → <em>+</em> → <em>From URL</em></li>
+                    <li>Paste the URL above and click <em>Add calendar</em></li>
+                  </ol>
+                </div>
+                <div>
+                  <p className="font-semibold">Apple Calendar</p>
+                  <ol className="list-decimal pl-5 text-gray-600 space-y-0.5">
+                    <li>
+                      <a href={webcalUrl ?? '#'} className="text-emerald-700 underline">
+                        Click here to subscribe directly
+                      </a>{' '}
+                      (or open <code className="text-xs">webcal://</code> link below)
+                    </li>
+                    <li>Or: Calendar → <em>File</em> → <em>New Calendar Subscription</em> → paste URL</li>
+                  </ol>
+                </div>
+                <div>
+                  <p className="font-semibold">Outlook (web / Microsoft 365)</p>
+                  <ol className="list-decimal pl-5 text-gray-600 space-y-0.5">
+                    <li>Outlook → Calendar → <em>Add calendar</em> → <em>Subscribe from web</em></li>
+                    <li>Paste the URL above and name the calendar</li>
+                  </ol>
+                </div>
+                <div>
+                  <p className="font-semibold">Other apps (Thunderbird, Fastmail, etc.)</p>
+                  <p className="text-gray-600">Use the URL above as a remote/network calendar (CalDAV-compatible apps may also accept it).</p>
+                </div>
+              </div>
+            </details>
+
+            <div className="mt-auto pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+              >
+                <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                Advanced
+              </button>
+              {showAdvanced && (
+                <div className="mt-3">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" disabled={regenerate.isPending}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Regenerate URL
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Regenerate the calendar URL?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Your current URL will stop working immediately. Any calendar app already
+                          subscribed will need to be re-pointed at the new URL.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRegenerate}>Regenerate</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function SettingsIntegrationsPage() {
   const { currentOrg, currentRole } = useOrganization();
@@ -2356,6 +2503,7 @@ export function SettingsIntegrationsPage() {
           maxDaysAhead={currentOrg.publicBookingMaxDaysAhead}
         />
         <StripeIntegrationCard org={currentOrg} isAdmin={isAdmin} />
+        <CalendarSyncCard orgId={currentOrg.id} orgName={currentOrg.name} />
         {COMING_SOON_INTEGRATIONS.map((item) => (
           <ComingSoonCard key={item.name} {...item} />
         ))}

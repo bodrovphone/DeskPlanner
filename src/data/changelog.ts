@@ -16,6 +16,13 @@ export interface ChangelogEntry {
  */
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-30',
+    title: 'Calendar sync — see all bookings in Google Calendar, Outlook, or Apple Calendar',
+    description:
+      "Subscribe to a live read-only feed of every booking at your space from any calendar app. Settings → Integrations → Calendar sync gives you a personal iCal URL — paste it into Google Calendar's 'From URL', click it for instant Apple Calendar subscription, or add it as a web calendar in Outlook. Updates every hour automatically. Includes both desk bookings (all-day) and meeting room reservations (timed). Token is rotatable from the Advanced section if you ever need to revoke access.",
+    tags: ['Integrations', 'Calendar', 'Google Calendar', 'Outlook', 'Apple Calendar'],
+  },
+  {
     date: '2026-04-27',
     title: 'New blog post: Nexudus alternatives for small spaces',
     description:
