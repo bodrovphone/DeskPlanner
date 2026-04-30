@@ -19,7 +19,7 @@ export const changelog: ChangelogEntry[] = [
     date: '2026-04-30',
     title: 'Calendar sync — arrivals & departures in Google, Outlook, or Apple Calendar',
     description:
-      "Subscribe your personal calendar to a live feed of bookings at your space. Default \"Arrivals & departures\" mode collapses each booking run into two markers — → arrives on day one, ✕ ends on the last day — so a 30-day plan is two calendar entries, not 30 stacked banners. Toggle to \"All booked days\" if you want the full grid. Meeting room reservations always come through as proper time-bound events. Updates every hour automatically; token rotatable from Advanced.",
+      "Subscribe your personal calendar to a live feed of bookings at your space. Titles are short and scannable: [ARRIVAL] - Alexey Safonov on day one, [ENDS] - Alexey Safonov on the last day. Full details (full name, plan, desk, run dates, space) live in the event body. Events are marked transparent so they don't block your free/busy availability. Toggle between \"Arrivals & departures only\" (default) and \"All booked days\" in Settings. Optional reminders: enable a notification with your preferred lead time (15 min to 2 days before). Token rotatable from Advanced.",
     tags: ['Integrations', 'Calendar', 'Google Calendar', 'Outlook', 'Apple Calendar'],
   },
   {

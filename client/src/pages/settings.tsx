@@ -18,8 +18,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Organization } from '@shared/schema';
 import { currencySymbols } from '@/lib/settings';
 import { useTeamMembersWithEmails, useGroupTeamMembers, useInviteManager, useRemoveManager } from '@/hooks/use-team-members';
-import { useManagerCalendarToken, useRegenerateManagerCalendarToken, buildCalendarFeedUrl, buildCalendarWebcalUrl, type CalendarFeedMode } from '@/hooks/use-calendar-sync';
+import { useManagerCalendarSettings, useRegenerateManagerCalendarToken, useUpdateManagerCalendarAlarm, buildCalendarFeedUrl, buildCalendarWebcalUrl, type CalendarFeedMode } from '@/hooks/use-calendar-sync';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import telegramIcon from '@/assets/telegram.svg?url';
 import viberIcon from '@/assets/viber.svg?url';
 import whatsappIcon from '@/assets/whatsapp.svg?url';
@@ -2337,16 +2338,47 @@ const COMING_SOON_INTEGRATIONS = [
   },
 ];
 
+const ALARM_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: 'At event start' },
+  { value: 15, label: '15 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 720, label: '12 hours before' },
+  { value: 1440, label: '1 day before' },
+  { value: 2880, label: '2 days before' },
+];
+
 function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }) {
   const { toast } = useToast();
-  const { data: token, isLoading } = useManagerCalendarToken(orgId);
+  const { data: settings, isLoading } = useManagerCalendarSettings(orgId);
   const regenerate = useRegenerateManagerCalendarToken();
+  const updateAlarm = useUpdateManagerCalendarAlarm();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<CalendarFeedMode>('arrivals');
 
+  const token = settings?.token ?? null;
   const url = token ? buildCalendarFeedUrl(token, mode) : null;
   const webcalUrl = token ? buildCalendarWebcalUrl(token, mode) : null;
+
+  const handleAlarmEnabledChange = (enabled: boolean) => {
+    if (!settings) return;
+    updateAlarm.mutate(
+      { orgId, enabled, minutesBefore: settings.alarmMinutesBefore },
+      {
+        onError: () => toast({ title: 'Failed', description: 'Could not save reminder setting.', variant: 'destructive' }),
+      },
+    );
+  };
+
+  const handleAlarmTimeChange = (minutesStr: string) => {
+    if (!settings) return;
+    updateAlarm.mutate(
+      { orgId, enabled: settings.alarmEnabled, minutesBefore: Number(minutesStr) },
+      {
+        onError: () => toast({ title: 'Failed', description: 'Could not save reminder time.', variant: 'destructive' }),
+      },
+    );
+  };
 
   const handleCopy = async () => {
     if (!url) return;
@@ -2419,6 +2451,42 @@ function CalendarSyncCard({ orgId, orgName }: { orgId: string; orgName: string }
                 </label>
               </RadioGroup>
             </div>
+
+            {settings && (
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-gray-500">Reminders</Label>
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-md border bg-gray-50 px-3 py-2">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Notify me before each event</p>
+                    <p className="text-xs text-gray-500">Adds a calendar alert to every arrival, departure, and meeting room booking.</p>
+                  </div>
+                  <Switch
+                    checked={settings.alarmEnabled}
+                    onCheckedChange={handleAlarmEnabledChange}
+                    disabled={updateAlarm.isPending}
+                  />
+                </div>
+                {settings.alarmEnabled && (
+                  <div className="mt-2">
+                    <Select
+                      value={String(settings.alarmMinutesBefore)}
+                      onValueChange={handleAlarmTimeChange}
+                      disabled={updateAlarm.isPending}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ALARM_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-gray-500">Re-subscribe in your calendar app to pick up reminder changes.</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <Label className="text-xs uppercase tracking-wide text-gray-500">Your iCal URL</Label>
