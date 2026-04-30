@@ -139,6 +139,7 @@ const features = [
   { icon: Shield, title: 'Multi-Room Control', desc: 'Configure unlimited rooms and desks to mirror your physical layout. One dashboard.' },
   { icon: UserRoundSearch, title: 'Member Management', desc: 'Persistent member records with autocomplete. Track contacts, visit history, and manage your community.' },
   { icon: Package, title: 'Flex Day Packages', desc: 'Sell day packages (e.g. 10 days for \u20ac80). Members self-book via personal link. Balance tracked automatically.' },
+  { icon: Calendar, title: 'Calendar Sync', desc: 'Subscribe Google Calendar, Outlook, or Apple Calendar to a live feed of your space. Arrivals and departures show up where you already work.' },
 ];
 
 const steps = [

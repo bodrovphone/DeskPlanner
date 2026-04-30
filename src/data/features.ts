@@ -13,6 +13,7 @@ import waitingListShot from '../assets/screenshots/waiting-list.png';
 import notificationsShot from '../assets/screenshots/notifications.png';
 import tgNotificationShot from '../assets/screenshots/tg-booking-notification.png';
 import multiLocationsShot from '../assets/screenshots/multi-locations.png';
+import calendarSyncShot from '../assets/screenshots/calendar-sync.png';
 
 export interface Feature {
   slug: string;
@@ -233,6 +234,23 @@ export const features: Feature[] = [
       { src: notificationsShot, alt: 'In-app notification settings showing per-event toggles' },
       { src: tgNotificationShot, alt: 'Example Telegram notification when a new booking comes in' },
     ],
+  },
+  {
+    slug: 'calendar-sync',
+    eyebrow: 'Calendar sync',
+    title: 'Subscribe Google, Outlook, and Apple Calendar to your space',
+    quickAnswer: 'Each manager gets a private iCal feed URL. Paste it into any calendar app and bookings appear as live events. Default mode shows just arrivals and departures, so a 30-day plan is two calendar entries — not 30 banners.',
+    intro:
+      'Subscribe your personal calendar to a live read-only feed of bookings at your space. Works with Google Calendar, Outlook, Apple Calendar, Thunderbird — anything that speaks iCal. Updates every hour automatically. Choose between "arrivals & departures only" (recommended) and "all booked days" with one toggle.',
+    bullets: [
+      'One private iCal URL per manager — paste into Google Calendar, click for one-tap Apple Calendar subscribe, or add as a web calendar in Outlook',
+      'Compact titles ([ARRIVAL] - Alexey Safo…, [ENDS] - Egor) so the feed stays scannable in grid views; full details (full name, plan, desk, run dates) live in the event body',
+      'Two modes: arrivals & departures only (default) collapses each booking run into 2 markers; all booked days mode for full coverage',
+      'Events are marked transparent — they never block your free/busy availability for meeting invites',
+      'Optional reminders: enable a notification 15 minutes to 2 days before each event with one toggle in Settings',
+      'Token rotation in one click if the URL ever leaks',
+    ],
+    images: [{ src: calendarSyncShot, alt: 'Calendar sync card in Settings → Integrations with arrivals/departures mode and reminder toggle' }],
   },
   {
     slug: 'multi-location',
