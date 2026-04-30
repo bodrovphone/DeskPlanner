@@ -21,6 +21,7 @@ export const changelog: ChangelogEntry[] = [
     description:
       "Subscribe your personal calendar to a live feed of bookings at your space. Titles are short and scannable: [ARRIVAL] - Alexey Safonov on day one, [ENDS] - Alexey Safonov on the last day. Full details (full name, plan, desk, run dates, space) live in the event body. Events are marked transparent so they don't block your free/busy availability. Toggle between \"Arrivals & departures only\" (default) and \"All booked days\" in Settings. Optional reminders: enable a notification with your preferred lead time (15 min to 2 days before). Token rotatable from Advanced.",
     tags: ['Integrations', 'Calendar', 'Google Calendar', 'Outlook', 'Apple Calendar'],
+    linkedFeature: 'calendar-sync',
   },
   {
     date: '2026-04-27',
