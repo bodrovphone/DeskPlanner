@@ -2,19 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 
-const SUPABASE_FUNCTIONS_URL = 'https://rvvunwqizlzlqrhmmera.supabase.co/functions/v1/calendar-feed';
-
-export type CalendarFeedMode = 'arrivals' | 'all';
-
-export function buildCalendarFeedUrl(token: string, mode: CalendarFeedMode = 'arrivals'): string {
-  const base = `${SUPABASE_FUNCTIONS_URL}?token=${token}`;
-  // 'arrivals' is the server default; only append when overriding.
-  return mode === 'all' ? `${base}&mode=all` : base;
-}
-
-export function buildCalendarWebcalUrl(token: string, mode: CalendarFeedMode = 'arrivals'): string {
-  return buildCalendarFeedUrl(token, mode).replace(/^https:/, 'webcal:');
-}
+// Re-export the pure URL helpers so existing import sites keep working.
+// Tests live next to the implementation in `@/lib/calendarFeedUrls`.
+export {
+  buildCalendarFeedUrl,
+  buildCalendarWebcalUrl,
+  type CalendarFeedMode,
+} from '@/lib/calendarFeedUrls';
 
 export interface ManagerCalendarSettings {
   token: string;
