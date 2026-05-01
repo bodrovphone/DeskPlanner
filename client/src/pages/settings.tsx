@@ -1972,7 +1972,7 @@ function PublicBookingCard({
   };
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col" data-testid="public-booking-card">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Globe className="h-5 w-5 text-blue-600" />

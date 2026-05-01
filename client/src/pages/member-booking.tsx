@@ -7,6 +7,13 @@ import { loadPublicFloorPlan, type FloorPlanData } from '@/hooks/use-floor-plan'
 import { isNonWorkingDay, DAY_LABELS } from '@/lib/workingDays';
 import { formatLocalDate } from '@/lib/dateUtils';
 import { buildAvailabilityMap, pickRandomAvailableDesk, getIsoDay } from '@/lib/bookingAvailability';
+import {
+  mapClientRowToClient,
+  computeFlexRemaining,
+  buildDeskLabelMap,
+  dedupeUpcomingBookingsByDate,
+  computePerVisitPrice,
+} from '@/lib/memberBookingUtils';
 import { Loader2, CalendarCheck, Check, MapPin, CalendarDays, Package } from 'lucide-react';
 import { SpaceContactBar } from '@/components/shared/SpaceContactBar';
 import { FloorPlanReadOnly } from '@/components/floor-plan/FloorPlanReadOnly';
@@ -56,20 +63,7 @@ export default function MemberBookingPage() {
         if (orgRow?.flex_plan_days && orgRow?.flex_plan_price) {
           setFlexConfig({ days: orgRow.flex_plan_days, price: orgRow.flex_plan_price });
         }
-        setMember({
-          id: String(clientRow.id),
-          organizationId: clientRow.organization_id,
-          name: clientRow.name,
-          contact: clientRow.contact || null,
-          email: clientRow.email || null,
-          phone: clientRow.phone || null,
-          flexActive: clientRow.flex_active || false,
-          flexTotalDays: clientRow.flex_total_days || 0,
-          flexUsedDays: clientRow.flex_used_days || 0,
-          flexStartDate: clientRow.flex_start_date || null,
-          createdAt: clientRow.created_at,
-          updatedAt: clientRow.updated_at,
-        });
+        setMember(mapClientRowToClient(clientRow));
         // Fetch upcoming bookings for this member
         if (orgRow?.id) {
           const { data: bookingRows } = await supabaseClient
@@ -82,22 +76,9 @@ export default function MemberBookingPage() {
             .limit(5);
 
           if (bookingRows && bookingRows.length > 0 && avail) {
-            const deskMap = new Map<string, string>();
-            for (const room of avail.rooms) {
-              for (const desk of room.desks) {
-                deskMap.set(desk.deskId, desk.label);
-              }
-            }
-            // Deduplicate by date (multi-day bookings have one row per date)
-            const seen = new Set<string>();
-            const upcoming: { date: string; deskLabel: string }[] = [];
-            for (const row of bookingRows) {
-              if (!seen.has(row.date)) {
-                seen.add(row.date);
-                upcoming.push({ date: row.date, deskLabel: deskMap.get(row.desk_id) || row.desk_id });
-              }
-            }
-            setUpcomingBookings(upcoming);
+            setUpcomingBookings(
+              dedupeUpcomingBookingsByDate(bookingRows, buildDeskLabelMap(avail)),
+            );
           }
         }
       } else {
@@ -136,7 +117,7 @@ export default function MemberBookingPage() {
     );
   }
 
-  const flexRemaining = member.flexTotalDays - member.flexUsedDays;
+  const flexRemaining = computeFlexRemaining(member);
   const noBalance = member.flexActive && flexRemaining <= 0;
 
   if (submitted) {
@@ -232,9 +213,7 @@ export default function MemberBookingPage() {
   const todayIsWorkingDay = !isNonWorkingDay(todayStr, org.workingDays);
   const tomorrowIsWorkingDay = !isNonWorkingDay(tomorrowStr, org.workingDays);
 
-  const perVisitPrice = flexConfig && flexConfig.days > 0
-    ? flexConfig.price / flexConfig.days
-    : 0;
+  const perVisitPrice = computePerVisitPrice(flexConfig);
 
   const toggleDate = (dateStr: string) => {
     setSelectedDates(prev =>

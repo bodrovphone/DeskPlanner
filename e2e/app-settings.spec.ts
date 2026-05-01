@@ -226,31 +226,41 @@ test.describe('Settings — public booking card', () => {
   });
 
   test('enabling public booking shows shareable link and amber warning (no Telegram)', async ({ page }) => {
-    const toggle = page.getByRole('switch', { name: 'Enable public booking' });
+    // Scope to the public booking card via data-testid so unrelated readonly
+    // inputs (e.g. CalendarSyncCard's iCal URL) can never match by accident.
+    const card = page.getByTestId('public-booking-card');
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    const toggle = card.getByRole('switch', { name: 'Enable public booking' });
     await expect(toggle).toBeVisible({ timeout: 10_000 });
 
     const wasEnabled = await toggle.isChecked();
 
-    // Ensure it's enabled for this test
+    // Ensure enabled state for this test (local React toggle — does NOT write
+    // to the DB, so we don't have to undo a Save).
     if (!wasEnabled) {
       await toggle.click();
     }
 
-    // Shareable link is a readonly textbox containing /book/
-    await expect(page.locator('input[readonly]').filter({ hasValue: /\/book\// })).toBeVisible({ timeout: 5_000 });
+    // Shareable link — readonly input scoped to this card. The bookingUrl is
+    // built as `${origin}/book/${orgSlug}` so it always contains "/book/".
+    const shareableLink = card.locator('input[readonly]').filter({ hasValue: /\/book\// });
+    await expect(shareableLink).toBeVisible({ timeout: 5_000 });
 
-    // Amber warning shown when Telegram not connected
+    // Amber warning is shown when Telegram is not connected.
     const telegramConnected = await page.getByText('Connected', { exact: true }).first().isVisible();
     if (!telegramConnected) {
-      await expect(page.getByText('Without Telegram connected')).toBeVisible();
+      await expect(card.getByText(/Without Telegram connected/)).toBeVisible();
     }
 
-    // Restore original state
+    // Restore: just toggle back. No Save click needed — local state was the
+    // only thing that changed, and after toggling back it matches the prop
+    // (and the DB), so the Save button is disabled. Re-clicking Save here
+    // would fail silently (disabled buttons absorb clicks) and the "Saved"
+    // toast never fires. Cleaner to just leave the local state aligned.
     if (!wasEnabled) {
       await toggle.click();
-      const saveBtn = page.locator('div').filter({ hasText: 'Public Booking Page' }).getByRole('button', { name: 'Save Changes' }).last();
-      await saveBtn.click();
-      await expect(page.getByText('Saved', { exact: true })).toBeVisible({ timeout: 10_000 });
+      await expect(toggle).not.toBeChecked();
     }
   });
 });
